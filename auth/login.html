@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - PLSNHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+    <div class="login-wrapper">
+        <div class="login-container">
+            <!-- Left Panel - Login Form -->
+            <div class="login-panel">
+                <div class="logo-section">
+                    <div class="school-logo">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%230B4F2E%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E';">
+                    </div>
+                    <div class="school-name">
+                        <h1>Placido L. Señor</h1>
+                        <p>National High School</p>
+                    </div>
+                </div>
+
+                <h2>Welcome <span class="highlight">Back</span></h2>
+                <p class="subtitle">Login to your account to continue</p>
+
+                <!-- Alert Container -->
+                <div id="alertContainer"></div>
+
+                <!-- Login Form -->
+                <form id="loginForm">
+                    <div class="input-group">
+                        <label for="email">Email Address <span>*</span></label>
+                        <div class="input-wrapper">
+                            <input type="email" id="email" name="email" placeholder="Enter your email address" required autofocus>
+                            <i class="fas fa-envelope input-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="password">Password <span>*</span></label>
+                        <div class="input-wrapper">
+                            <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                            <button type="button" class="toggle-password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="forgot-password">
+                        <a href="forgot_password.html">
+                            <i class="fas fa-key"></i> Forgot Password?
+                        </a>
+                    </div>
+
+                    <div class="remember-me">
+                        <input type="checkbox" id="remember" name="remember">
+                        <label for="remember">Remember me</label>
+                    </div>
+
+                    <button type="submit" class="btn-login" id="loginBtn">
+                        <i class="fas fa-sign-in-alt" style="margin-right: 8px;"></i> LOGIN
+                    </button>
+                </form>
+
+                <!-- Enroll Now Link - Changed from Create Account -->
+                <div class="signup-link">
+                    Don't have an account? <a href="../student/enrollment.html">Enroll Now</a>
+                </div>
+
+                <div class="form-footer">
+                    <a href="homepage.html" class="back-home">
+                        <i class="fas fa-arrow-left"></i> Back to Home
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Panel - Information -->
+            <div class="info-panel">
+                <div class="motto">
+                    <h3>VIRTUS<br><span>EXCELLENTIA</span><br>SERVITIUM</h3>
+                </div>
+
+                <div class="school-level">
+                    <h4>SENIOR HIGH SCHOOL</h4>
+                    <p>Grades 11-12 · Academic & Technical-Vocational Tracks</p>
+                </div>
+
+                <ul class="programs-list">
+                    <li><strong>TVL</strong> - Technical Vocational Livelihood (Cookery)</li>
+                    <li><strong>HUMSS</strong> - Humanities and Social Sciences</li>
+                    <li><strong>GAS</strong> - General Academic Strand</li>
+                </ul>
+
+                <div class="address">
+                    <i class="fas fa-map-marker-alt"></i> Langtad, City of Naga, Cebu<br>
+                    <i class="fas fa-phone"></i> (032) 123-4567<br>
+                    <i class="fas fa-envelope"></i> info@plsnhs.edu.ph
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Success!</span>
+    </div>
+
+    <!-- JavaScript -->
+    <script type="module" src="js/login.js"></script>
+</body>
+</html>

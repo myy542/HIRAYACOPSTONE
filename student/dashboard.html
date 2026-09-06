@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - PLSNHS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- STUDENT CSS - local -->
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="PLSNHS Logo" class="logo-img" onerror="this.onerror=null; this.style.display='none'; this.parentElement.textContent='P'; this.parentElement.style.background='#FFD700'; this.parentElement.style.color='#0b2b4a'; this.parentElement.style.display='flex'; this.parentElement.style.alignItems='center'; this.parentElement.style.justifyContent='center'; this.parentElement.style.fontWeight='800'; this.parentElement.style.fontSize='1.2rem';">
+                    </div>
+                    <div class="logo-text">
+                        <div class="logo-main">PLS<span>NHS</span></div>
+                        <div class="logo-sub">Placido L. Señor NHS</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="student-profile">
+                <div class="student-avatar">
+                    <div class="avatar-initial" id="studentInitial">S</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="student-name" id="studentName">Student</div>
+                <div class="student-role"><i class="fas fa-user-graduate"></i> Student</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="schedule.html"><i class="fas fa-calendar-alt"></i> Class Schedule</a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> My Grades</a></li>
+                        <li><a href="enrollment_history.html"><i class="fas fa-history"></i> Enrollment History</a></li>
+                        <li><a href="requirements.html"><i class="fas fa-file-alt"></i> Requirements</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user-circle"></i> My Profile</a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+ 
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Welcome back, <span id="studentNameHeader">Student</span>!</p>
+                </div>
+                <div class="header-actions">
+                    <div class="notification-wrapper">
+                        <a href="#" class="notification-btn" id="notificationBtn">
+                            <i class="fas fa-bell"></i>
+                            <span class="notif-count" id="notifCount">0</span>
+                        </a>
+                        <div class="notification-dropdown" id="notificationDropdown">
+                            <div class="dropdown-header">
+                                <h4>Notifications</h4>
+                                <button id="markAllReadBtn" class="mark-all-read">Mark all as read</button>
+                            </div>
+                            <div class="dropdown-body" id="notificationList">
+                                <div class="empty-notifications">
+                                    <i class="fas fa-bell-slash"></i>
+                                    <p>No notifications yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Type Badge -->
+            <div class="student-type-badge" id="studentTypeBadge" style="background: #197e2f;">
+                <i class="fas fa-star"></i> New Student
+            </div>
+
+            <!-- Student Type Information Card -->
+            <div class="student-type-card">
+                <div class="student-type-icon" id="studentTypeIcon" style="background: #197e2f;">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="student-type-info">
+                    <h3 id="studentTypeTitle">New Student</h3>
+                    <p id="studentTypeDesc">First time enrollee</p>
+                    <small><i class="fas fa-graduation-cap"></i> First time enrollment</small>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Enrollment Status</h3>
+                        <div class="stat-icon"><i class="fas fa-graduation-cap"></i></div>
+                    </div>
+                    <div class="stat-number" id="enrollmentDisplay">Not Enrolled</div>
+                    <div class="stat-label" id="enrollmentStatus" style="color: #6c757d;">
+                        <i class="fas fa-circle" style="font-size: 8px; margin-right: 5px;"></i> No Record
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Subjects</h3>
+                        <div class="stat-icon"><i class="fas fa-book"></i></div>
+                    </div>
+                    <div class="stat-number" id="subjectsCount">0</div>
+                    <div class="stat-label">Current Subjects</div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Average Grade</h3>
+                        <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    </div>
+                    <div class="stat-number" id="averageGrade">--</div>
+                    <div class="stat-label">Overall Average</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Total Enrollments</h3>
+                        <div class="stat-icon" style="background: #197e2f; color: white; opacity: 1; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                    </div>
+                    <div class="stat-number" id="totalEnrollments" style="font-size: 24px;">0</div>
+                    <div class="stat-label"><i class="fas fa-history"></i> Since 2024</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="section-title">
+                <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+            </div>
+
+            <div class="actions-grid">
+                <div class="action-card">
+                    <div class="action-icon"><i class="fas fa-graduation-cap"></i></div>
+                    <h3>Enrollment</h3>
+                    <p>Enroll now for the current school year</p>
+                    <a href="enrollment.html" class="action-btn">Enroll Now</a>
+                </div>
+                
+                <div class="action-card">
+                    <div class="action-icon"><i class="fas fa-calendar-alt"></i></div>
+                    <h3>Class Schedule</h3>
+                    <p>View your weekly class schedule and subjects</p>
+                    <a href="schedule.html" class="action-btn">View Schedule</a>
+                </div>
+                
+                <div class="action-card">
+                    <div class="action-icon"><i class="fas fa-star"></i></div>
+                    <h3>My Grades</h3>
+                    <p>Check your grades and academic performance</p>
+                    <a href="grades.html" class="action-btn">View Grades</a>
+                </div>
+                
+                <div class="action-card">
+                    <div class="action-icon"><i class="fas fa-user-circle"></i></div>
+                    <h3>My Profile</h3>
+                    <p>Update your personal information and password</p>
+                    <a href="profile.html" class="action-btn">View Profile</a>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="section-title">
+                <h2><i class="fas fa-history"></i> Recent Enrollment Activity</h2>
+            </div>
+
+            <div class="activity-card">
+                <div class="activity-header">
+                    <h3><i class="fas fa-file-signature"></i> Enrollment History</h3>
+                    <span class="stat-label">Last 5 records</span>
+                </div>
+                <div class="activity-list" id="recentActivities">
+                    <div class="activity-item">
+                        <div class="activity-content" style="text-align: center; padding: 30px;">
+                            <i class="fas fa-file-signature" style="font-size: 40px; color: #999; opacity: 0.3; margin-bottom: 10px;"></i>
+                            <p style="color: #999;">No enrollment history found.</p>
+                            <a href="enrollment.html" style="color: #0B4F2E; text-decoration: none; font-weight: 500; display: inline-block; margin-top: 10px;">
+                                Enroll Now <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complete Enrollment History -->
+            <div class="section-title">
+                <h2><i class="fas fa-history"></i> Complete Enrollment History</h2>
+            </div>
+
+            <div class="activity-card">
+                <div class="activity-header">
+                    <h3><i class="fas fa-file-signature"></i> All Enrollments</h3>
+                    <span class="stat-label" id="totalEnrollmentsLabel">Total: 0 enrollments</span>
+                </div>
+                <div class="activity-list" id="completeHistory">
+                    <div class="activity-item">
+                        <div class="activity-content" style="text-align: center; padding: 30px;">
+                            <i class="fas fa-file-signature" style="font-size: 40px; color: #999; opacity: 0.3; margin-bottom: 10px;"></i>
+                            <p style="color: #999;">No enrollment history found.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- School Information -->
+            <div class="school-info">
+                <p>
+                    <i class="fas fa-map-marker-alt"></i> PLACIDO L. SEÑOR SENIOR HIGH SCHOOL<br>
+                    Langtad, City of Naga, Cebu 6037<br>
+                    <i class="fas fa-phone"></i> (032) 123-4567 · <i class="fas fa-envelope"></i> info@plsshs.edu.ph
+                </p>
+            </div>
+        </main>
+    </div>
+
+    <!-- STUDENT JS - local -->
+    <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

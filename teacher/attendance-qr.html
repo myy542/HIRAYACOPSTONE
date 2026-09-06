@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Attendance - Teacher Dashboard | PLSNHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- QR Attendance CSS -->
+    <link rel="stylesheet" href="css/attendance-qr.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">P</div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="teacher-profile">
+                <div class="teacher-avatar">
+                    <div class="avatar-initial" id="teacherInitial">T</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="teacher-name" id="teacherName">Teacher</div>
+                <div class="teacher-role"><i class="fas fa-chalkboard-user"></i> Teacher</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="attendance-qr.html" class="active"><i class="fas fa-qrcode"></i> QR Attendance</a></li>
+                        <li><a href="classes.html"><i class="fas fa-users"></i> My Classes</a></li>
+                        <li><a href="schedule.html"><i class="fas fa-clock"></i> Schedule</a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> Grades</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1>QR Code Attendance System</h1>
+                    <p>Generate QR code to record your Time In and Time Out</p>
+                </div>
+                <div class="date-badge">
+                    <i class="fas fa-calendar-alt"></i> Loading...
+                </div>
+            </div>
+
+            <!-- Philippine Time Display -->
+            <div class="ph-time">
+                <i class="fas fa-clock"></i> Philippine Time: <span id="phTimeDisplay">Loading...</span>
+            </div>
+
+            <!-- Cutoff Time Info -->
+            <div class="cutoff-info">
+                <i class="fas fa-info-circle"></i> 
+                <strong>Time In Cutoff: 8:00 AM</strong> - Time in after 8:00 AM will be marked as "Late"
+                <span class="info-text-late" id="lateWarning">
+                    <i class="fas fa-exclamation-triangle"></i> Current time is past 8:00 AM, Time In will be marked as LATE
+                </span>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+                    <div class="stat-number" id="totalDays">0</div>
+                    <div class="stat-label">Total Days</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon success"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-number" id="presentDays">0</div>
+                    <div class="stat-label">Present</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon warning"><i class="fas fa-clock"></i></div>
+                    <div class="stat-number" id="lateDays">0</div>
+                    <div class="stat-label">Late</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon danger"><i class="fas fa-times-circle"></i></div>
+                    <div class="stat-number" id="absentDays">0</div>
+                    <div class="stat-label">Absent</div>
+                </div>
+            </div>
+
+            <!-- Today's Attendance Info -->
+            <div class="attendance-info" id="attendanceInfo" style="display: none;">
+                <h3><i class="fas fa-calendar-day"></i> Today's Attendance</h3>
+                <div class="info-row">
+                    <span class="info-label">⏰ Time In:</span>
+                    <span class="info-value" id="timeInDisplay">Not yet recorded</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">⏰ Time Out:</span>
+                    <span class="info-value" id="timeOutDisplay">Not yet recorded</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">📊 Status:</span>
+                    <span class="info-value" id="statusDisplay">
+                        <span class="status-badge status-Pending">Pending</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- QR Code Scanner Section -->
+            <div class="scanner-container">
+                <div class="scanner-header">
+                    <h3><i class="fas fa-camera"></i> Scan QR Code to Record Attendance</h3>
+                    <div class="tab-buttons">
+                        <button class="tab-btn active" onclick="window.switchTab('camera')">📷 Camera</button>
+                        <button class="tab-btn" onclick="window.switchTab('upload')">📁 Upload Photo</button>
+                    </div>
+                </div>
+                
+                <!-- Camera Tab -->
+                <div id="cameraScannerTab" class="scanner-tab active-tab">
+                    <div class="video-container">
+                        <video id="video" playsinline autoplay></video>
+                        <canvas id="canvas"></canvas>
+                        <div class="scan-line" id="scanLine"></div>
+                    </div>
+                    <div class="scanner-controls">
+                        <button class="btn-scanner" id="startCameraBtn" onclick="window.startCamera()">
+                            <i class="fas fa-camera"></i> Start Camera
+                        </button>
+                        <button class="btn-scanner danger" id="stopCameraBtn" onclick="window.stopCamera()" style="display: none;">
+                            <i class="fas fa-stop"></i> Stop Camera
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Upload Tab -->
+                <div id="uploadScannerTab" class="scanner-tab">
+                    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Click to upload QR code image</p>
+                        <p class="upload-hint">Supports: JPG, PNG, GIF</p>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" onchange="window.uploadImage(this)">
+                    <div class="preview-image" id="previewImage" style="display: none;">
+                        <img id="previewImg" src="" alt="Preview">
+                    </div>
+                </div>
+                
+                <div class="scan-result" id="scanResult"></div>
+            </div>
+
+            <!-- QR Code Section -->
+            <div class="qr-card" id="qrContainer">
+                <div class="qr-container">
+                    <h3><i class="fas fa-qrcode"></i> Time In QR Code</h3>
+                    <p>Generate a QR code to record your Time In</p>
+                    <div class="qr-actions" style="text-align: center; padding: 30px;">
+                        <button onclick="window.generateQR('time_in')" class="btn-generate-timein">
+                            <i class="fas fa-qrcode"></i> Generate Time In QR Code
+                        </button>
+                        <p class="info-text" style="margin-top: 15px;">
+                            <i class="fas fa-info-circle"></i> Generate a QR code to record your Time In. This will expire in 30 minutes.
+                            <br><strong class="text-warning">⚠️ Note: Time In after 8:00 AM will be marked as LATE</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance History -->
+            <div class="history-section">
+                <h3><i class="fas fa-history"></i> Attendance History (Last 10 Records)</h3>
+                <div id="historyList">
+                    <div class="no-data">
+                        <i class="fas fa-calendar-alt"></i>
+                        <p>No attendance records found</p>
+                        <p class="info-text">Generate a QR code to start recording your attendance</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- jsQR Library for QR code scanning -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    
+    <!-- JavaScript -->
+    <script type="module" src="js/attendance-qr.js"></script>
+</body>
+</html>

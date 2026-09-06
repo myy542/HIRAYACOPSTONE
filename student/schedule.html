@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Schedule - PLSNHS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/schedule.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="PLSNHS Logo" class="logo-img" onerror="this.onerror=null; this.style.display='none'; this.parentElement.textContent='P'; this.parentElement.style.background='#FFD700'; this.parentElement.style.color='#0b2b4a'; this.parentElement.style.display='flex'; this.parentElement.style.alignItems='center'; this.parentElement.style.justifyContent='center'; this.parentElement.style.fontWeight='800'; this.parentElement.style.fontSize='1.2rem';">
+                    </div>
+                    <div class="logo-text">
+                        <div class="logo-main">PLS<span>NHS</span></div>
+                        <div class="logo-sub">Placido L. Señor NHS</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="student-profile">
+                <div class="student-avatar">
+                    <div class="avatar-initial" id="studentInitial">S</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="student-name" id="studentName">Student</div>
+                <div class="student-role"><i class="fas fa-user-graduate"></i> Student</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="schedule.html" class="active"><i class="fas fa-calendar-alt"></i> Class Schedule</a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> My Grades</a></li>
+                        <li><a href="enrollment_history.html"><i class="fas fa-history"></i> Enrollment History</a></li>
+                        <li><a href="requirements.html"><i class="fas fa-file-alt"></i> Requirements</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user-circle"></i> My Profile</a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1><i class="fas fa-calendar-alt"></i> Class Schedule</h1>
+                    <p>View your weekly class schedule and subjects</p>
+                </div>
+                <div class="date-badge" id="dateBadge">
+                    <i class="fas fa-calendar-alt"></i> Loading...
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Section Card -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="section-title">
+                        <h2 id="sectionName">Loading...</h2>
+                        <p>Your assigned section and class details</p>
+                    </div>
+                </div>
+                <div class="section-details">
+                    <span class="detail-item"><i class="fas fa-layer-group"></i> Grade: <strong id="gradeDisplay">N/A</strong></span>
+                    <span class="detail-item"><i class="fas fa-calendar-alt"></i> School Year: <strong id="schoolYearDisplay">N/A</strong></span>
+                    <span class="detail-item"><i class="fas fa-user-graduate"></i> Total Classes: <strong id="totalClasses">0</strong></span>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Total Classes</h3>
+                        <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalClasses">0</div>
+                    <div class="stat-label">Per Week</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Subjects</h3>
+                        <div class="stat-icon"><i class="fas fa-book"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalSubjects">0</div>
+                    <div class="stat-label">Unique Subjects</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Teachers</h3>
+                        <div class="stat-icon"><i class="fas fa-chalkboard-user"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalTeachers">0</div>
+                    <div class="stat-label">Assign Teachers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Free Periods</h3>
+                        <div class="stat-icon"><i class="fas fa-coffee"></i></div>
+                    </div>
+                    <div class="stat-number" id="freePeriods">0</div>
+                    <div class="stat-label">Available Slots</div>
+                </div>
+            </div>
+
+            <!-- Today's Classes -->
+            <div class="today-card">
+                <div class="today-icon">
+                    <i class="fas fa-sun"></i>
+                </div>
+                <div class="today-info">
+                    <h4><i class="fas fa-clock"></i> Today's Classes - <span id="todayName">Loading...</span></h4>
+                    <div class="today-classes" id="todayClasses">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule Table -->
+            <div class="schedule-container">
+                <div class="schedule-header">
+                    <h3><i class="fas fa-table"></i> Weekly Schedule</h3>
+                    <span class="schedule-info-badge"><i class="fas fa-info-circle"></i> All times are in 24-hour format</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 70px;">Time</th>
+                                <th>Monday <small>Mon</small></th>
+                                <th>Tuesday <small>Tue</small></th>
+                                <th>Wednesday <small>Wed</small></th>
+                                <th>Thursday <small>Thu</small></th>
+                                <th>Friday <small>Fri</small></th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleBody">
+                            <!-- Dynamic content -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="legend">
+                    <span class="legend-item">
+                        <span class="legend-color class"></span> Class
+                    </span>
+                    <span class="legend-item">
+                        <span class="legend-color free"></span> Free Period
+                    </span>
+                    <span class="legend-item">
+                        <span style="width:16px;height:16px;border-radius:4px;background:rgba(11,43,74,0.08);border-left:3px solid var(--primary);"></span> Current Day Highlight
+                    </span>
+                </div>
+            </div>
+
+            <!-- Summary Grid -->
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <h4>
+                        <i class="fas fa-book-open"></i> Subjects
+                        <span class="badge-count" id="subjectCountBadge">0</span>
+                    </h4>
+                    <div class="summary-content" id="subjectsList">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <h4>
+                        <i class="fas fa-chalkboard-user"></i> Teachers
+                        <span class="badge-count" id="teacherCountBadge">0</span>
+                    </h4>
+                    <div class="summary-content" id="teachersList">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section Info -->
+            <div class="summary-card" style="margin-top: 1.5rem;">
+                <h4><i class="fas fa-info-circle"></i> Section Information</h4>
+                <div class="summary-content" id="sectionInfo">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="js/schedule.js"></script>
+</body>
+</html>

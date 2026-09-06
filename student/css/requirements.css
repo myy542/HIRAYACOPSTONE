@@ -1,0 +1,1118 @@
+/* ===== REQUIREMENTS CSS ===== */
+:root {
+    --primary: #0b2b4a;
+    --primary-light: #1a3d5f;
+    --primary-dark: #061a2e;
+    --accent: #FFD700;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --gray-900: #0f172a;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+    --radius: 12px;
+    --radius-lg: 16px;
+    --transition: all 0.3s ease;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-800);
+    min-height: 100vh;
+}
+
+/* ===== APP CONTAINER ===== */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+    width: 260px;
+    background: var(--primary);
+    color: white;
+    padding: 1.5rem 0;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    padding: 0 1.5rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ===== LOGO - LEFT SIDE WITH SUBTITLE BELOW ===== */
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.logo-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #FFD700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 1.2rem;
+    color: var(--primary);
+}
+
+.logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.logo-main {
+    font-size: 1.3rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: white;
+}
+
+.logo-main span {
+    color: var(--accent);
+}
+
+.logo-sub {
+    font-size: 0.55rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.45);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+/* Student Profile */
+.student-profile {
+    padding: 1.5rem;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.student-avatar {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 0.5rem;
+}
+
+.student-avatar .avatar-initial {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.online-dot {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--success);
+    border: 2px solid var(--primary);
+}
+
+.student-name {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.student-role {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.student-role i {
+    margin-right: 4px;
+}
+
+/* Navigation */
+.nav-menu {
+    flex: 1;
+    padding: 1rem 1.5rem;
+}
+
+.nav-section-title {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.3);
+    margin: 1rem 0 0.5rem;
+}
+
+.nav-items {
+    list-style: none;
+}
+
+.nav-items li {
+    margin-bottom: 4px;
+}
+
+.nav-items a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.nav-items a i {
+    width: 20px;
+    text-align: center;
+    font-size: 1rem;
+}
+
+.nav-items a:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: white;
+}
+
+.nav-items a.active {
+    background: rgba(255, 215, 0, 0.12);
+    color: var(--accent);
+}
+
+/* ===== MAIN CONTENT ===== */
+.main-content {
+    flex: 1;
+    margin-left: 260px;
+    padding: 2rem 2.5rem;
+    max-width: calc(100% - 260px);
+}
+
+/* ===== PAGE HEADER ===== */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.page-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+.page-header p {
+    color: var(--gray-500);
+    font-size: 0.95rem;
+    margin-top: 0.2rem;
+}
+
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.5rem 1.2rem;
+    border-radius: 40px;
+    background: var(--gray-100);
+    color: var(--gray-600);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.back-btn:hover {
+    background: var(--primary);
+    color: white;
+}
+
+/* ===== STATUS ALERT ===== */
+.status-alert {
+    padding: 1rem 1.5rem;
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    animation: slideIn 0.3s ease;
+}
+
+.status-alert.success {
+    background: #d4edda;
+    color: #155724;
+    border-left: 4px solid var(--success);
+}
+.status-alert.warning {
+    background: #fff3e0;
+    color: #856404;
+    border-left: 4px solid var(--warning);
+}
+.status-alert.danger {
+    background: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid var(--danger);
+}
+.status-alert.info {
+    background: #e3f2fd;
+    color: #0c5460;
+    border-left: 4px solid var(--primary);
+}
+
+.status-alert i {
+    font-size: 1.5rem;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== ALERTS ===== */
+.alert {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem 1.2rem;
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.alert-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #065f46;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.alert-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #991b1b;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* ===== INFO CARD ===== */
+.info-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.info-card-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.info-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--gray-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.info-details {
+    flex: 1;
+}
+
+.info-details h3 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.info-details p {
+    font-size: 0.85rem;
+    color: var(--gray-500);
+    margin: 2px 0;
+}
+
+.student-type-badge {
+    display: inline-block;
+    padding: 0.1rem 0.6rem;
+    border-radius: 40px;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.student-type-new {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success);
+}
+.student-type-continuing {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3b82f6;
+}
+.student-type-transferee {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--warning);
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.1rem 0.6rem;
+    border-radius: 40px;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.status-enrolled {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success);
+}
+.status-pending {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--warning);
+}
+.status-rejected {
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--danger);
+}
+.status-pending_requirements {
+    background: rgba(59, 130, 246, 0.12);
+    color: #3b82f6;
+}
+
+.enrollment-approved-badge {
+    background: linear-gradient(135deg, var(--success), #059669);
+    color: white;
+    padding: 0.4rem 1rem;
+    border-radius: 40px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ===== PROGRESS CARD ===== */
+.progress-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+}
+
+.progress-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+.progress-header h3 i {
+    color: var(--primary);
+    margin-right: 0.5rem;
+}
+
+.progress-percentage {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.progress-container {
+    margin-bottom: 0.8rem;
+}
+
+.progress-bar {
+    height: 8px;
+    background: var(--gray-200);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--success));
+    border-radius: 8px;
+    transition: width 0.6s ease;
+}
+
+.progress-stats {
+    display: flex;
+    gap: 2rem;
+}
+
+.progress-stats .stat {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.stat-value {
+    font-weight: 700;
+    color: var(--gray-800);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--gray-400);
+}
+
+/* ===== REQUIREMENTS CARD ===== */
+.requirements-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.requirements-card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 1.5rem;
+}
+.requirements-card h3 i {
+    color: var(--primary);
+    margin-right: 0.5rem;
+}
+
+.student-type-label {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: var(--gray-500);
+}
+
+.requirements-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.requirement-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.2rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-200);
+    transition: var(--transition);
+}
+
+.requirement-item.submitted {
+    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.04);
+}
+
+.requirement-item.missing {
+    border-color: var(--gray-200);
+}
+
+.requirement-item:hover {
+    border-color: var(--primary);
+}
+
+.requirement-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+.requirement-icon.submitted {
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success);
+}
+
+.requirement-icon.missing {
+    background: var(--gray-100);
+    color: var(--gray-400);
+}
+
+.requirement-info {
+    flex: 1;
+}
+
+.requirement-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--gray-800);
+}
+
+.required-badge {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 40px;
+    background: rgba(239, 68, 68, 0.12);
+    color: var(--danger);
+    font-weight: 500;
+}
+
+.optional-badge {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 40px;
+    background: var(--gray-100);
+    color: var(--gray-500);
+    font-weight: 500;
+}
+
+.follow-up-badge {
+    font-size: 0.6rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 40px;
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--warning);
+    font-weight: 500;
+}
+
+.requirement-description {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+    margin-top: 2px;
+}
+
+.requirement-status {
+    margin-top: 2px;
+}
+
+.submitted-badge {
+    color: var(--success);
+    font-size: 0.75rem;
+}
+
+.missing-badge {
+    color: var(--gray-400);
+    font-size: 0.75rem;
+}
+
+.requirement-actions {
+    flex-shrink: 0;
+}
+
+.btn-view {
+    padding: 0.3rem 0.8rem;
+    border: none;
+    border-radius: 40px;
+    background: var(--gray-100);
+    color: var(--gray-600);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-view:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-upload {
+    padding: 0.3rem 0.8rem;
+    border: none;
+    border-radius: 40px;
+    background: var(--primary);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-upload:hover:not(:disabled) {
+    background: var(--primary-light);
+    transform: translateY(-2px);
+}
+
+.btn-upload:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ===== INSTRUCTIONS CARD ===== */
+.instructions-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.instructions-card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: 1rem;
+}
+.instructions-card h3 i {
+    color: var(--primary);
+    margin-right: 0.5rem;
+}
+
+.instructions-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.instruction-item {
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-start;
+}
+
+.instruction-number {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.instruction-content h4 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.instruction-content p {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+    margin-top: 2px;
+}
+
+/* ===== CONTACT CARD ===== */
+.contact-card {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 1.5rem 2rem;
+}
+
+.contact-card i {
+    font-size: 2rem;
+    color: var(--primary);
+}
+
+.contact-info h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.contact-info p {
+    font-size: 0.85rem;
+    color: var(--gray-500);
+}
+
+.contact-details {
+    display: flex;
+    gap: 1rem;
+    margin-top: 4px;
+}
+
+.contact-details span {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+}
+.contact-details span i {
+    font-size: 0.8rem;
+    margin-right: 4px;
+}
+
+/* ===== NO ENROLLMENT CARD ===== */
+.no-enrollment-card {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+}
+
+.no-enrollment-card i {
+    font-size: 3rem;
+    color: var(--gray-300);
+    margin-bottom: 1rem;
+}
+
+.no-enrollment-card h3 {
+    font-size: 1.2rem;
+    color: var(--gray-700);
+}
+
+.no-enrollment-card p {
+    color: var(--gray-500);
+    margin: 0.5rem 0 1.5rem;
+}
+
+.btn-enroll {
+    display: inline-block;
+    padding: 0.6rem 1.5rem;
+    border-radius: 40px;
+    background: var(--primary);
+    color: white;
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-enroll:hover {
+    background: var(--primary-light);
+    transform: translateY(-2px);
+}
+
+/* ===== MODAL ===== */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(6px);
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: var(--radius-lg);
+    max-width: 480px;
+    width: 90%;
+    box-shadow: var(--shadow-lg);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.modal-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+.modal-header h3 i {
+    color: var(--primary);
+    margin-right: 0.5rem;
+}
+
+.close-modal {
+    font-size: 1.8rem;
+    color: var(--gray-400);
+    cursor: pointer;
+    background: none;
+    border: none;
+    transition: var(--transition);
+}
+
+.close-modal:hover {
+    color: var(--gray-800);
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.upload-info {
+    margin-bottom: 1.2rem;
+}
+
+.upload-info p {
+    font-size: 0.95rem;
+    color: var(--gray-700);
+}
+
+.file-info {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+    margin-top: 4px;
+}
+.file-info i {
+    margin-right: 4px;
+}
+
+.file-input-wrapper {
+    text-align: center;
+}
+
+.file-input-wrapper input[type="file"] {
+    display: none;
+}
+
+.file-input-label {
+    display: inline-block;
+    padding: 0.8rem 2rem;
+    border-radius: var(--radius);
+    border: 2px dashed var(--gray-300);
+    color: var(--gray-500);
+    cursor: pointer;
+    transition: var(--transition);
+    font-weight: 500;
+    width: 100%;
+}
+
+.file-input-label:hover {
+    border-color: var(--primary);
+    background: rgba(11, 43, 74, 0.02);
+}
+
+.file-input-label i {
+    margin-right: 8px;
+}
+
+.selected-file {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--success);
+}
+
+.upload-progress {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.upload-progress .progress-bar {
+    height: 6px;
+    background: var(--gray-200);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.upload-progress .progress-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 6px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.8rem;
+    color: var(--gray-400);
+    margin-top: 4px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.8rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+.btn-primary {
+    padding: 0.5rem 1.5rem;
+    border: none;
+    border-radius: 40px;
+    background: var(--primary);
+    color: white;
+    font-weight: 500;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-primary:hover {
+    background: var(--primary-light);
+}
+
+.btn-secondary {
+    padding: 0.5rem 1.5rem;
+    border: none;
+    border-radius: 40px;
+    background: var(--gray-100);
+    color: var(--gray-600);
+    font-weight: 500;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-secondary:hover {
+    background: var(--gray-200);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 70px;
+        padding: 1rem 0;
+    }
+    .sidebar .logo-main,
+    .sidebar .logo-sub,
+    .sidebar .student-name,
+    .sidebar .student-role,
+    .sidebar .nav-section-title,
+    .sidebar .nav-items a span {
+        display: none;
+    }
+    .sidebar .nav-items a {
+        justify-content: center;
+        padding: 0.6rem;
+    }
+    .sidebar .nav-items a i {
+        font-size: 1.2rem;
+    }
+    .sidebar .logo-icon {
+        width: 36px;
+        height: 36px;
+        margin: 0 auto;
+    }
+    .sidebar .logo {
+        justify-content: center;
+    }
+    .main-content {
+        margin-left: 70px;
+        max-width: calc(100% - 70px);
+        padding: 1.5rem;
+    }
+    .info-card-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    .instructions-list {
+        grid-template-columns: 1fr;
+    }
+    .progress-stats {
+        justify-content: center;
+    }
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .requirement-item {
+        flex-wrap: wrap;
+    }
+    .contact-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    .contact-details {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .requirements-card {
+        padding: 1rem;
+    }
+    .progress-card {
+        padding: 1rem;
+    }
+    .info-card {
+        padding: 1rem;
+    }
+    .modal-content {
+        max-width: 95%;
+    }
+    .requirement-name {
+        font-size: 0.85rem;
+    }
+    .logo-icon {
+        width: 30px;
+        height: 30px;
+    }
+    .logo-main {
+        font-size: 1rem;
+    }
+    .logo-sub {
+        font-size: 0.45rem;
+    }
+}

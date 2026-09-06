@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enrollment - PLSNHS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/enrollment.css">
+</head>
+<body>
+    <div class="enrollment-wrapper">
+        <div class="enrollment-container">
+
+            <!-- HEADER -->
+            <div class="enrollment-header">
+                <div class="logo-section">
+                    <div class="school-logo">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231a2a6c%22/%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E';">
+                    </div>
+                    <div class="school-name">
+                        <h1>Placido L. Señor</h1>
+                        <p>National High School</p>
+                    </div>
+                </div>
+                <h2><span class="highlight">Student</span> <span class="highlight2">Enrollment</span></h2>
+                <p class="subtitle">Fill out the form to enroll for the upcoming school year</p>
+            </div>
+
+            <!-- ALERT -->
+            <div id="alertContainer"></div>
+
+            <!-- EXISTING ENROLLMENT -->
+            <div id="existingEnrollment" style="display:none;">
+                <h3>📋 You already have an enrollment</h3>
+                <div id="enrollmentDisplay"></div>
+                <p style="margin-top:12px;font-size:13px;color:#666;">
+                    You can only submit one enrollment. If you need to make changes, please contact the registrar.
+                </p>
+                <button id="backBtn" class="btn btn-prev" style="margin-top:12px;">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </button>
+            </div>
+
+            <!-- FORM -->
+            <form id="enrollmentForm">
+
+                <!-- ====== PERSONAL INFORMATION ====== -->
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-user"></i> Personal Information</h3>
+                    
+                    <div class="form-group">
+                        <label>Full Name <span>*</span></label>
+                        <div class="form-row-3">
+                            <div class="input-wrapper">
+                                <input type="text" id="lastName" placeholder="Last Name" required>
+                            </div>
+                            <div class="input-wrapper">
+                                <input type="text" id="firstName" placeholder="First Name" required>
+                            </div>
+                            <div class="input-wrapper">
+                                <input type="text" id="middleName" placeholder="Middle Name">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Date of Birth <span>*</span></label>
+                            <div class="input-wrapper">
+                                <input type="date" id="dob" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Age <span>*</span></label>
+                            <div class="input-wrapper">
+                                <input type="number" id="age" placeholder="e.g., 12" min="5" max="25" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Place of Birth <span>*</span></label>
+                            <div class="input-wrapper">
+                                <input type="text" id="birthplace" placeholder="City/Municipality, Province" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Gender <span>*</span></label>
+                            <div class="input-wrapper">
+                                <select id="gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nationality <span>*</span></label>
+                            <div class="input-wrapper">
+                                <input type="text" id="nationality" placeholder="e.g., Filipino" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Religion</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="religion" placeholder="e.g., Roman Catholic">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Home Address <span>*</span></label>
+                        <div class="input-wrapper">
+                            <textarea id="address" rows="2" placeholder="Street, Barangay, City/Municipality, Province" required></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== PARENT/GUARDIAN INFORMATION ====== -->
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-users"></i> Parent/Guardian Information</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Mother's Name <span>*</span></label>
+                            <div class="input-wrapper">
+                                <input type="text" id="motherName" placeholder="Full Name" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Mother's Occupation</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="motherOccupation" placeholder="Occupation">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Father's Name <span>*</span></label>
+                            <div class="input-wrapper">
+                                <input type="text" id="fatherName" placeholder="Full Name" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Father's Occupation</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="fatherOccupation" placeholder="Occupation">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Guardian's Name <span>*</span></label>
+                            <div class="input-wrapper">
+                                <input type="text" id="guardian" placeholder="Full name of guardian" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Relationship <span>*</span></label>
+                            <div class="input-wrapper">
+                                <select id="guardianRelationship" required>
+                                    <option value="">Select Relationship</option>
+                                    <option value="Parent">Parent</option>
+                                    <option value="Grandparent">Grandparent</option>
+                                    <option value="Sibling">Sibling</option>
+                                    <option value="Aunt/Uncle">Aunt/Uncle</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Guardian's Contact <span>*</span></label>
+                            <div class="input-wrapper">
+                                <input type="tel" id="guardianContact" placeholder="09XX XXX XXXX" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Guardian's Email</label>
+                            <div class="input-wrapper">
+                                <input type="email" id="guardianEmail" placeholder="guardian@email.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Guardian's Address <span>*</span></label>
+                        <div class="input-wrapper">
+                            <textarea id="guardianAddress" rows="2" placeholder="Street, Barangay, City/Municipality, Province" required></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== ACADEMIC BACKGROUND - GIWALA ====== -->
+
+                <!-- ====== GRADE LEVEL & STRAND ====== -->
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-book"></i> Grade Level & Strand</h3>
+
+                    <div class="form-group">
+                        <label>Applying for Grade Level <span>*</span></label>
+                        <div class="grade-options" id="gradeOptions">
+                            <div class="grade-option">
+                                <input type="radio" name="gradeLevel" value="Grade 7" id="grade7">
+                                <label for="grade7">Grade 7</label>
+                            </div>
+                            <div class="grade-option">
+                                <input type="radio" name="gradeLevel" value="Grade 8" id="grade8">
+                                <label for="grade8">Grade 8</label>
+                            </div>
+                            <div class="grade-option">
+                                <input type="radio" name="gradeLevel" value="Grade 9" id="grade9">
+                                <label for="grade9">Grade 9</label>
+                            </div>
+                            <div class="grade-option">
+                                <input type="radio" name="gradeLevel" value="Grade 10" id="grade10">
+                                <label for="grade10">Grade 10</label>
+                            </div>
+                            <div class="grade-option">
+                                <input type="radio" name="gradeLevel" value="Grade 11" id="grade11">
+                                <label for="grade11">Grade 11</label>
+                            </div>
+                            <div class="grade-option">
+                                <input type="radio" name="gradeLevel" value="Grade 12" id="grade12">
+                                <label for="grade12">Grade 12</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- STUDENT TYPE -->
+                    <div class="form-group" id="studentTypeGroup" style="display:none;">
+                        <label>Student Type <span>*</span></label>
+                        <div class="input-wrapper">
+                            <select id="student_type">
+                                <option value="">-- Select Student Type --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- STRAND (SHS only) -->
+                    <div class="form-group" id="strandDiv" style="display:none;">
+                        <label>Select Strand <span>*</span></label>
+                        <div class="strand-options">
+                            <div class="strand-option">
+                                <input type="radio" name="strand" value="TVL-Cookery" id="tvl">
+                                <label for="tvl">
+                                    <span class="strand-name">TVL</span>
+                                    <span class="strand-desc">Technical Vocational Livelihood - Cookery</span>
+                                </label>
+                            </div>
+                            <div class="strand-option">
+                                <input type="radio" name="strand" value="HUMSS" id="humss">
+                                <label for="humss">
+                                    <span class="strand-name">HUMSS</span>
+                                    <span class="strand-desc">Humanities and Social Sciences</span>
+                                </label>
+                            </div>
+                            <div class="strand-option">
+                                <input type="radio" name="strand" value="GAS" id="gas">
+                                <label for="gas">
+                                    <span class="strand-name">GAS</span>
+                                    <span class="strand-desc">General Academic Strand</span>
+                                </label>
+                            </div>
+                            <div class="strand-option">
+                                <input type="radio" name="strand" value="STEM" id="stem">
+                                <label for="stem">
+                                    <span class="strand-name">STEM</span>
+                                    <span class="strand-desc">Science, Technology, Engineering, Math</span>
+                                </label>
+                            </div>
+                            <div class="strand-option">
+                                <input type="radio" name="strand" value="ABM" id="abm">
+                                <label for="abm">
+                                    <span class="strand-name">ABM</span>
+                                    <span class="strand-desc">Accountancy, Business, Management</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SCHOOL YEAR -->
+                    <div class="form-group">
+                        <label>School Year <span>*</span></label>
+                        <div class="input-wrapper">
+                            <input type="text" id="school_year" placeholder="e.g., 2026-2027" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== REQUIREMENTS ====== -->
+                <div id="requirementsSection" style="display:none;">
+                    <h4>📎 Required Documents</h4>
+                    <div id="requirementsList"></div>
+                </div>
+
+                <!-- SUBMIT BUTTON -->
+                <div class="form-buttons">
+                    <span></span>
+                    <button type="submit" class="btn btn-submit" id="submitBtn">
+                        <i class="fas fa-paper-plane" style="margin-right:8px;"></i> Submit Enrollment
+                    </button>
+                </div>
+            </form>
+
+            <div class="back-link">
+                <a href="dashboard.html"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/enrollment.js"></script>
+</body>
+</html>

@@ -1,0 +1,369 @@
+/* ===== BASE CSS - NAVY BLUE THEME ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f0f2f5;
+    color: #0f172a;
+    line-height: 1.6;
+}
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ===== MOBILE MENU TOGGLE ===== */
+.menu-toggle {
+    display: none;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 101;
+    background: #1B2A4A;
+    color: #fff;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.menu-toggle:hover {
+    background: #14223a;
+    transform: scale(1.05);
+}
+
+/* ===== SIDEBAR - NAVY BLUE ===== */
+.sidebar {
+    width: 280px;
+    background: #1B2A4A;
+    color: #fff;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+    transition: transform 0.3s ease, width 0.3s ease;
+}
+
+.sidebar-header {
+    margin-bottom: 28px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.logo-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.logo-text {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #fff;
+}
+
+.logo-text span {
+    color: #facc15;
+}
+
+.school-badge {
+    font-size: 11px;
+    opacity: 0.8;
+    letter-spacing: 0.3px;
+    padding-left: 4px;
+}
+
+.admin-profile {
+    text-align: center;
+    padding: 18px 0 22px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 24px;
+}
+
+.admin-avatar {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: #facc15;
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-size: 28px;
+    font-weight: 700;
+    color: #1B2A4A;
+}
+
+.avatar-initial {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #facc15;
+    color: #1B2A4A;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.online-dot {
+    width: 14px;
+    height: 14px;
+    background: #22c55e;
+    border-radius: 50%;
+    border: 2px solid #1B2A4A;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+}
+
+.admin-name {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.admin-role {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-top: 2px;
+}
+
+.admin-role i {
+    margin-right: 4px;
+}
+
+/* ===== NAVIGATION ===== */
+.nav-menu {
+    flex: 1;
+}
+
+.nav-section {
+    margin-bottom: 24px;
+}
+
+.nav-section-title {
+    font-size: 10px;
+    letter-spacing: 1px;
+    opacity: 0.5;
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-left: 4px;
+    color: #fff;
+}
+
+.nav-items {
+    list-style: none;
+}
+
+.nav-items li {
+    margin-bottom: 2px;
+}
+
+.nav-items a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.nav-items a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.nav-items a.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+.nav-items a i {
+    width: 20px;
+    font-size: 15px;
+}
+
+/* ===== MAIN CONTENT ===== */
+.main-content {
+    flex: 1;
+    margin-left: 280px;
+    padding: 32px 40px;
+    min-height: 100vh;
+    transition: margin-left 0.3s ease;
+}
+
+/* ===== PAGE HEADER ===== */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.page-header h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #1B2A4A;
+}
+
+.subtitle {
+    color: #64748b;
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: #1e293b;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.back-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: flex;
+    }
+
+    .sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+        padding: 24px 20px;
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .sidebar.active .logo-text,
+    .sidebar.active .school-badge,
+    .sidebar.active .admin-name,
+    .sidebar.active .admin-role,
+    .sidebar.active .nav-section-title,
+    .sidebar.active .nav-items a span {
+        display: block;
+    }
+
+    .sidebar .logo-text,
+    .sidebar .school-badge,
+    .sidebar .admin-name,
+    .sidebar .admin-role,
+    .sidebar .nav-section-title,
+    .sidebar .nav-items a span {
+        display: none;
+    }
+
+    .sidebar .nav-items a {
+        justify-content: center;
+        padding: 12px;
+    }
+
+    .sidebar .nav-items a i {
+        margin: 0;
+        font-size: 18px;
+    }
+
+    .sidebar.active .nav-items a {
+        justify-content: flex-start;
+        padding: 10px 14px;
+    }
+
+    .sidebar.active .nav-items a i {
+        margin-right: 12px;
+        font-size: 15px;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 20px;
+        padding-top: 70px;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-header h1 {
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn-submit,
+    .btn-cancel {
+        justify-content: center;
+    }
+
+    .preview-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .preview-avatar {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+}

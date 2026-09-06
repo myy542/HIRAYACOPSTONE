@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Section Students - Registrar Dashboard | PLS NHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Section Students CSS -->
+    <link rel="stylesheet" href="css/section_students.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <div class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">P</div>
+                <div class="logo-text">PLS<span>NHS</span></div>
+            </div>
+            <div class="school-badge">Placido L. Señor NHS</div>
+        </div>
+
+        <div class="admin-profile">
+            <div class="admin-avatar">
+                <div class="avatar-initial" id="adminInitial">R</div>
+                <div class="online-dot"></div>
+            </div>
+            <div class="admin-name" id="adminName">Registrar</div>
+            <div class="admin-role"><i class="fas fa-user-tie"></i> Registrar</div>
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-section">
+                <div class="nav-section-title">MAIN MENU</div>
+                <ul class="nav-items">
+                    <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="enrollments.html"><i class="fas fa-file-signature"></i> Enrollments</a></li>
+                    <li><a href="students.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+                    <li><a href="sections.html" class="active"><i class="fas fa-layer-group"></i> Sections</a></li>
+                    <li><a href="reports.html"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">ACCOUNT</div>
+                <ul class="nav-items">
+                    <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                    <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                </ul>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1>Manage Section Students</h1>
+                <p id="sectionSubtitle">Assign and remove students from Section</p>
+            </div>
+            <div class="header-actions">
+                <a href="sections.html" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Back to Sections
+                </a>
+            </div>
+        </div>
+
+        <!-- Alert Container -->
+        <div id="alertContainer"></div>
+
+        <!-- Section Info Card -->
+        <div class="section-info-card">
+            <div class="section-info">
+                <h2 id="sectionName">Section Name</h2>
+                <div class="section-meta">
+                    <span class="meta-item">
+                        <i class="fas fa-layer-group"></i> <span id="sectionGrade">Grade Level</span>
+                    </span>
+                    <span class="meta-item">
+                        <i class="fas fa-user-tie"></i> Adviser: <span id="sectionAdviser">Not Assigned</span>
+                    </span>
+                </div>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="currentCount">0</div>
+                    <div class="stat-label">In This Section</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="availableCount">0</div>
+                    <div class="stat-label">Available</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalGradeCount">0</div>
+                    <div class="stat-label">Total in Grade</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid-2">
+            <!-- Current Students in Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-users"></i> Current Students</h3>
+                    <span class="badge" id="currentBadge">0 students</span>
+                </div>
+
+                <div id="currentStudentsContainer">
+                    <form id="removeForm">
+                        <div class="bulk-actions">
+                            <button type="button" class="btn-bulk remove" onclick="toggleAll('current')">
+                                <i class="fas fa-check-double"></i> Select All
+                            </button>
+                            <button type="submit" name="remove_selected" class="btn-bulk remove" id="removeSelectedBtn">
+                                <i class="fas fa-user-minus"></i> Remove Selected
+                            </button>
+                        </div>
+
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchCurrent" placeholder="Search current students...">
+                        </div>
+
+                        <div class="student-list" id="currentList">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Available Students -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-user-plus"></i> Available Students</h3>
+                    <span class="badge" id="availableBadge">0 available</span>
+                </div>
+
+                <div id="availableStudentsContainer">
+                    <form id="assignForm">
+                        <div class="bulk-actions">
+                            <button type="button" class="btn-bulk assign" onclick="toggleAll('available')">
+                                <i class="fas fa-check-double"></i> Select All
+                            </button>
+                            <button type="submit" name="assign_selected" class="btn-bulk assign" id="assignSelectedBtn">
+                                <i class="fas fa-user-plus"></i> Assign Selected
+                            </button>
+                        </div>
+
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchAvailable" placeholder="Search available students...">
+                        </div>
+
+                        <div class="student-list" id="availableList">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <a href="sections.html" class="btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Sections
+            </a>
+        </div>
+    </main>
+    <!-- JavaScript -->
+    <script src="js/section_students.js"></script>
+</body>
+</html>

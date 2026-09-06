@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Enrollment - Registrar Dashboard | PLS NHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/view_enrollment.css">
+    <link rel="stylesheet" href="css/file-modal.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <div class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">P</div>
+                <div class="logo-text">PLS<span>NHS</span></div>
+            </div>
+            <div class="school-badge">Placido L. Señor NHS</div>
+        </div>
+
+        <div class="admin-profile">
+            <div class="admin-avatar">
+                <div class="avatar-initial" id="adminInitial">R</div>
+                <div class="online-dot"></div>
+            </div>
+            <div class="admin-name" id="adminName">Registrar</div>
+            <div class="admin-role"><i class="fas fa-user-tie"></i> Registrar</div>
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-section">
+                <div class="nav-section-title">MAIN MENU</div>
+                <ul class="nav-items">
+                    <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="enrollments.html"><i class="fas fa-file-signature"></i> Enrollments</a></li>
+                    <li><a href="students.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+                    <li><a href="sections.html"><i class="fas fa-layer-group"></i> Sections</a></li>
+                    <li><a href="reports.html"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">ACCOUNT</div>
+                <ul class="nav-items">
+                    <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                    <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                </ul>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1>Enrollment Details</h1>
+                <p>View and manage enrollment information</p>
+            </div>
+            <a href="enrollments.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i> Back to Enrollments
+            </a>
+        </div>
+
+        <!-- Alert Container -->
+        <div id="alertContainer"></div>
+
+        <!-- Student Information Card -->
+        <div class="detail-card">
+            <div class="card-header">
+                <h3><i class="fas fa-user-graduate"></i> Student Information</h3>
+                <span class="status-badge" id="statusBadge">Pending</span>
+            </div>
+
+            <div class="student-info-card">
+                <div class="student-avatar-large" id="studentAvatar">S</div>
+                <div class="student-details">
+                    <h2 id="studentName">Student Name</h2>
+                    <div class="student-meta">
+                        <span><i class="fas fa-envelope"></i> <span id="studentEmail">student@email.com</span></span>
+                        <span><i class="fas fa-id-card"></i> ID: <span id="studentId">Not assigned</span></span>
+                        <span><i class="fas fa-calendar-alt"></i> Registered: <span id="registeredDate">N/A</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-grid" id="infoGrid">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Requirements Section -->
+        <div class="detail-card">
+            <div class="card-header">
+                <h3><i class="fas fa-clipboard-list"></i> Enrollment Requirements</h3>
+                <span class="badge-count" id="reqBadge">Grade - Student Type</span>
+            </div>
+
+            <div class="requirements-grid" id="requirementsGrid">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Submitted Documents Summary -->
+        <div class="detail-card">
+            <div class="card-header">
+                <h3><i class="fas fa-file-upload"></i> Submitted Documents</h3>
+            </div>
+
+            <div class="info-grid" id="documentsGrid">
+                <!-- Populated by JavaScript -->
+            </div>
+
+            <!-- Status Update Form -->
+            <div class="status-update">
+                <h4><i class="fas fa-edit"></i> Update Enrollment Status</h4>
+                <form id="statusForm">
+                    <div class="form-group">
+                        <label>Change Status</label>
+                        <select name="status" class="status-select" id="statusSelect">
+                            <option value="Pending">Pending</option>
+                            <option value="Enrolled">Enrolled</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="rejectionReasonGroup" style="display: none;">
+                        <label>Rejection Reason <span class="required">*</span></label>
+                        <textarea name="rejection_reason" id="rejectionReason" class="form-control" rows="3" placeholder="Please provide a reason for rejecting this enrollment..."></textarea>
+                        <small class="form-text">This reason will be sent to the student via notification.</small>
+                    </div>
+                    
+                    <button type="submit" name="update_status" class="btn-update">
+                        <i class="fas fa-save"></i> Update Status
+                    </button>
+                </form>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button onclick="window.print()" class="btn-print">
+                    <i class="fas fa-print"></i> Print Details
+                </button>
+                <button class="btn-notify" id="notifyStudentBtn">
+                    <i class="fas fa-bell"></i> Notify Student
+                </button>
+            </div>
+        </div>
+
+        <!-- Enrollment History -->
+        <div class="detail-card">
+            <div class="card-header">
+                <h3><i class="fas fa-history"></i> Enrollment History</h3>
+                <span class="badge-count" id="historyCount">0 records</span>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table history-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>School Year</th>
+                            <th>Grade Level</th>
+                            <th>Strand</th>
+                            <th>Student Type</th>
+                            <th>Applied Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- ========== FILE PREVIEW MODAL ========== -->
+    <div id="filePreviewModal" class="file-modal">
+        <div class="file-modal-content">
+            <div class="file-modal-header">
+                <div class="file-modal-title">
+                    <i class="fas fa-file-alt"></i>
+                    <span id="modalFileName">File Preview</span>
+                </div>
+                <button class="file-modal-close">&times;</button>
+            </div>
+            <div class="file-modal-body" id="modalBody">
+                <div class="file-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading file...</p>
+                </div>
+            </div>
+            <div class="file-modal-footer">
+                <a href="#" id="downloadFileBtn" class="file-download-btn" download>
+                    <i class="fas fa-download"></i> Download
+                </a>
+                <button class="file-modal-close-footer">Close</button>
+            </div>
+        </div>
+    </div>
+    <!-- JavaScript -->
+    <script src="js/view_enrollment.js"></script>
+    <script src="js/file-modal.js"></script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+/* ===== ADD ACCOUNT SPECIFIC STYLES - NAVY BLUE ===== */
+
+/* Extends base.css with page-specific overrides */
+
+.info-box {
+    background: #e8edf5;
+    border-left: 4px solid #1B2A4A;
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 14px;
+    color: #1B2A4A;
+}
+
+.info-box i {
+    font-size: 24px;
+    color: #1B2A4A;
+}
+
+/* Preview card - refined */
+.preview-card {
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-top: 28px;
+    border: 1px solid #e9edf4;
+    transition: all 0.2s;
+}
+
+.preview-card:hover {
+    border-color: #cbd5e1;
+}
+
+.preview-card h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.preview-content {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.preview-avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: #1B2A4A;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 600;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+}
+
+.preview-avatar.changed {
+    animation: pulse 0.4s ease;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}
+
+.preview-info {
+    flex: 1;
+    min-width: 180px;
+}
+
+.preview-info h5 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+
+.preview-role-badge {
+    display: inline-block;
+    padding: 2px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #e2e8f0;
+    color: #475569;
+    margin-bottom: 6px;
+    transition: all 0.3s ease;
+}
+
+.preview-role-badge.admin {
+    background: #1B2A4A;
+    color: #fff;
+}
+
+.preview-role-badge.registrar {
+    background: #2563eb;
+    color: #fff;
+}
+
+.preview-email,
+.preview-id {
+    font-size: 13px;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.preview-email i,
+.preview-id i {
+    color: #94a3b8;
+    font-size: 13px;
+    width: 16px;
+}
+
+/* Password strength text colors */
+.strength-text .weak {
+    color: #ef4444;
+}
+
+.strength-text .medium {
+    color: #f59e0b;
+}
+
+.strength-text .strong {
+    color: #10b981;
+}
+
+/* Match indicator */
+.strength-text .match {
+    color: #10b981;
+}
+
+.strength-text .no-match {
+    color: #ef4444;
+}
+
+/* Form group enhancements */
+.form-group .input-wrapper input.error {
+    border-color: #ef4444;
+}
+
+.form-group .input-wrapper input.success {
+    border-color: #10b981;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .preview-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .preview-avatar {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn-submit,
+    .btn-cancel {
+        justify-content: center;
+    }
+}

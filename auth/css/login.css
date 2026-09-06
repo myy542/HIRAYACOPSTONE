@@ -1,0 +1,530 @@
+/* ===== LOGIN PAGE - Minimal Blue Design ===== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0b2b4a, #1a3d5f);
+    padding: 2rem;
+}
+
+/* ===== LOGIN WRAPPER ===== */
+.login-wrapper {
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* ===== CONTAINER ===== */
+.login-container {
+    background: #ffffff;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    display: flex;
+    animation: fadeInUp 0.6s ease;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== LEFT PANEL - LOGIN FORM ===== */
+.login-panel {
+    flex: 1;
+    padding: 50px 40px;
+    background: white;
+}
+
+/* ===== LOGO SECTION ===== */
+.logo-section {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.school-logo {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.school-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 50%;
+}
+
+.school-name h1 {
+    font-size: 20px;
+    color: #0b2b4a;
+    margin-bottom: 5px;
+}
+
+.school-name p {
+    font-size: 12px;
+    color: #666;
+}
+
+h2 {
+    font-size: 28px;
+    color: #333;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.highlight {
+    color: #0b2b4a;
+}
+
+.subtitle {
+    color: #666;
+    margin-bottom: 30px;
+    text-align: center;
+    font-size: 14px;
+}
+
+/* ===== ALERT MESSAGES ===== */
+.alert {
+    padding: 15px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.alert-error {
+    background: #fee2e2;
+    color: #dc2626;
+    border-left: 4px solid #dc2626;
+}
+
+.alert-success {
+    background: #d4edda;
+    color: #155724;
+    border-left: 4px solid #10b981;
+}
+
+.alert i {
+    font-size: 18px;
+}
+
+.alert a {
+    color: #0b2b4a;
+    text-decoration: underline;
+}
+
+/* ===== FORM ===== */
+.input-group {
+    margin-bottom: 25px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #555;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.input-group label span {
+    color: #dc3545;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.input-wrapper input {
+    width: 100%;
+    padding: 14px 45px 14px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 15px;
+    transition: all 0.3s;
+    background: #f8f9fa;
+    font-family: 'Inter', sans-serif;
+}
+
+.input-wrapper input:focus {
+    border-color: #0b2b4a;
+    outline: none;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(11, 43, 74, 0.1);
+}
+
+.input-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #999;
+    font-size: 16px;
+}
+
+.toggle-password:hover {
+    color: #0b2b4a;
+}
+
+/* ===== FORGOT PASSWORD ===== */
+.forgot-password {
+    text-align: right;
+    margin: -15px 0 20px;
+}
+
+.forgot-password a {
+    color: #666;
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.3s;
+}
+
+.forgot-password a:hover {
+    color: #0b2b4a;
+    text-decoration: underline;
+}
+
+/* ===== REMEMBER ME ===== */
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.remember-me input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #0b2b4a;
+    cursor: pointer;
+}
+
+.remember-me label {
+    color: #555;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* ===== BUTTON ===== */
+.btn-login {
+    width: 100%;
+    background: linear-gradient(135deg, #0b2b4a, #1a3d5f);
+    color: white;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin: 20px 0 15px;
+}
+
+.btn-login:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(11, 43, 74, 0.3);
+}
+
+.btn-login:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ===== FOOTER ===== */
+.signup-link {
+    text-align: center;
+    margin: 20px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.signup-link a {
+    color: #0b2b4a;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.signup-link a:hover {
+    text-decoration: underline;
+}
+
+.back-home {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #666;
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.3s;
+}
+
+.back-home:hover {
+    color: #0b2b4a;
+}
+
+.form-footer {
+    text-align: center;
+    margin-top: 15px;
+}
+
+/* ===== RIGHT PANEL - INFO ===== */
+.info-panel {
+    flex: 1;
+    background: linear-gradient(135deg, #0b2b4a, #1a3d5f);
+    padding: 50px 40px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.info-panel::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
+    transform: rotate(45deg);
+}
+
+.motto {
+    text-align: center;
+    margin-bottom: 40px;
+    position: relative;
+    z-index: 1;
+}
+
+.motto h3 {
+    font-size: 28px;
+    font-weight: 300;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    line-height: 1.4;
+}
+
+.motto h3 span {
+    display: block;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: #FFD700;
+}
+
+.school-level {
+    text-align: center;
+    margin: 30px 0 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    z-index: 1;
+}
+
+.school-level h4 {
+    font-size: 20px;
+    margin-bottom: 5px;
+    color: #FFD700;
+}
+
+.school-level p {
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+.programs-list {
+    list-style: none;
+    margin: 25px 0;
+    position: relative;
+    z-index: 1;
+}
+
+.programs-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.programs-list li::before {
+    content: "✓";
+    font-size: 14px;
+    opacity: 0.8;
+    color: #FFD700;
+}
+
+.address {
+    margin-top: 30px;
+    text-align: center;
+    font-size: 12px;
+    opacity: 0.8;
+    line-height: 1.6;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    z-index: 1;
+    font-style: italic;
+}
+
+.address i {
+    margin-right: 5px;
+}
+
+/* ===== TOAST ===== */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: #0b2b4a;
+    color: white;
+    padding: 14px 28px;
+    border-radius: 14px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    z-index: 9999;
+    animation: slideInToast 0.4s ease;
+    max-width: 400px;
+    border: 1px solid rgba(255, 215, 0, 0.15);
+    display: none;
+    align-items: center;
+    gap: 10px;
+}
+
+.toast.show {
+    display: flex;
+}
+
+.toast.success {
+    border-color: #10b981;
+}
+.toast.error {
+    border-color: #ef4444;
+}
+.toast.warning {
+    border-color: #f59e0b;
+}
+
+.toast i {
+    font-size: 1.2rem;
+}
+
+.toast.success i {
+    color: #10b981;
+}
+.toast.error i {
+    color: #ef4444;
+}
+.toast.warning i {
+    color: #f59e0b;
+}
+
+@keyframes slideInToast {
+    from {
+        transform: translateX(60px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .login-container {
+        flex-direction: column;
+    }
+
+    .login-panel,
+    .info-panel {
+        padding: 30px 20px;
+    }
+
+    h2 {
+        font-size: 24px;
+    }
+
+    .motto h3 {
+        font-size: 24px;
+    }
+
+    .school-logo {
+        width: 80px;
+        height: 80px;
+    }
+
+    .toast {
+        bottom: 15px;
+        right: 15px;
+        left: 15px;
+        max-width: none;
+        padding: 12px 20px;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-panel {
+        padding: 20px 15px;
+    }
+
+    .info-panel {
+        padding: 20px 15px;
+    }
+
+    .input-wrapper input {
+        padding: 12px 40px 12px 14px;
+        font-size: 14px;
+    }
+
+    .btn-login {
+        padding: 12px;
+        font-size: 14px;
+    }
+}

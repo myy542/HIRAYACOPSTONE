@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Section Details - Teacher Dashboard | PLSNHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- View Section CSS -->
+    <link rel="stylesheet" href="css/view-section.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">P</div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="teacher-profile">
+                <div class="teacher-avatar">
+                    <div class="avatar-initial" id="teacherInitial">T</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="teacher-name" id="teacherName">Teacher</div>
+                <div class="teacher-role"><i class="fas fa-chalkboard-user"></i> Teacher</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="attendance-qr.html"><i class="fas fa-qrcode"></i> QR Attendance</a></li>
+                        <li><a href="classes.html" class="active"><i class="fas fa-users"></i> My Classes</a></li>
+                        <li><a href="schedule.html"><i class="fas fa-clock"></i> Schedule</a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> Grades</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1>Section Details</h1>
+                    <p>View information about <span id="sectionName">Loading...</span></p>
+                </div>
+                <div class="header-actions">
+                    <a href="classes.html" class="back-btn">
+                        <i class="fas fa-arrow-left"></i> Back to Classes
+                    </a>
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Section Header -->
+            <div class="section-header">
+                <div class="section-icon-large">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="section-title-info">
+                    <h1 id="sectionName">Loading...</h1>
+                    <div class="badge-container">
+                        <span class="badge badge-grade">
+                            <i class="fas fa-layer-group"></i> <span id="sectionGrade">N/A</span>
+                        </span>
+                        <span class="badge badge-adviser" id="isAdviserBadge" style="display: none;">
+                            <i class="fas fa-star"></i> You are the Adviser
+                        </span>
+                        <span class="badge badge-info">
+                            <i class="fas fa-user-tie"></i> Adviser: <span id="adviserName">Not Assigned</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-content">
+                        <h3>Total Students</h3>
+                        <div class="stat-number" id="totalStudents">0</div>
+                        <div class="stat-label">Enrolled in this section</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-book"></i></div>
+                    <div class="stat-content">
+                        <h3>Subjects</h3>
+                        <div class="stat-number" id="totalSubjects">0</div>
+                        <div class="stat-label">Classes scheduled</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+                    <div class="stat-content">
+                        <h3>Attendance Rate</h3>
+                        <div class="stat-number" id="attendanceRate">0%</div>
+                        <div class="stat-label">Overall attendance</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-content">
+                        <h3>Your Subjects</h3>
+                        <div class="stat-number" id="subjectsTaught">0</div>
+                        <div class="stat-label">You teach in this section</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Grid -->
+            <div class="grid-2">
+                <!-- Students List -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-user-graduate"></i> Enrolled Students</h3>
+                        <span class="badge" id="studentCountBadge">0 students</span>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table students-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsBody">
+                                <tr>
+                                    <td colspan="3">
+                                        <div class="no-data">
+                                            <i class="fas fa-user-graduate"></i>
+                                            <p>No students enrolled in this section.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Class Schedule -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-calendar-alt"></i> Class Schedule</h3>
+                        <span class="badge" id="scheduleCountBadge">0 classes</span>
+                    </div>
+
+                    <div class="schedule-list" id="scheduleList">
+                        <div class="no-data">
+                            <i class="fas fa-calendar-times"></i>
+                            <h3>No Schedule Yet</h3>
+                            <p>No classes have been scheduled for this section.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script type="module" src="js/view-section.js"></script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Student - PLSNHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/view_student.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <div class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                    </div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="admin-profile">
+                <div class="admin-avatar">
+                    <div class="avatar-initial">A</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="admin-name">Admin</div>
+                <div class="admin-role"><i class="fas fa-shield-alt"></i> Administrator</div>
+            </div>
+
+            <div class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="students.html" class="active"><i class="fas fa-user-graduate"></i> Students</a></li>
+                        <li><a href="teachers.html"><i class="fas fa-chalkboard-user"></i> Teachers</a></li>
+                        <li><a href="sections.html"><i class="fas fa-layer-group"></i> Sections</a></li>
+                        <li><a href="subjects.html"><i class="fas fa-book"></i> Subjects</a></li>
+                        <li><a href="enrollments.html"><i class="fas fa-file-signature"></i> Enrollments</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">MANAGEMENT</div>
+                    <ul class="nav-items">
+                        <li><a href="manage_accounts.html"><i class="fas fa-users-cog"></i> Accounts</a></li>
+                        <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Attendance</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/logout.html"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1>Student Profile</h1>
+                    <p class="subtitle">View complete student information and records</p>
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Student Profile Card -->
+            <div class="profile-card">
+                <div class="profile-avatar-large">
+                    <div class="avatar-initial" id="avatarInitial">J</div>
+                </div>
+                <div class="profile-info">
+                    <h2 id="studentName">Juan Dela Cruz</h2>
+                    
+                    <div class="profile-meta">
+                        <span class="profile-meta-item">
+                            <i class="fas fa-envelope"></i> <span id="studentEmail">juan.dela@plshs.edu.ph</span>
+                        </span>
+                        <span class="profile-meta-item">
+                            <i class="fas fa-id-card"></i> ID: <span id="studentIdNumber">PLSNHS-STU-000001</span>
+                        </span>
+                        <span class="profile-meta-item">
+                            <i class="fas fa-calendar-alt"></i> Registered: <span id="studentRegistered">June 15, 2026</span>
+                        </span>
+                        <span class="profile-meta-item">
+                            <i class="fas fa-clock"></i> Active: <span id="studentDaysActive">0</span> days
+                        </span>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <span class="profile-badge badge-enrolled" id="statusBadge">
+                            <i class="fas fa-check-circle"></i>
+                            Current Status: Enrolled
+                        </span>
+                    </div>
+
+                    <div class="action-buttons">
+                        <a href="edit_student.html?id=1" class="btn-edit">
+                            <i class="fas fa-edit"></i> Edit Student
+                        </a>
+                        <button class="btn-delete" onclick="deleteStudent()">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personal Information Section -->
+            <div class="detail-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-user-circle"></i> Personal Information</h3>
+                </div>
+                <div class="info-grid" id="personalInfoGrid">
+                    <!-- Loaded by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Current Enrollment Details -->
+            <div class="detail-card" id="currentEnrollmentCard">
+                <div class="card-header">
+                    <h3><i class="fas fa-graduation-cap"></i> Current Enrollment</h3>
+                    <a href="view_enrollment.html?id=1" class="view-link">
+                        View Details <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="info-grid" id="enrollmentInfoGrid">
+                    <!-- Loaded by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Enrollment History -->
+            <div class="detail-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-history"></i> Enrollment History</h3>
+                </div>
+                <div class="table-container" id="historyContainer">
+                    <!-- Loaded by JavaScript -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/view_student.js"></script>
+</body>
+</html>

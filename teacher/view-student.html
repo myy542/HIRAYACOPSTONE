@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Profile - Teacher Dashboard | PLSNHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- View Student CSS -->
+    <link rel="stylesheet" href="css/view-student.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">P</div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="teacher-profile">
+                <div class="teacher-avatar">
+                    <div class="avatar-initial" id="teacherInitial">T</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="teacher-name" id="teacherName">Teacher</div>
+                <div class="teacher-role"><i class="fas fa-chalkboard-user"></i> Teacher</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="attendance-qr.html"><i class="fas fa-qrcode"></i> QR Attendance</a></li>
+                        <li><a href="classes.html" class="active"><i class="fas fa-users"></i> My Classes</a></li>
+                        <li><a href="schedule.html"><i class="fas fa-clock"></i> Schedule</a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> Grades</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1>Student Profile</h1>
+                    <p>View detailed information about <span id="studentName">Loading...</span></p>
+                </div>
+                <div class="header-actions">
+                    <a href="javascript:history.back()" class="back-btn">
+                        <i class="fas fa-arrow-left"></i> Go Back
+                    </a>
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Profile Header -->
+            <div class="profile-header">
+                <div class="profile-avatar-large">
+                    <div class="avatar-initial" id="studentInitial">S</div>
+                </div>
+                <div class="profile-info">
+                    <h1 id="studentName">Loading...</h1>
+                    <div class="profile-meta">
+                        <span class="meta-item">
+                            <i class="fas fa-envelope"></i> <span id="studentEmail">N/A</span>
+                        </span>
+                        <span class="meta-item">
+                            <i class="fas fa-id-card"></i> Student ID: <span id="studentId">N/A</span>
+                        </span>
+                        <span class="meta-item">
+                            <i class="fas fa-layer-group"></i> <span id="studentGrade">N/A</span>
+                        </span>
+                        <span class="meta-item">
+                            <i class="fas fa-users"></i> <span id="studentSection">N/A</span>
+                        </span>
+                    </div>
+                    <div class="status-container">
+                        <span class="status-badge status-pending" id="enrollmentStatus">Pending</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-content">
+                        <h3>Average Grade</h3>
+                        <div class="stat-number" id="averageGrade">N/A</div>
+                        <div class="stat-label">Overall average</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-book"></i></div>
+                    <div class="stat-content">
+                        <h3>Subjects</h3>
+                        <div class="stat-number" id="subjectsCount">0</div>
+                        <div class="stat-label">Enrolled subjects</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-content">
+                        <h3>Quarters</h3>
+                        <div class="stat-number" id="quartersCount">4</div>
+                        <div class="stat-label">Academic quarters</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
+                    <div class="stat-content">
+                        <h3>Member Since</h3>
+                        <div class="stat-number" id="memberYear">2024</div>
+                        <div class="stat-label">Registration year</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Personal Information and Grade Summary -->
+            <div class="info-grid">
+                <!-- Personal Information -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-user-circle"></i> Personal Information</h3>
+                    </div>
+                    <div class="info-list">
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-user"></i> Full Name</span>
+                            <span class="info-value" id="studentName">Loading...</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-envelope"></i> Email</span>
+                            <span class="info-value" id="studentEmail">N/A</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-id-card"></i> Student ID</span>
+                            <span class="info-value" id="studentId">N/A</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-clock"></i> Member Since</span>
+                            <span class="info-value" id="memberSince">N/A</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-layer-group"></i> Grade Level</span>
+                            <span class="info-value" id="studentGrade">N/A</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-users"></i> Section</span>
+                            <span class="info-value" id="studentSection">N/A</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-calendar-alt"></i> School Year</span>
+                            <span class="info-value" id="studentSchoolYear">N/A</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-tag"></i> Strand</span>
+                            <span class="info-value" id="studentStrand">N/A</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Academic Information -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
+                    </div>
+                    <div class="info-list">
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-layer-group"></i> Grade Level</span>
+                            <span class="info-value" id="studentGrade">N/A</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-users"></i> Section</span>
+                            <span class="info-value" id="studentSection">N/A</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-calendar-alt"></i> School Year</span>
+                            <span class="info-value" id="studentSchoolYear">N/A</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label"><i class="fas fa-tag"></i> Strand</span>
+                            <span class="info-value" id="studentStrand">N/A</span>
+                        </div>
+                    </div>
+
+                    <!-- Grade Summary -->
+                    <div class="grade-summary-section">
+                        <h4>Quarterly Averages</h4>
+                        <div class="grade-summary">
+                            <div class="summary-item">
+                                <div class="label">Q1</div>
+                                <div class="value" id="q1Avg">—</div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="label">Q2</div>
+                                <div class="value" id="q2Avg">—</div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="label">Q3</div>
+                                <div class="value" id="q3Avg">—</div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="label">Q4</div>
+                                <div class="value" id="q4Avg">—</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grades Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-star"></i> Subject Grades</h3>
+                    <span class="badge" id="gradesCountBadge">0 records</span>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Quarter</th>
+                                <th>Grade</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gradesBody">
+                            <tr>
+                                <td colspan="4">
+                                    <div class="no-data">
+                                        <i class="fas fa-star"></i>
+                                        <h3>No Grades Available</h3>
+                                        <p>This student doesn't have any grades recorded yet.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script type="module" src="js/view-student.js"></script>
+</body>
+</html>

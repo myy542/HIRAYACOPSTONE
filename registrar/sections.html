@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Section Management - Registrar Dashboard | PLS NHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Sections CSS -->
+    <link rel="stylesheet" href="css/sections.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <div class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">P</div>
+                <div class="logo-text">PLS<span>NHS</span></div>
+            </div>
+            <div class="school-badge">Placido L. Señor NHS</div>
+        </div>
+
+        <div class="admin-profile">
+            <div class="admin-avatar">
+                <div class="avatar-initial" id="adminInitial">R</div>
+                <div class="online-dot"></div>
+            </div>
+            <div class="admin-name" id="adminName">Registrar</div>
+            <div class="admin-role"><i class="fas fa-user-tie"></i> Registrar</div>
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-section">
+                <div class="nav-section-title">MAIN MENU</div>
+                <ul class="nav-items">
+                    <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="enrollments.html"><i class="fas fa-file-signature"></i> Enrollments</a></li>
+                    <li><a href="students.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+                    <li><a href="sections.html" class="active"><i class="fas fa-layer-group"></i> Sections</a></li>
+                    <li><a href="reports.html"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">ACCOUNT</div>
+                <ul class="nav-items">
+                    <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                    <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                </ul>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1>Section Management</h1>
+                <p>Manage class sections and assign advisers</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-add" onclick="openAddModal()">
+                    <i class="fas fa-plus"></i> Add New Section
+                </button>
+            </div>
+        </div>
+
+        <!-- Alert Container -->
+        <div id="alertContainer"></div>
+
+        <!-- Quick Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <h3>Total Sections</h3>
+                    <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+                </div>
+                <div class="stat-number" id="totalSections">0</div>
+                <div class="stat-label">Active sections</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <h3>Enrolled Students</h3>
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                </div>
+                <div class="stat-number" id="totalStudents">0</div>
+                <div class="stat-label">Total students</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <h3>With Adviser</h3>
+                    <div class="stat-icon"><i class="fas fa-chalkboard-user"></i></div>
+                </div>
+                <div class="stat-number" id="sectionsWithAdviser">0</div>
+                <div class="stat-label">Sections with adviser</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-header">
+                    <h3>Current Year</h3>
+                    <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
+                </div>
+                <div class="stat-number" id="currentYear">2024</div>
+                <div class="stat-label">School year</div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label>Filter by Grade Level</label>
+                <select id="gradeFilter" class="filter-select">
+                    <option value="">All Grades</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Search Section</label>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Section name...">
+                </div>
+            </div>
+        </div>
+
+        <!-- Sections Grid -->
+        <div class="sections-grid" id="sectionsGrid">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </main>
+
+    <!-- ===== ADD SECTION MODAL ===== -->
+    <div class="modal" id="addModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-plus-circle"></i> Add New Section</h3>
+                <button class="close-modal" onclick="closeAddModal()">&times;</button>
+            </div>
+            <form id="addSectionForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Section Name <span class="required">*</span></label>
+                        <input type="text" name="section_name" id="addSectionName" placeholder="e.g., Grade 7 - Section A" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Grade Level <span class="required">*</span></label>
+                        <select name="grade_id" id="addGradeId" required>
+                            <option value="">Select Grade Level</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Class Adviser</label>
+                        <select name="adviser_id" id="addAdviserId">
+                            <option value="">Select Teacher (Optional)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+                    <button type="submit" name="add_section" class="btn-save">Add Section</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== EDIT SECTION MODAL ===== -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Edit Section</h3>
+                <button class="close-modal" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form id="editSectionForm">
+                <input type="hidden" name="section_id" id="editSectionId">
+                <div class="modal-body">
+                    <div class="warning-message" id="editWarning" style="display:none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Warning:</strong> This section has <strong id="editStudentCount">0</strong> enrolled student(s). 
+                        Changing the grade level will automatically remove students whose enrollment grade doesn't match the new grade.
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Section Name <span class="required">*</span></label>
+                        <input type="text" name="section_name" id="editSectionName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Grade Level <span class="required">*</span></label>
+                        <select name="grade_id" id="editGradeId" required>
+                            <option value="">Select Grade Level</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Class Adviser</label>
+                        <select name="adviser_id" id="editAdviserId">
+                            <option value="">Select Teacher (Optional)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" name="edit_section" class="btn-save">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- JavaScript -->
+    <script src="js/sections.js"></script>
+</body>
+</html>

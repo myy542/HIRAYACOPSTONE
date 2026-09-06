@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade Management - Teacher Dashboard | PLSNHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Grades CSS -->
+    <link rel="stylesheet" href="css/grades.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">P</div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="teacher-profile">
+                <div class="teacher-avatar">
+                    <div class="avatar-initial" id="teacherInitial">T</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="teacher-name" id="teacherName">Teacher</div>
+                <div class="teacher-role"><i class="fas fa-chalkboard-user"></i> Teacher</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="attendance-qr.html"><i class="fas fa-qrcode"></i> QR Attendance</a></li>
+                        <li><a href="classes.html"><i class="fas fa-users"></i> My Classes</a></li>
+                        <li><a href="schedule.html"><i class="fas fa-clock"></i> Schedule</a></li>
+                        <li><a href="grades.html" class="active"><i class="fas fa-star"></i> Grades</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1>Grade Management</h1>
+                    <p>Record and manage student grades for your classes</p>
+                </div>
+                <div class="date-badge">
+                    <i class="fas fa-calendar-alt"></i> Loading...
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Quick Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>My Classes</h3>
+                        <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalClasses">0</div>
+                    <div class="stat-label">Sections assigned</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Subjects</h3>
+                        <div class="stat-icon"><i class="fas fa-book"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalSubjects">0</div>
+                    <div class="stat-label">Total subjects taught</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Students</h3>
+                        <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalStudents">0</div>
+                    <div class="stat-label">In selected class</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>With Grades</h3>
+                        <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    </div>
+                    <div class="stat-number" id="gradedCount">0</div>
+                    <div class="stat-label">Grades recorded</div>
+                </div>
+            </div>
+
+            <!-- Filter Card -->
+            <div class="filter-card">
+                <h3><i class="fas fa-filter"></i> Select Class and Subject</h3>
+                <form id="filterForm" class="filter-form">
+                    <div class="filter-grid">
+                        <div class="filter-group">
+                            <label><i class="fas fa-layer-group"></i> Section / Class</label>
+                            <select name="section_id" id="section_id" required>
+                                <option value="">Select Section</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label><i class="fas fa-book"></i> Subject</label>
+                            <select name="subject_id" id="subject_id" required>
+                                <option value="">Select Subject</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label><i class="fas fa-chart-line"></i> Quarter</label>
+                            <select name="quarter" id="quarter" required>
+                                <option value="1st Quarter">1st Quarter</option>
+                                <option value="2nd Quarter">2nd Quarter</option>
+                                <option value="3rd Quarter">3rd Quarter</option>
+                                <option value="4th Quarter">4th Quarter</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <button type="submit" class="btn-filter">
+                                <i class="fas fa-search"></i> Load Students
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Statistics Panel -->
+            <div class="stats-panel" id="statsPanel"></div>
+
+            <!-- Grade Entry Form -->
+            <div class="grade-card">
+                <div class="grade-header">
+                    <h3>
+                        <i class="fas fa-star"></i>
+                        Grade Entry
+                        <span class="quarter-badge" id="quarterBadge">1st Quarter</span>
+                    </h3>
+                    <div class="batch-actions">
+                        <button type="button" class="btn-batch btn-pass" onclick="window.setAllGrades(75)">
+                            <i class="fas fa-check-circle"></i> All Passing (75)
+                        </button>
+                        <button type="button" class="btn-batch btn-fail" onclick="window.setAllGrades(65)">
+                            <i class="fas fa-times-circle"></i> All Failing (65)
+                        </button>
+                    </div>
+                </div>
+
+                <form id="gradesForm">
+                    <input type="hidden" name="section_id" id="formSectionId" value="">
+                    <input type="hidden" name="subject_id" id="formSubjectId" value="">
+                    <input type="hidden" name="quarter" id="formQuarter" value="">
+
+                    <div class="table-container">
+                        <table class="data-table grades-table">
+                            <thead>
+                                <tr>
+                                    <th>Student Information</th>
+                                    <th style="width: 120px;">Grade (0-100)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gradeTableBody">
+                                <tr>
+                                    <td colspan="2">
+                                        <div class="no-data">
+                                            <i class="fas fa-hand-pointer"></i>
+                                            <h3>Select a Class and Subject</h3>
+                                            <p>Please select a section, subject, and quarter to enter grades.</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <button type="submit" class="btn-save" id="saveGradesBtn">
+                        <i class="fas fa-save"></i> Save Grades
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script type="module" src="js/grades.js"></script>
+</body>
+</html>

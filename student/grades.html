@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Grades - PLSNHS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/grades.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="PLSNHS Logo" class="logo-img" onerror="this.onerror=null; this.style.display='none'; this.parentElement.textContent='P'; this.parentElement.style.background='#FFD700'; this.parentElement.style.color='#0b2b4a'; this.parentElement.style.display='flex'; this.parentElement.style.alignItems='center'; this.parentElement.style.justifyContent='center'; this.parentElement.style.fontWeight='800'; this.parentElement.style.fontSize='1.2rem';">
+                    </div>
+                    <div class="logo-text">
+                        <div class="logo-main">PLS<span>NHS</span></div>
+                        <div class="logo-sub">Placido L. Señor NHS</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="student-profile">
+                <div class="student-avatar">
+                    <div class="avatar-initial" id="studentInitial">S</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="student-name" id="studentName">Student</div>
+                <div class="student-role"><i class="fas fa-user-graduate"></i> Student</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="schedule.html"><i class="fas fa-calendar-alt"></i> Class Schedule</a></li>
+                        <li><a href="grades.html" class="active"><i class="fas fa-star"></i> My Grades</a></li>
+                        <li><a href="enrollment_history.html"><i class="fas fa-history"></i> Enrollment History</a></li>
+                        <li><a href="requirements.html"><i class="fas fa-file-alt"></i> Requirements</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user-circle"></i> My Profile</a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1><i class="fas fa-star"></i> My Grades</h1>
+                    <p>View your academic performance and subject grades</p>
+                </div>
+                <div class="date-badge" id="dateBadge">
+                    <i class="fas fa-calendar-alt"></i> Loading...
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Class Info Card -->
+            <div class="class-info-card" style="display: none;">
+                <div class="class-info-details">
+                    <h3><i class="fas fa-graduation-cap"></i> Current Enrollment</h3>
+                    <div class="class-info-badges">
+                        <span class="info-badge"><i class="fas fa-layer-group"></i> Grade: <span id="gradeDisplay">N/A</span></span>
+                        <span class="info-badge"><i class="fas fa-tag"></i> Strand: <span id="strandDisplay">N/A</span></span>
+                        <span class="info-badge"><i class="fas fa-check-circle"></i> Status: <span id="statusDisplay">N/A</span></span>
+                    </div>
+                </div>
+                <div class="school-year">
+                    <i class="fas fa-calendar-alt"></i> <span id="schoolYearDisplay">N/A</span>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-container" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Subjects</h3>
+                        <div class="stat-icon"><i class="fas fa-book"></i></div>
+                    </div>
+                    <div class="stat-number" id="subjectsCount">0</div>
+                    <div class="stat-label">Total Subjects</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Grade Level</h3>
+                        <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+                    </div>
+                    <div class="stat-number" id="gradeLevelDisplay">N/A</div>
+                    <div class="stat-label">Current Grade</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>School Year</h3>
+                        <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
+                    </div>
+                    <div class="stat-number" id="schoolYearStat">N/A</div>
+                    <div class="stat-label">Academic Year</div>
+                </div>
+            </div>
+
+            <!-- Not Enrolled Card -->
+            <div class="no-grades-card" id="notEnrolledCard" style="display: none;">
+                <i class="fas fa-file-signature"></i>
+                <h3>Not Enrolled</h3>
+                <p>You need to be enrolled to view your grades. Please complete the enrollment process.</p>
+                <div class="info-message">
+                    <i class="fas fa-info-circle"></i>
+                    <p>Once you are enrolled, your grades will appear here. If you have already enrolled, please wait for the admin to approve your enrollment.</p>
+                </div>
+                <a href="enrollment-form.html" class="btn-primary" style="display: inline-block; margin-top: 1.5rem; padding: 0.7rem 2rem; border-radius: 40px; background: var(--primary); color: white; text-decoration: none; font-weight: 600;">
+                    <i class="fas fa-pen-fancy"></i> Enroll Now
+                </a>
+            </div>
+
+            <!-- Subjects Card -->
+            <div class="subjects-card" style="display: none;">
+                <h3><i class="fas fa-book-open"></i> Subjects & Grades</h3>
+                
+                <!-- No Grades Message -->
+                <div class="no-grades-message" id="noGradesMsg" style="display: none;">
+                    <i class="fas fa-clock"></i>
+                    <h3>No Grades Available</h3>
+                    <p>Your grades are not yet available. Please check back later or contact your teacher.</p>
+                </div>
+
+                <!-- Subjects Grid -->
+                <div class="subjects-grid" id="subjectsGrid">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ===== GRADE MODAL ===== -->
+    <div class="grade-modal" id="gradeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalSubjectTitle">Subject Grades</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/grades.js"></script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PLSNHS · Enrollment Gateway</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="css/homepage.css">
+</head>
+<body>
+    <div class="fullscreen-wrapper">
+        <!-- ===== NAVBAR ===== -->
+        <nav class="navbar">
+            <div class="brand">
+                <img src="../pictures/logo sa skwelahan.jpg" alt="PLSNHS Logo" class="brand-logo" onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <span class="brand-icon-fallback" style="display: none; background: #0a015c; color: white; width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: 12px; font-weight: 700; font-size: 1rem;">P</span>
+                <span class="brand-name">PLSNHS</span>
+            </div>
+            <div class="nav-menu">
+                <div class="nav-links">
+                    <a href="homepage.html" data-page="home" class="active">Home</a>
+                    <a href="homepage.html#features" data-page="features">Features</a>
+                    <a href="homepage.html#about" data-page="about">About</a>
+                    <a href="homepage.html#contact" data-page="contact">Contact</a>
+                </div>
+            </div>
+            <div class="nav-login">
+                <a href="../auth/login.html" class="btn-outline-sm" style="text-decoration: none;">Login</a>
+            </div>
+        </nav>
+
+        <!-- ===== PAGE CONTENT ===== -->
+        <main id="pageContent">
+            <section id="page-home" class="page-section active">
+                <div class="hero-section">
+                    <div class="hero-content">
+                        <h1 class="hero-title">Welcome to PLSNHS</h1>
+                        <p class="hero-sub">Your seamless gateway to academic enrollment and management</p>
+                        <div class="hero-buttons">
+                            <a href="../student/enrollment.html" class="btn-enroll" style="text-decoration: none;">
+                                <i class="fas fa-pen-fancy"></i> Enroll Now
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FEATURES -->
+                <section class="features-section" id="features">
+                    <div class="container">
+                        <h2 class="section-title">Why Choose Placido L. Señior National Highschool</h2>
+                        <div class="features-row">
+                            <div class="feature-card" data-feature="enrollment">
+                                <i class="fas fa-file-signature"></i>
+                                <h3>Easy Enrollment</h3>
+                                <p>Streamlined online enrollment process for students and parents</p>
+                            </div>
+                            <div class="feature-card" data-feature="tracking">
+                                <i class="fas fa-chart-line"></i>
+                                <h3>Real-time Tracking</h3>
+                                <p>Monitor enrollment status and requirements in real-time</p>
+                            </div>
+                            <div class="feature-card" data-feature="security">
+                                <i class="fas fa-shield-alt"></i>
+                                <h3>Secure System</h3>
+                                <p>Your data is protected with industry-standard security</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="about-section" id="about">
+                    <div class="container">
+                        <div class="about-stats-wrap">
+                            <div class="about-text">
+                                <h2>About PLSNHS</h2>
+                                <p>PLSNHS is a modern enrollment management system designed specifically for Placido L. Señior National High School. We streamline the admission process, making it easier for students, parents, and administrators to manage enrollments efficiently.</p>
+                                <ul class="about-list">
+                                    <li><i class="fas fa-check-circle"></i> Paperless enrollment process</li>
+                                    <li><i class="fas fa-check-circle"></i> Automated status notifications</li>
+                                    <li><i class="fas fa-check-circle"></i> Integrated document tracking</li>
+                                    <li><i class="fas fa-check-circle"></i> 24/7 accessibility</li>
+                                </ul>
+                            </div>
+                            <div class="stats-group">
+                                <div class="stat-item">
+                                    <span class="stat-number" data-count="500">500+</span>
+                                    <span class="stat-label">Students Enrolled</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number" data-count="50">50+</span>
+                                    <span class="stat-label">Staff Members</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number" data-count="98">98%</span>
+                                    <span class="stat-label">Satisfaction Rate</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </section>
+
+            <!-- ===== FEATURES PAGE ===== -->
+            <section id="page-features" class="page-section">
+                <div class="container page-container">
+                    <h1 class="page-title">📋 Features</h1>
+                    <p class="page-subtitle">Discover what makes PLSNHS the best choice for your academic journey.</p>
+                    <div class="features-row">
+                        <div class="feature-card">
+                            <i class="fas fa-user-graduate"></i>
+                            <h3>Student Management</h3>
+                            <p>Complete student profile management with easy access to records and academic history.</p>
+                        </div>
+                        <div class="feature-card">
+                            <i class="fas fa-file-alt"></i>
+                            <h3>Paperless Enrollment</h3>
+                            <p>Submit requirements online, no more physical documents and long lines.</p>
+                        </div>
+                        <div class="feature-card">
+                            <i class="fas fa-bell"></i>
+                            <h3>Real-time Notifications</h3>
+                            <p>Get instant updates on your enrollment status and important announcements.</p>
+                        </div>
+                        <div class="feature-card">
+                            <i class="fas fa-shield-alt"></i>
+                            <h3>Data Security</h3>
+                            <p>Your personal information is protected with enterprise-grade security.</p>
+                        </div>
+                        <div class="feature-card">
+                            <i class="fas fa-mobile-alt"></i>
+                            <h3>24/7 Accessibility</h3>
+                            <p>Access the system anytime, anywhere from any device.</p>
+                        </div>
+                        <div class="feature-card">
+                            <i class="fas fa-chart-pie"></i>
+                            <h3>Analytics Dashboard</h3>
+                            <p>Track enrollment trends and statistics with comprehensive reports.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== ABOUT PAGE ===== -->
+            <section id="page-about" class="page-section">
+                <div class="container page-container">
+                    <h1 class="page-title">About PLSNHS</h1>
+                    <p class="page-subtitle">Learn more about our mission and vision.</p>
+                    <div class="about-grid">
+                        <div class="feature-card">
+                            <i class="fas fa-bullseye"></i>
+                            <h3>Our Mission</h3>
+                            <p>To provide accessible, efficient, and quality enrollment management services for students and stakeholders of Placido L. Señior National High School.</p>
+                        </div>
+                        <div class="feature-card">
+                            <i class="fas fa-eye"></i>
+                            <h3>Our Vision</h3>
+                            <p>To be the leading enrollment management system in the region, setting the standard for innovation and excellence in education administration.</p>
+                        </div>
+                        <div class="feature-card full-width">
+                            <i class="fas fa-heart"></i>
+                            <h3>Our Values</h3>
+                            <p>Integrity, Innovation, Service Excellence, and Student-Centered Approach in everything we do.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== CONTACT PAGE ===== -->
+            <section id="page-contact" class="page-section">
+                <div class="container page-container">
+                    <h1 class="page-title">PLSNHS</h1>
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <i class="fas fa-map-pin"></i>
+                            <div>
+                                <h4>Address</h4>
+                                <p>Langtad, City of Naga, Cebu</p>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-phone-alt"></i>
+                            <div>
+                                <h4>Phone</h4>
+                                <p>(032) 123-4567</p>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-envelope"></i>
+                            <div>
+                                <h4>Email</h4>
+                                <p>info@PLSNHS.edu.ph</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ===== FOOTER ===== -->
+        <footer class="footer">
+            <div class="container">
+                <div class="footer-links">
+                    <div class="footer-brand">
+                        <h3>PLSNHS</h3>
+                        <p>Your seamless gateway to academic enrollment</p>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Quick Links</h4>
+                        <a href="homepage.html" data-page="home">Home</a>
+                        <a href="homepage.html#features" data-page="features">Features</a>
+                        <a href="homepage.html#about" data-page="about">About</a>
+                        <a href="homepage.html#contact" data-page="contact">Contact</a>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Support</h4>
+                        <a href="#" data-page="faq">FAQ</a>
+                        <a href="#" data-page="privacy">Privacy Policy</a>
+                        <a href="#" data-page="terms">Terms of Service</a>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Contact</h4>
+                        <div class="contact-details">
+                            <i class="fas fa-map-pin"></i> Langtad, City of Naga, Cebu<br>
+                            <i class="fas fa-phone-alt"></i> (032) 123-4567<br>
+                            <i class="fas fa-envelope"></i> info@PLSNHS.edu.ph
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-note">
+                    <span>© 2024 PLSNHS. All rights reserved. | Placido L. Señior National High School</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ===== JAVASCRIPT (external) ===== -->
+    <script src="js/homepage.js"></script>
+</body>
+</html>

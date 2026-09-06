@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logout - PLSNHS Parent Portal</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1B2A4A, #2a3d6e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .logout-container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .logout-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 45px 40px 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .logout-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #fee2e2;
+            color: #ef4444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin: 0 auto 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .logout-card h2 {
+            color: #0f172a;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .logout-card .subtitle {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .logout-card .user-info {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            border: 1px solid #e9edf4;
+        }
+
+        .user-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #1B2A4A;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .user-details {
+            flex: 1;
+            text-align: left;
+        }
+
+        .user-details .user-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .user-details .user-email {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .user-details .user-role {
+            font-size: 12px;
+            color: #1B2A4A;
+            font-weight: 500;
+            background: #e8edf5;
+            padding: 1px 10px;
+            border-radius: 12px;
+            display: inline-block;
+            margin-top: 2px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .btn-logout {
+            flex: 1;
+            padding: 12px 20px;
+            background: #ef4444;
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .btn-logout:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-logout:active {
+            transform: translateY(0);
+        }
+
+        .btn-logout:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-cancel {
+            flex: 1;
+            padding: 12px 20px;
+            background: #ffffff;
+            color: #475569;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-cancel:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .logout-timer {
+            margin-top: 16px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .logout-timer .timer-count {
+            font-weight: 700;
+            color: #1B2A4A;
+            font-size: 16px;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin: 0 0 16px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+            font-size: 14px;
+            animation: slideDown 0.3s ease;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border-left: 4px solid #ef4444;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        .alert i {
+            font-size: 18px;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Spinner animation */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.6s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .logout-card {
+                padding: 30px 20px 25px;
+            }
+
+            .logout-icon {
+                width: 64px;
+                height: 64px;
+                font-size: 28px;
+            }
+
+            .logout-card h2 {
+                font-size: 20px;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn-logout,
+            .btn-cancel {
+                justify-content: center;
+            }
+
+            .user-info {
+                flex-wrap: wrap;
+                justify-content: center;
+                text-align: center;
+            }
+
+            .user-details {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="logout-container">
+        <div class="logout-card">
+            <!-- Icon -->
+            <div class="logout-icon">
+                <i class="fas fa-sign-out-alt"></i>
+            </div>
+
+            <!-- Title -->
+            <h2>Logout</h2>
+            <p class="subtitle">Are you sure you want to sign out?</p>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- User Info -->
+            <div class="user-info">
+                <div class="user-avatar">P</div>
+                <div class="user-details">
+                    <div class="user-name">Mr. & Mrs. Dela Cruz</div>
+                    <div class="user-email">parent@plshs.edu.ph</div>
+                    <span class="user-role"><i class="fas fa-user-friends"></i> Parent</span>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="btn-group">
+                <a href="../parents/dashboard.html" class="btn-cancel">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+                <button class="btn-logout" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+
+            <!-- Timer -->
+            <div class="logout-timer">
+                <i class="fas fa-clock"></i>
+                You will be automatically logged out in 
+                <span class="timer-count" id="timerCount">30</span> seconds
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const logoutBtn = document.getElementById('logoutBtn');
+            const timerCount = document.getElementById('timerCount');
+            const alertContainer = document.getElementById('alertContainer');
+
+            // Timer variables
+            let timer = 30;
+            let timerInterval = null;
+
+            // Show alert
+            function showAlert(message, type = 'error') {
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type}`;
+                const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+                alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+                alertContainer.appendChild(alertDiv);
+
+                setTimeout(() => {
+                    alertDiv.style.opacity = '0';
+                    alertDiv.style.transition = 'opacity 0.3s ease';
+                    setTimeout(() => {
+                        alertDiv.remove();
+                    }, 300);
+                }, 5000);
+            }
+
+            // ===== PERFORM LOGOUT - REDIRECT TO HOMEPAGE =====
+            function performLogout() {
+                // Disable button and show loading
+                logoutBtn.disabled = true;
+                logoutBtn.innerHTML = '<span class="spinner"></span> Logging out...';
+
+                // Simulate logout process
+                setTimeout(function() {
+                    // Show success message
+                    showAlert('✅ You have been logged out successfully.', 'success');
+                    
+                    // ===== REDIRECT TO HOMEPAGE (auth/homepage.html) =====
+                    setTimeout(function() {
+                        window.location.href = 'homepage.html';
+                    }, 1500);
+                }, 1500);
+            }
+
+            // Start timer
+            function startTimer() {
+                timerInterval = setInterval(function() {
+                    timer--;
+                    timerCount.textContent = timer;
+
+                    if (timer <= 5) {
+                        timerCount.style.color = '#ef4444';
+                    }
+
+                    if (timer <= 0) {
+                        clearInterval(timerInterval);
+                        performLogout();
+                    }
+                }, 1000);
+            }
+
+            // ===== EVENT LISTENERS =====
+
+            // Logout button click
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    clearInterval(timerInterval);
+                    performLogout();
+                });
+            }
+
+            // Cancel button click (using the anchor tag)
+            document.querySelector('.btn-cancel').addEventListener('click', function(e) {
+                e.preventDefault();
+                clearInterval(timerInterval);
+                window.location.href = '../parents/dashboard.html';
+            });
+
+            // Keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                // Escape key - cancel
+                if (e.key === 'Escape') {
+                    clearInterval(timerInterval);
+                    window.location.href = '../parents/dashboard.html';
+                }
+                // Enter key - confirm logout
+                if (e.key === 'Enter') {
+                    clearInterval(timerInterval);
+                    performLogout();
+                }
+            });
+
+            // ===== INIT =====
+
+            // Start the timer
+            startTimer();
+
+            // Log logout attempt for security
+            console.log('Logout page loaded at: ' + new Date().toLocaleString());
+        });
+    </script>
+</body>
+</html>

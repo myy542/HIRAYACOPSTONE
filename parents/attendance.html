@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance - PLSNHS Parent Portal</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/attendance.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <div class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                    </div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="parent-profile">
+                <div class="parent-avatar">
+                    <div class="avatar-initial">P</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="parent-name">Mr. & Mrs. Dela Cruz</div>
+                <div class="parent-role"><i class="fas fa-user-friends"></i> Parent</div>
+            </div>
+
+            <div class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> Grades</a></li>
+                        <li><a href="attendance.html" class="active"><i class="fas fa-calendar-check"></i> Attendance</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/logout.html"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <div class="page-header">
+                <div>
+                    <h1>Attendance</h1>
+                    <p class="subtitle">Monitor your child's attendance records</p>
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Student Selector -->
+            <div class="student-selector">
+                <label>Select Student:</label>
+                <select id="studentSelect">
+                    <option value="all">All Children</option>
+                    <option value="1">Juan Dela Cruz</option>
+                    <option value="2">Maria Dela Cruz</option>
+                </select>
+            </div>
+
+            <!-- Attendance Stats -->
+            <div class="attendance-stats-grid" id="attendanceStats">
+                <!-- Loaded by JavaScript -->
+            </div>
+
+            <!-- Monthly Attendance Chart -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-bar"></i> Monthly Attendance</h3>
+                    <select id="monthSelect" class="month-select">
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12" selected>December</option>
+                    </select>
+                </div>
+                <div class="chart-container" id="chartContainer">
+                    <!-- Loaded by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Attendance Records Table -->
+            <div class="attendance-table-container">
+                <div class="table-header">
+                    <h3><i class="fas fa-list"></i> Daily Attendance Records</h3>
+                    <span class="badge-count" id="recordCount">0 records</span>
+                </div>
+                <div class="table-container">
+                    <table class="attendance-table" id="attendanceTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Student</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                                <th>Status</th>
+                                <th>Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceBody">
+                            <!-- Loaded by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Absences Summary -->
+            <div class="absences-card">
+                <div class="absences-header">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Absences Summary</h3>
+                </div>
+                <div id="absencesContent">
+                    <!-- Loaded by JavaScript -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/attendance.js"></script>
+</body>
+</html>

@@ -1,0 +1,690 @@
+/* ===== PARENTS DASHBOARD CSS ===== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f0f2f5;
+    color: #0f172a;
+    line-height: 1.6;
+}
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ===== MOBILE MENU TOGGLE ===== */
+.menu-toggle {
+    display: none;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 101;
+    background: #1B2A4A;
+    color: #fff;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.menu-toggle:hover {
+    background: #14223a;
+    transform: scale(1.05);
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+    width: 280px;
+    background: #1B2A4A;
+    color: #fff;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    overflow-y: auto;
+    z-index: 100;
+    transition: transform 0.3s ease;
+}
+
+.sidebar-header {
+    margin-bottom: 28px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.logo-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.logo-text {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #fff;
+}
+
+.logo-text span {
+    color: #facc15;
+}
+
+.school-badge {
+    font-size: 11px;
+    opacity: 0.8;
+    letter-spacing: 0.3px;
+    padding-left: 4px;
+}
+
+/* Parent Profile */
+.parent-profile {
+    text-align: center;
+    padding: 18px 0 22px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 24px;
+}
+
+.parent-avatar {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: #facc15;
+    margin: 0 auto 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-size: 28px;
+    font-weight: 700;
+    color: #1B2A4A;
+}
+
+.avatar-initial {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #facc15;
+    color: #1B2A4A;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.online-dot {
+    width: 14px;
+    height: 14px;
+    background: #22c55e;
+    border-radius: 50%;
+    border: 2px solid #1B2A4A;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+}
+
+.parent-name {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.parent-role {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-top: 2px;
+}
+
+.parent-role i {
+    margin-right: 4px;
+}
+
+/* ===== NAVIGATION ===== */
+.nav-menu {
+    flex: 1;
+}
+
+.nav-section {
+    margin-bottom: 24px;
+}
+
+.nav-section-title {
+    font-size: 10px;
+    letter-spacing: 1px;
+    opacity: 0.5;
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-left: 4px;
+    color: #fff;
+}
+
+.nav-items {
+    list-style: none;
+}
+
+.nav-items li {
+    margin-bottom: 2px;
+}
+
+.nav-items a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.nav-items a:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.nav-items a.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+}
+
+.nav-items a i {
+    width: 20px;
+    font-size: 15px;
+}
+
+/* ===== MAIN CONTENT ===== */
+.main-content {
+    flex: 1;
+    margin-left: 280px;
+    padding: 32px 40px;
+    min-height: 100vh;
+    transition: margin-left 0.3s ease;
+}
+
+/* ===== PAGE HEADER ===== */
+.page-header {
+    margin-bottom: 28px;
+}
+
+.page-header h1 {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #1B2A4A;
+}
+
+.subtitle {
+    color: #64748b;
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+/* ===== STATS GRID ===== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.stat-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 18px 20px;
+    border: 1px solid #e9edf4;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s;
+}
+
+.stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+}
+
+.stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.stat-header h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    margin: 0;
+}
+
+.stat-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #e8edf5;
+    color: #1B2A4A;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: 800;
+    color: #1B2A4A;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+/* ===== SECTION TITLE ===== */
+.section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 28px 0 16px;
+}
+
+.section-title h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.section-title h2 i {
+    color: #1B2A4A;
+}
+
+/* ===== CHILDREN GRID ===== */
+.children-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.child-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #e9edf4;
+    transition: all 0.2s;
+}
+
+.child-card:hover {
+    border-color: #1B2A4A;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.child-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.child-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #1B2A4A;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.child-info h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+}
+
+.child-info .child-grade {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.child-details {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.child-detail-item {
+    font-size: 13px;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.child-detail-item i {
+    color: #94a3b8;
+    width: 16px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 2px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.status-enrolled {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-not-enrolled {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+/* ===== GRADES TABLE ===== */
+.grades-table-container {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e9edf4;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.grades-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 600px;
+}
+
+.grades-table thead {
+    background: #f8fafc;
+}
+
+.grades-table th {
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: #475569;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e9edf4;
+}
+
+.grades-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.grades-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.grade-passed {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.grade-failed {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+/* ===== ENROLLMENT CARD ===== */
+.enrollment-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e9edf4;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.enrollment-list {
+    padding: 8px 0;
+}
+
+.enrollment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.enrollment-item:last-child {
+    border-bottom: none;
+}
+
+.enrollment-item-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.enrollment-item-left .child-avatar-small {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #1B2A4A;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.enrollment-item-left .enrollment-info h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+}
+
+.enrollment-item-left .enrollment-info span {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* ===== NO DATA ===== */
+.no-data {
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.no-data i {
+    font-size: 32px;
+    color: #cbd5e1;
+    margin-bottom: 8px;
+}
+
+.no-data p {
+    color: #94a3b8;
+    font-size: 14px;
+    margin: 0;
+}
+
+/* ===== ALERT ===== */
+.alert {
+    padding: 12px 18px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    transition: opacity 0.3s ease;
+}
+
+.alert-error {
+    background: #fef2f2;
+    border-left: 4px solid #ef4444;
+    color: #991b1b;
+}
+
+.alert-success {
+    background: #f0fdf4;
+    border-left: 4px solid #22c55e;
+    color: #166534;
+}
+
+.alert i {
+    font-size: 18px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: flex;
+    }
+
+    .sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .sidebar .logo-text,
+    .sidebar .school-badge,
+    .sidebar .parent-name,
+    .sidebar .parent-role,
+    .sidebar .nav-section-title,
+    .sidebar .nav-items a span {
+        display: none;
+    }
+
+    .sidebar.active .logo-text,
+    .sidebar.active .school-badge,
+    .sidebar.active .parent-name,
+    .sidebar.active .parent-role,
+    .sidebar.active .nav-section-title,
+    .sidebar.active .nav-items a span {
+        display: block;
+    }
+
+    .sidebar .nav-items a {
+        justify-content: center;
+        padding: 12px;
+    }
+
+    .sidebar .nav-items a i {
+        margin: 0;
+        font-size: 18px;
+    }
+
+    .sidebar.active .nav-items a {
+        justify-content: flex-start;
+        padding: 10px 14px;
+    }
+
+    .sidebar.active .nav-items a i {
+        margin-right: 12px;
+        font-size: 15px;
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 20px;
+        padding-top: 70px;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .stat-number {
+        font-size: 22px;
+    }
+
+    .children-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .page-header h1 {
+        font-size: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .grades-table {
+        min-width: 400px;
+    }
+
+    .enrollment-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .enrollment-item-left {
+        width: 100%;
+    }
+}

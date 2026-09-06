@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Dashboard - PLSNHS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">P</div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="teacher-profile">
+                <div class="teacher-avatar">
+                    <div class="avatar-initial" id="teacherInitial">T</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="teacher-name" id="teacherName">Teacher</div>
+                <div class="teacher-role"><i class="fas fa-chalkboard-user"></i> Teacher</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="attendance-qr.html"><i class="fas fa-qrcode"></i> QR Attendance</a></li>
+                        <li><a href="classes.html"><i class="fas fa-users"></i> My Classes</a></li>
+                        <li><a href="schedule.html"><i class="fas fa-clock"></i> Schedule</a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> Grades</a></li>
+                        <!-- LOGOUT - gibalhin sa MAIN MENU para mohaum sa image -->
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1>Teacher Dashboard</h1>
+                    <p>Manage your classes, attendance, and student progress</p>
+                </div>
+                <div class="date-badge">
+                    <i class="fas fa-calendar-alt"></i> Loading...
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Total Students</h3>
+                        <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalStudents">0</div>
+                    <div class="stat-label">Enrolled students</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>My Sections</h3>
+                        <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalSections">0</div>
+                    <div class="stat-label">Classes handling</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Subjects</h3>
+                        <div class="stat-icon"><i class="fas fa-book"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalSubjects">0</div>
+                    <div class="stat-label">Total subjects</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Grade Levels</h3>
+                        <div class="stat-icon"><i class="fas fa-graduation-cap"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalGradeLevels">0</div>
+                    <div class="stat-label">Available levels</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <div class="section-header">
+                    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                </div>
+                <div class="actions-grid">
+                    <a href="attendance-qr.html" class="action-card">
+                        <div class="action-icon"><i class="fas fa-qrcode"></i></div>
+                        <div class="action-info">
+                            <h4>QR Attendance</h4>
+                            <p>Scan QR code to record attendance</p>
+                        </div>
+                    </a>
+
+                    <a href="classes.html" class="action-card">
+                        <div class="action-icon"><i class="fas fa-users"></i></div>
+                        <div class="action-info">
+                            <h4>View Classes</h4>
+                            <p>See your assigned sections</p>
+                        </div>
+                    </a>
+
+                    <a href="schedule.html" class="action-card">
+                        <div class="action-icon"><i class="fas fa-clock"></i></div>
+                        <div class="action-info">
+                            <h4>Class Schedule</h4>
+                            <p>Check your teaching schedule</p>
+                        </div>
+                    </a>
+
+                    <a href="grades.html" class="action-card">
+                        <div class="action-icon"><i class="fas fa-star"></i></div>
+                        <div class="action-info">
+                            <h4>Enter Grades</h4>
+                            <p>Input student grades</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <!-- My Classes and Subjects Grid -->
+            <div class="dashboard-grid">
+                <!-- My Sections -->
+                <div class="info-card">
+                    <h3><i class="fas fa-layer-group"></i> My Sections</h3>
+                    <div id="sectionsList">
+                        <div class="no-data">
+                            <i class="fas fa-layer-group"></i>
+                            <p>No sections assigned yet</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subjects Organized by Grade Level -->
+                <div class="info-card">
+                    <h3><i class="fas fa-book"></i> Subjects by Grade Level</h3>
+                    <div id="subjectsContainer">
+                        <div class="no-data">
+                            <i class="fas fa-book"></i>
+                            <p>No subjects found.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

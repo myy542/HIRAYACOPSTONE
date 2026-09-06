@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Classes - Teacher Dashboard | PLSNHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Classes CSS -->
+    <link rel="stylesheet" href="css/classes.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">P</div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="teacher-profile">
+                <div class="teacher-avatar">
+                    <div class="avatar-initial" id="teacherInitial">T</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="teacher-name" id="teacherName">Teacher</div>
+                <div class="teacher-role"><i class="fas fa-chalkboard-user"></i> Teacher</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="attendance-qr.html"><i class="fas fa-qrcode"></i> QR Attendance</a></li>
+                        <li><a href="classes.html" class="active"><i class="fas fa-users"></i> My Classes</a></li>
+                        <li><a href="schedule.html"><i class="fas fa-clock"></i> Schedule</a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> Grades</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1>My Classes</h1>
+                    <p>Manage your advisory classes and subjects</p>
+                </div>
+                <div class="date-badge">
+                    <i class="fas fa-calendar-alt"></i> Loading...
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Advisory Classes</h3>
+                        <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalSections">0</div>
+                    <div class="stat-label">Sections handled</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Subjects</h3>
+                        <div class="stat-icon"><i class="fas fa-book"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalSubjects">0</div>
+                    <div class="stat-label">Subjects taught</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Total Students</h3>
+                        <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalStudents">0</div>
+                    <div class="stat-label">Under your advisory</div>
+                </div>
+            </div>
+
+            <!-- Section Tabs -->
+            <div class="section-tabs">
+                <button class="tab-btn active" data-tab="advisory">
+                    <i class="fas fa-star"></i> Advisory Classes
+                </button>
+                <button class="tab-btn" data-tab="subjects">
+                    <i class="fas fa-book"></i> My Subjects
+                </button>
+                <button class="tab-btn" data-tab="schedule">
+                    <i class="fas fa-clock"></i> Schedule
+                </button>
+            </div>
+
+            <!-- Advisory Classes Tab -->
+            <div id="advisory" class="tab-content active-tab">
+                <div class="classes-grid" id="advisoryContainer">
+                    <div class="no-data">
+                        <i class="fas fa-users"></i>
+                        <h3>No Advisory Classes</h3>
+                        <p>You are not assigned as adviser to any section yet.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subjects Tab -->
+            <div id="subjects" class="tab-content">
+                <div id="subjectsContainer">
+                    <div class="no-data">
+                        <i class="fas fa-book"></i>
+                        <h3>No Subjects Assigned</h3>
+                        <p>You are not assigned to teach any subjects yet.</p>
+                        <p style="font-size: 13px; margin-top: 10px;">Subjects will appear here once you have class schedules.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule Tab -->
+            <div id="schedule" class="tab-content">
+                <div class="schedule-card">
+                    <h3><i class="fas fa-calendar-alt"></i> Weekly Schedule</h3>
+                    <div id="scheduleContainer">
+                        <div class="no-data">
+                            <i class="fas fa-calendar-alt"></i>
+                            <h3>No Schedule Found</h3>
+                            <p>You don't have any class schedule assigned yet.</p>
+                            <p style="font-size: 13px; margin-top: 10px;">Please contact the administrator to set up your teaching schedule.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script type="module" src="js/classes.js"></script>
+</body>
+</html>

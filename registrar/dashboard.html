@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Dashboard - PLSNHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Dashboard CSS -->
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">P</div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="admin-profile">
+                <div class="admin-avatar">
+                    <div class="avatar-initial" id="adminInitial">R</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="admin-name" id="adminName">Registrar</div>
+                <div class="admin-role"><i class="fas fa-user-tie"></i> Registrar</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="enrollments.html"><i class="fas fa-file-signature"></i> Enrollments</a></li>
+                        <li><a href="students.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+                        <li><a href="sections.html"><i class="fas fa-layer-group"></i> Sections</a></li>
+                        <li><a href="reports.html"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <!-- Page Header with Notification Bell -->
+            <div class="page-header">
+                <div>
+                    <h1>Registrar Dashboard</h1>
+                    <p>Manage enrollments and student records</p>
+                </div>
+                <div class="header-actions">
+                    <div class="notification-wrapper">
+                        <button class="notification-btn" id="notificationBtn">
+                            <i class="fas fa-bell"></i>
+                            <span class="notif-count" id="notifCount">0</span>
+                        </button>
+                        <div class="notification-dropdown" id="notificationDropdown">
+                            <div class="dropdown-header">
+                                <h4>Notifications</h4>
+                                <button id="markAllReadBtn" class="mark-all-read">Mark all as read</button>
+                            </div>
+                            <div class="dropdown-body" id="notificationList">
+                                <div class="empty-notifications">
+                                    <i class="fas fa-bell-slash"></i>
+                                    <p>No notifications yet</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="date-badge" id="dateBadge">
+                        <i class="fas fa-calendar-alt"></i> Loading...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card" onclick="window.location.href='enrollments.html'">
+                    <div class="stat-header">
+                        <h3>Total Enrollments</h3>
+                        <div class="stat-icon"><i class="fas fa-file-signature"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalEnrollments">0</div>
+                    <div class="stat-label">All time</div>
+                </div>
+
+                <div class="stat-card" onclick="window.location.href='enrollments.html?status=Pending'">
+                    <div class="stat-header">
+                        <h3>Pending</h3>
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                    </div>
+                    <div class="stat-number" id="pendingCount">0</div>
+                    <div class="stat-label">Awaiting review</div>
+                </div>
+
+                <div class="stat-card" onclick="window.location.href='enrollments.html?status=Enrolled'">
+                    <div class="stat-header">
+                        <h3>Enrolled</h3>
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                    <div class="stat-number" id="enrolledCount">0</div>
+                    <div class="stat-label">Approved</div>
+                </div>
+
+                <div class="stat-card" onclick="window.location.href='enrollments.html?status=Rejected'">
+                    <div class="stat-header">
+                        <h3>Rejected</h3>
+                        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+                    </div>
+                    <div class="stat-number" id="rejectedCount">0</div>
+                    <div class="stat-label">Not approved</div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="dashboard-grid">
+                <!-- Enrollment Trends Chart -->
+                <div class="chart-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-line"></i> Enrollment Trends</h3>
+                        <span class="badge">Last 6 months</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="trendsChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Grade Distribution -->
+                <div class="chart-card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-pie-chart"></i> Enrollment by Grade Level</h3>
+                        <span class="badge success">Current enrolled</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="gradeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Recent Enrollments -->
+                <div class="info-card">
+                    <h3><i class="fas fa-history"></i> Recent Enrollments</h3>
+                    <div id="recentEnrollments">
+                        <div class="no-data">
+                            <i class="fas fa-file-signature"></i>
+                            <p>No recent enrollments</p>
+                        </div>
+                    </div>
+                    <a href="enrollments.html" class="view-link">
+                        View All Enrollments <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <!-- Recent Activities -->
+                <div class="info-card">
+                    <h3><i class="fas fa-bell"></i> Recent Activities</h3>
+                    <div id="recentActivities">
+                        <div class="no-data">
+                            <i class="fas fa-bell-slash"></i>
+                            <p>No recent activities</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <div class="section-header">
+                    <h3><i class="fas fa-bolt"></i> Quick Actions</h3>
+                </div>
+                <div class="actions-grid">
+                    <a href="enrollments.html" class="action-card">
+                        <div class="action-icon"><i class="fas fa-file-signature"></i></div>
+                        <div class="action-info">
+                            <h4>Manage Enrollments</h4>
+                            <p>View and process applications</p>
+                        </div>
+                    </a>
+                    
+                    <a href="students.html" class="action-card">
+                        <div class="action-icon"><i class="fas fa-user-graduate"></i></div>
+                        <div class="action-info">
+                            <h4>Student Records</h4>
+                            <p>Manage student information</p>
+                        </div>
+                    </a>
+                    
+                    <a href="sections.html" class="action-card">
+                        <div class="action-icon"><i class="fas fa-layer-group"></i></div>
+                        <div class="action-info">
+                            <h4>Manage Sections</h4>
+                            <p>Create and assign sections</p>
+                        </div>
+                    </a>
+                    
+                    <a href="reports.html" class="action-card">
+                        <div class="action-icon"><i class="fas fa-chart-bar"></i></div>
+                        <div class="action-info">
+                            <h4>Generate Reports</h4>
+                            <p>Create enrollment reports</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Dashboard JS -->
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

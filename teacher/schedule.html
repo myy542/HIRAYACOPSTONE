@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Schedule - Teacher Dashboard | PLSNHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Schedule CSS -->
+    <link rel="stylesheet" href="css/schedule.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">P</div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="teacher-profile">
+                <div class="teacher-avatar">
+                    <div class="avatar-initial" id="teacherInitial">T</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="teacher-name" id="teacherName">Teacher</div>
+                <div class="teacher-role"><i class="fas fa-chalkboard-user"></i> Teacher</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="attendance-qr.html"><i class="fas fa-qrcode"></i> QR Attendance</a></li>
+                        <li><a href="classes.html"><i class="fas fa-users"></i> My Classes</a></li>
+                        <li><a href="schedule.html" class="active"><i class="fas fa-clock"></i> Schedule</a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> Grades</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1>My Schedule</h1>
+                    <p>View your weekly class schedule assigned by the admin</p>
+                </div>
+                <div class="date-badge">
+                    <i class="fas fa-calendar-alt"></i> Loading...
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Total Classes</h3>
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalClasses">0</div>
+                    <div class="stat-label">Classes per week</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Sections</h3>
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalSections">0</div>
+                    <div class="stat-label">Different sections</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Subjects</h3>
+                        <div class="stat-icon"><i class="fas fa-book"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalSubjects">0</div>
+                    <div class="stat-label">Subjects taught</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Free Periods</h3>
+                        <div class="stat-icon"><i class="fas fa-coffee"></i></div>
+                    </div>
+                    <div class="stat-number" id="freePeriods">0</div>
+                    <div class="stat-label">Available slots</div>
+                </div>
+            </div>
+
+            <!-- Week Navigation -->
+            <div class="week-nav">
+                <div class="week-display">
+                    <h3><i class="fas fa-calendar-week"></i> Week Schedule</h3>
+                    <span class="week-range" id="weekRange">Loading...</span>
+                </div>
+                <div class="nav-buttons">
+                    <a href="#" class="nav-btn" onclick="window.changeWeek(-1)">
+                        <i class="fas fa-chevron-left"></i> Previous Week
+                    </a>
+                    <a href="#" class="nav-btn" onclick="window.changeWeek(1)">
+                        Next Week <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Schedule Container -->
+            <div class="schedule-container">
+                <div class="schedule-header">
+                    <h3><i class="fas fa-table"></i> Your Assigned Schedule</h3>
+                    <span class="schedule-info-badge" id="scheduleInfoBadge">
+                        <i class="fas fa-info-circle"></i> 0 classes scheduled
+                    </span>
+                </div>
+
+                <!-- Schedule Table -->
+                <div class="table-container">
+                    <table class="data-table schedule-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Monday</th>
+                                <th>Tuesday</th>
+                                <th>Wednesday</th>
+                                <th>Thursday</th>
+                                <th>Friday</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleBody">
+                            <tr>
+                                <td colspan="6" class="no-data-cell">
+                                    <div class="no-data">
+                                        <i class="fas fa-clock"></i>
+                                        <h3>Loading schedule...</h3>
+                                        <p>Please wait while we load your schedule.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Legend -->
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color class"></div>
+                        <span>Regular Class</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color advisory"></div>
+                        <span>Advisory Class (You are the adviser)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Grid -->
+            <div class="summary-grid">
+                <!-- Your Sections -->
+                <div class="summary-card">
+                    <h4>
+                        <i class="fas fa-users"></i> Your Sections
+                        <span class="badge-count" id="sectionsBadge">0</span>
+                    </h4>
+                    <div class="summary-content" id="sectionsList">
+                        <div class="no-data-message"><i class="fas fa-info-circle"></i> No sections assigned</div>
+                    </div>
+                </div>
+
+                <!-- Your Subjects -->
+                <div class="summary-card">
+                    <h4>
+                        <i class="fas fa-book"></i> Your Subjects
+                        <span class="badge-count" id="subjectsBadge">0</span>
+                    </h4>
+                    <div class="summary-content" id="subjectsList">
+                        <div class="no-data-message"><i class="fas fa-info-circle"></i> No subjects assigned</div>
+                    </div>
+                </div>
+
+                <!-- Advisory Classes -->
+                <div class="summary-card">
+                    <h4>
+                        <i class="fas fa-star" style="color: #FFD700;"></i> Advisory Classes
+                        <span class="badge-count" id="advisoryBadge">0</span>
+                    </h4>
+                    <div class="summary-content" id="advisoryList">
+                        <div class="no-data-message"><i class="fas fa-info-circle"></i> No advisory classes</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script type="module" src="js/schedule.js"></script>
+</body>
+</html>

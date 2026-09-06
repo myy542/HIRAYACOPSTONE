@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parents Dashboard - PLSNHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <div class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                    </div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="parent-profile">
+                <div class="parent-avatar">
+                    <div class="avatar-initial">P</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="parent-name">Mr. & Mrs. Dela Cruz</div>
+                <div class="parent-role"><i class="fas fa-user-friends"></i> Parent</div>
+            </div>
+
+            <div class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> Grades</a></li>
+                        <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Attendance</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/logout.html"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <div class="page-header">
+                <div>
+                    <h1>Parents Dashboard</h1>
+                    <p class="subtitle">Welcome back, <span id="parentName">Mr. & Mrs. Dela Cruz</span>! Here's your child's academic overview.</p>
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Quick Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Children</h3>
+                        <div class="stat-icon"><i class="fas fa-child"></i></div>
+                    </div>
+                    <div class="stat-number" id="childrenCount">0</div>
+                    <div class="stat-label">Total children</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Enrolled</h3>
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                    <div class="stat-number" id="enrolledCount">0</div>
+                    <div class="stat-label">Currently enrolled</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Average Grade</h3>
+                        <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    </div>
+                    <div class="stat-number" id="avgGrade">0.00</div>
+                    <div class="stat-label">Overall average</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Attendance Rate</h3>
+                        <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+                    </div>
+                    <div class="stat-number" id="attendanceRate">0%</div>
+                    <div class="stat-label">Overall attendance</div>
+                </div>
+            </div>
+
+            <!-- Children List -->
+            <div class="section-title">
+                <h2><i class="fas fa-users"></i> Your Children</h2>
+            </div>
+
+            <div class="children-grid" id="childrenGrid">
+                <!-- Loaded by JavaScript -->
+            </div>
+
+            <!-- Recent Grades -->
+            <div class="section-title">
+                <h2><i class="fas fa-star"></i> Recent Grades</h2>
+            </div>
+
+            <div class="grades-table-container">
+                <table class="grades-table" id="gradesTable">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Subject</th>
+                            <th>Quarter</th>
+                            <th>Grade</th>
+                            <th>Remarks</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gradesBody">
+                        <!-- Loaded by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Enrollment Status -->
+            <div class="section-title">
+                <h2><i class="fas fa-file-signature"></i> Enrollment Status</h2>
+            </div>
+
+            <div class="enrollment-card">
+                <div class="enrollment-list" id="enrollmentList">
+                    <!-- Loaded by JavaScript -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

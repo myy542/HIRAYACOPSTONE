@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management - Registrar Dashboard | PLS NHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Students CSS -->
+    <link rel="stylesheet" href="css/students.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <div class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">P</div>
+                <div class="logo-text">PLS<span>NHS</span></div>
+            </div>
+            <div class="school-badge">Placido L. Señor NHS</div>
+        </div>
+
+        <div class="admin-profile">
+            <div class="admin-avatar">
+                <div class="avatar-initial" id="adminInitial">R</div>
+                <div class="online-dot"></div>
+            </div>
+            <div class="admin-name" id="adminName">Registrar</div>
+            <div class="admin-role"><i class="fas fa-user-tie"></i> Registrar</div>
+        </div>
+
+        <nav class="nav-menu">
+            <div class="nav-section">
+                <div class="nav-section-title">MAIN MENU</div>
+                <ul class="nav-items">
+                    <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a href="enrollments.html"><i class="fas fa-file-signature"></i> Enrollments</a></li>
+                    <li><a href="students.html" class="active"><i class="fas fa-user-graduate"></i> Students</a></li>
+                    <li><a href="sections.html"><i class="fas fa-layer-group"></i> Sections</a></li>
+                    <li><a href="reports.html"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                </ul>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">ACCOUNT</div>
+                <ul class="nav-items">
+                    <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                    <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                </ul>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header">
+            <div>
+                <h1>Student Management</h1>
+                <p>Manage student records and enrollment information</p>
+            </div>
+            <div class="date-badge" id="dateBadge">
+                <i class="fas fa-calendar-alt"></i> Loading...
+            </div>
+        </div>
+
+        <!-- Alert Container -->
+        <div id="alertContainer"></div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card" onclick="window.location.href='students.html'">
+                <div class="stat-header">
+                    <h3>Total Students</h3>
+                    <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+                </div>
+                <div class="stat-number" id="totalStudents">0</div>
+                <div class="stat-label">All students</div>
+            </div>
+
+            <div class="stat-card" onclick="window.location.href='students.html?status=Enrolled'">
+                <div class="stat-header">
+                    <h3>Enrolled</h3>
+                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                </div>
+                <div class="stat-number" id="enrolledStudents">0</div>
+                <div class="stat-label">Active enrollments</div>
+            </div>
+
+            <div class="stat-card" onclick="window.location.href='students.html?status=Pending'">
+                <div class="stat-header">
+                    <h3>Pending</h3>
+                    <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                </div>
+                <div class="stat-number" id="pendingStudents">0</div>
+                <div class="stat-label">Awaiting approval</div>
+            </div>
+
+            <div class="stat-card" onclick="window.location.href='students.html?status=Rejected'">
+                <div class="stat-header">
+                    <h3>Rejected</h3>
+                    <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+                </div>
+                <div class="stat-number" id="rejectedStudents">0</div>
+                <div class="stat-label">Not enrolled</div>
+            </div>
+
+            <div class="stat-card" onclick="window.location.href='students.html?status=none'">
+                <div class="stat-header">
+                    <h3>No Enrollment</h3>
+                    <div class="stat-icon"><i class="fas fa-user-slash"></i></div>
+                </div>
+                <div class="stat-number" id="noEnrollment">0</div>
+                <div class="stat-label">No records</div>
+            </div>
+        </div>
+
+        <!-- Actions Bar -->
+        <div class="actions-bar">
+            <form id="filterForm" class="filter-form">
+                <div class="filter-group">
+                    <select name="grade" id="gradeFilter" class="filter-select">
+                        <option value="">All Grades</option>
+                    </select>
+
+                    <select name="status" id="statusFilter" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="Enrolled">Enrolled</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
+
+                    <button type="submit" class="btn-filter">
+                        <i class="fas fa-filter"></i> Apply
+                    </button>
+
+                    <a href="students.html" class="btn-reset">
+                        <i class="fas fa-redo-alt"></i> Reset
+                    </a>
+                </div>
+
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" name="search" id="searchInput" placeholder="Search students...">
+                </div>
+            </form>
+
+            <div class="export-buttons">
+                <button type="button" class="btn-export" id="exportExcelBtn">
+                    <i class="fas fa-file-excel"></i> Export
+                </button>
+                <button type="button" class="btn-export" id="printBtn">
+                    <i class="fas fa-print"></i> Print
+                </button>
+            </div>
+        </div>
+
+        <!-- Students Table -->
+        <div class="table-card">
+            <div class="table-header">
+                <h3><i class="fas fa-user-graduate"></i> Student Records</h3>
+                <div class="stats-badges">
+                    <span class="badge-old" id="badgeOld">Old: 0</span>
+                    <span class="badge-new" id="badgeNew">New: 0</span>
+                    <span class="badge-count" id="badgeCount">Total: 0 students</span>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table" id="studentsTable">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>ID Number</th>
+                            <th>Grade & Strand</th>
+                            <th>Status</th>
+                            <th>Student Type</th>
+                            <th>School Year</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr>
+                            <td colspan="7">
+                                <div class="no-data">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <h3>Loading...</h3>
+                                    <p>Please wait while we load student records.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    <!-- JavaScript -->
+    <script src="js/students.js"></script>
+</body>
+</html>

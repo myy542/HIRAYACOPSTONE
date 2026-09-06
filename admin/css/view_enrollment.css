@@ -1,0 +1,823 @@
+/* ===== VIEW ENROLLMENT SPECIFIC STYLES ===== */
+
+/* Detail Card */
+.detail-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e9edf4;
+    margin-bottom: 24px;
+    overflow: hidden;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e9edf4;
+}
+
+.card-header h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.card-header h3 i {
+    color: #1B2A4A;
+}
+
+.view-link {
+    font-size: 13px;
+    color: #1B2A4A;
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.view-link:hover {
+    text-decoration: underline;
+}
+
+.badge-count {
+    font-size: 12px;
+    color: #64748b;
+    background: #f8fafc;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid #e9edf4;
+}
+
+/* Student Info */
+.student-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+}
+
+.student-avatar-large {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: #1B2A4A;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.student-avatar-large-img {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.student-avatar-large-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.student-details h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 4px 0;
+}
+
+.student-meta {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.student-meta span {
+    font-size: 14px;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.student-meta i {
+    color: #94a3b8;
+}
+
+/* Stats Mini Grid */
+.stats-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+    border-top: 1px solid #f1f5f9;
+}
+
+.stat-mini-card {
+    padding: 14px 20px;
+    text-align: center;
+    border-right: 1px solid #f1f5f9;
+}
+
+.stat-mini-card:last-child {
+    border-right: none;
+}
+
+.stat-mini-number {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1B2A4A;
+}
+
+.stat-mini-label {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* Info Grid */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+    padding: 0;
+}
+
+.info-item {
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    border-right: 1px solid #f1f5f9;
+}
+
+.info-item:nth-child(2n) {
+    border-right: none;
+}
+
+.info-item:last-child,
+.info-item:nth-last-child(2) {
+    border-bottom: none;
+}
+
+.info-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.info-value {
+    font-size: 14px;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.info-value i {
+    color: #94a3b8;
+    width: 16px;
+}
+
+/* Status Badge Small */
+.status-badge-small {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-enrolled {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* ===== REQUIREMENTS SECTION ===== */
+.requirements-card .card-header .completion-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1B2A4A;
+    background: #e8edf5;
+    padding: 4px 14px;
+    border-radius: 20px;
+}
+
+.requirements-info-banner {
+    display: flex;
+    gap: 24px;
+    padding: 12px 20px;
+    background: #f8fafc;
+    border-bottom: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+}
+
+.info-banner-item {
+    font-size: 13px;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.info-banner-item i {
+    color: #1B2A4A;
+}
+
+.info-banner-item strong {
+    color: #0f172a;
+}
+
+/* Progress Bar */
+.progress-container {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #475569;
+    margin-bottom: 6px;
+}
+
+.progress-percentage {
+    font-weight: 600;
+    color: #1B2A4A;
+}
+
+.progress-bar {
+    height: 8px;
+    background: #e9edf4;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #1B2A4A;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+
+/* Requirements Grid */
+.requirements-grid {
+    padding: 16px 20px;
+}
+
+.requirements-grid h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0 0 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.requirements-grid.submitted-grid {
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.requirements-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.requirement-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid #f1f5f9;
+    transition: all 0.2s;
+}
+
+.requirement-item:hover {
+    border-color: #e2e8f0;
+}
+
+.requirement-item.submitted {
+    background: #f0fdf4;
+    border-color: #d1fae5;
+}
+
+.requirement-item.missing {
+    background: #fef2f2;
+    border-color: #fee2e2;
+}
+
+.requirement-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.requirement-info {
+    flex: 1;
+}
+
+.requirement-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #0f172a;
+}
+
+.requirement-status {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 2px;
+}
+
+.status-badge-submitted {
+    font-size: 11px;
+    color: #065f46;
+    background: #d1fae5;
+    padding: 1px 10px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-badge-missing {
+    font-size: 11px;
+    color: #991b1b;
+    background: #fee2e2;
+    padding: 1px 10px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.requirement-badge {
+    font-size: 10px;
+    padding: 1px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.badge-required {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-optional {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.badge-follow {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.requirement-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-view-file {
+    padding: 4px 12px;
+    background: #1B2A4A;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.btn-view-file:hover {
+    background: #14223a;
+}
+
+.btn-notify {
+    padding: 4px 12px;
+    background: #f59e0b;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.btn-notify:hover {
+    background: #d97706;
+}
+
+/* No Requirements */
+.no-requirements {
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.no-requirements i {
+    font-size: 36px;
+    color: #cbd5e1;
+    margin-bottom: 8px;
+}
+
+.no-requirements p {
+    color: #94a3b8;
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Requirements Summary */
+.requirements-summary {
+    display: flex;
+    gap: 24px;
+    padding: 14px 20px;
+    border-top: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+
+.summary-item {
+    text-align: center;
+}
+
+.summary-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1B2A4A;
+}
+
+.summary-label {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* History Table */
+.table-container {
+    overflow-x: auto;
+    padding: 4px;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 500px;
+}
+
+.history-table thead {
+    background: #f8fafc;
+}
+
+.history-table th {
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: #475569;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e9edf4;
+}
+
+.history-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+}
+
+.history-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* Badge */
+.badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.badge-enrolled {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* No Data */
+.no-data {
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.no-data i {
+    font-size: 32px;
+    color: #cbd5e1;
+    margin-bottom: 8px;
+}
+
+.no-data p {
+    color: #94a3b8;
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Alert */
+.alert {
+    padding: 12px 18px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    transition: opacity 0.3s ease;
+}
+
+.alert-error {
+    background: #fef2f2;
+    border-left: 4px solid #ef4444;
+    color: #991b1b;
+}
+
+.alert-success {
+    background: #f0fdf4;
+    border-left: 4px solid #22c55e;
+    color: #166534;
+}
+
+.alert i {
+    font-size: 18px;
+}
+
+.subtitle {
+    color: #64748b;
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+/* File Modal */
+.file-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.file-modal.show {
+    display: flex;
+}
+
+.file-modal-content {
+    background: #fff;
+    border-radius: 16px;
+    max-width: 800px;
+    width: 95%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.file-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid #e9edf4;
+}
+
+.file-modal-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.file-modal-title i {
+    color: #1B2A4A;
+}
+
+.file-modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s;
+    padding: 0 4px;
+}
+
+.file-modal-close:hover {
+    color: #ef4444;
+    transform: rotate(90deg);
+}
+
+.file-modal-body {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.file-loading {
+    text-align: center;
+    color: #94a3b8;
+}
+
+.file-loading i {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.file-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #e9edf4;
+}
+
+.file-download-btn {
+    padding: 8px 20px;
+    background: #1B2A4A;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.file-download-btn:hover {
+    background: #14223a;
+}
+
+.file-modal-close-footer {
+    padding: 8px 20px;
+    background: #fff;
+    color: #475569;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.file-modal-close-footer:hover {
+    background: #f8fafc;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .info-item {
+        border-right: none;
+    }
+    
+    .info-item:nth-last-child(2) {
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .student-info {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .student-meta {
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .student-avatar-large {
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+    }
+    
+    .student-avatar-large-img {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .requirements-info-banner {
+        flex-direction: column;
+        gap: 6px;
+    }
+    
+    .requirements-summary {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .requirement-item {
+        flex-wrap: wrap;
+    }
+    
+    .requirement-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .stats-mini-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-mini-card {
+        border-right: none;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    
+    .stat-mini-card:last-child {
+        border-bottom: none;
+    }
+    
+    .file-modal-content {
+        width: 98%;
+        margin: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .history-table {
+        min-width: 400px;
+    }
+}

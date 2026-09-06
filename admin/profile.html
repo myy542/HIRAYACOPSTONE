@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - PLSNHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/profile.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <div class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                    </div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="admin-profile">
+                <div class="admin-avatar">
+                    <div class="avatar-initial">A</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="admin-name">Admin</div>
+                <div class="admin-role"><i class="fas fa-shield-alt"></i> Administrator</div>
+            </div>
+
+            <div class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="students.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+                        <li><a href="teachers.html"><i class="fas fa-chalkboard-user"></i> Teachers</a></li>
+                        <li><a href="sections.html"><i class="fas fa-layer-group"></i> Sections</a></li>
+                        <li><a href="subjects.html"><i class="fas fa-book"></i> Subjects</a></li>
+                        <li><a href="enrollments.html"><i class="fas fa-file-signature"></i> Enrollments</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">MANAGEMENT</div>
+                    <ul class="nav-items">
+                        <li><a href="manage_accounts.html"><i class="fas fa-users-cog"></i> Accounts</a></li>
+                        <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Attendance</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html" class="active"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/logout.html"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1>My Profile</h1>
+                    <p class="subtitle">View and manage your account information</p>
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Profile Grid -->
+            <div class="profile-grid">
+                <!-- Left Column - Profile Info -->
+                <div>
+                    <div class="profile-card">
+                        <div class="profile-avatar-large" onclick="openImageModal()">
+                            <div class="avatar-initial">A</div>
+                            <div class="avatar-overlay">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                        </div>
+                        <h2 class="profile-name">Admin User</h2>
+                        <div style="text-align: center;">
+                            <span class="profile-role">Administrator</span>
+                        </div>
+
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <div class="stat-number" id="daysActive">0</div>
+                                <div class="stat-label">Days Active</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">Admin</div>
+                                <div class="stat-label">Account Type</div>
+                            </div>
+                        </div>
+
+                        <div class="profile-info-item">
+                            <div class="info-icon"><i class="fas fa-envelope"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">Email Address</div>
+                                <div class="info-value" id="emailDisplay">
+                                    admin@plshs.edu.ph
+                                    <span class="verified-badge" id="emailStatusBadge"><i class="fas fa-check-circle"></i> Verified</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-info-item">
+                            <div class="info-icon"><i class="fas fa-id-card"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">ID Number</div>
+                                <div class="info-value">PLSNHS-ADM-00001</div>
+                            </div>
+                        </div>
+
+                        <div class="profile-info-item">
+                            <div class="info-icon"><i class="fas fa-phone"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">Contact Number</div>
+                                <div class="info-value">09123456789</div>
+                            </div>
+                        </div>
+
+                        <div class="profile-info-item">
+                            <div class="info-icon"><i class="fas fa-calendar-alt"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">Member Since</div>
+                                <div class="info-value">January 1, 2026</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Edit Forms -->
+                <div>
+                    <!-- Email Verification Section -->
+                    <div class="verify-email-section" id="verifySection">
+                        <div class="verify-header">
+                            <i class="fas fa-envelope"></i>
+                            <h3>Email Verification</h3>
+                        </div>
+                        
+                        <div id="verifyStatus">
+                            <div class="verify-badge verified" id="verifyBadge">
+                                <i class="fas fa-check-circle"></i> Verified Email
+                            </div>
+                            <div class="verify-info" id="verifyInfo">
+                                <p><i class="fas fa-check-circle" style="color: #10b981;"></i> Your email address has been verified.</p>
+                                <p style="margin-top: 6px;">This adds an extra layer of security to your account.</p>
+                            </div>
+                        </div>
+
+                        <!-- Verification Form (hidden when verified) -->
+                        <div id="verifyFormContainer" style="display: none;">
+                            <div class="verify-info">
+                                <p><i class="fas fa-info-circle"></i> Your email address has not been verified yet.</p>
+                                <p style="margin-top: 6px;">Verifying your email helps secure your account and ensures you receive important notifications.</p>
+                            </div>
+                            
+                            <div class="email-info-box">
+                                <i class="fas fa-envelope"></i> Code sent to: <strong id="verifyEmailDisplay">admin@plshs.edu.ph</strong>
+                            </div>
+
+                            <div id="verifyAlertContainer"></div>
+
+                            <form id="verifyForm">
+                                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                                    <input type="text" name="code" id="verifyCodeInput" class="verify-code-input" placeholder="000000" maxlength="6" pattern="[0-9]{6}" autofocus>
+                                    <button type="submit" class="btn-verify-email" id="verifyBtn">
+                                        <i class="fas fa-check-circle"></i> Verify
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                                <a href="#" id="resendLink" class="resend-link-text">
+                                    <i class="fas fa-redo"></i> Resend Verification Code
+                                </a>
+                                <span style="color: #94a3b8; font-size: 13px;">|</span>
+                                <a href="#" id="cancelVerifyLink" class="resend-link-text" style="color: #ef4444;">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Manual Verify Button (shown when unverified) -->
+                        <div id="verifyButtonContainer" style="display: none; margin-top: 12px;">
+                            <button class="btn-verify-email" id="showVerifyFormBtn">
+                                <i class="fas fa-paper-plane"></i> Verify Email Now
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Email Change Section -->
+                    <div class="verify-email-section">
+                        <div class="verify-header">
+                            <i class="fas fa-exchange-alt"></i>
+                            <h3>Change Email Address</h3>
+                        </div>
+                        
+                        <form id="emailChangeForm">
+                            <div class="form-group">
+                                <label class="form-label">New Email Address</label>
+                                <input type="email" name="new_email" id="newEmail" placeholder="Enter your new email address" required>
+                                <small style="color: #64748b; display: block; margin-top: 5px;">
+                                    <i class="fas fa-info-circle"></i> A verification code will be sent to the new email address for confirmation.
+                                </small>
+                            </div>
+                            <button type="submit" class="btn-verify-email">
+                                <i class="fas fa-paper-plane"></i> Send Verification Code
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Edit Profile Form -->
+                    <div class="form-card">
+                        <div class="form-header">
+                            <i class="fas fa-user-edit"></i>
+                            <h3>Edit Profile Information</h3>
+                        </div>
+                        <form id="profileForm">
+                            <div class="form-group">
+                                <label class="form-label">Full Name <span class="required">*</span></label>
+                                <input type="text" name="fullname" id="fullname" value="Admin User" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">ID Number</label>
+                                <input type="text" name="id_number" id="idNumber" value="PLSNHS-ADM-00001" placeholder="Enter your ID number">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Contact Number</label>
+                                <input type="tel" name="phone" id="phone" value="09123456789" placeholder="09XXXXXXXXX">
+                                <small style="color: #64748b; display: block; margin-top: 5px;">
+                                    <i class="fas fa-info-circle"></i> Philippine mobile number format: 09XXXXXXXXX (11 digits)
+                                </small>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Role</label>
+                                <input type="text" value="Administrator" disabled>
+                            </div>
+
+                            <button type="submit" name="update_profile" class="btn-submit">
+                                <i class="fas fa-save"></i> Update Profile
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Change Password Form -->
+                    <div class="form-card">
+                        <div class="form-header">
+                            <i class="fas fa-lock"></i>
+                            <h3>Change Password</h3>
+                        </div>
+                        
+                        <div class="password-section">
+                            <div class="password-header">
+                                <input type="checkbox" id="changePasswordCheckbox">
+                                <label for="changePasswordCheckbox">I want to change my password</label>
+                            </div>
+
+                            <form id="passwordForm">
+                                <div class="password-fields" id="passwordFields">
+                                    <div class="form-group">
+                                        <label class="form-label">Current Password <span class="required">*</span></label>
+                                        <input type="password" name="current_password" id="currentPassword" disabled>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">New Password <span class="required">*</span></label>
+                                            <input type="password" name="new_password" id="newPassword" disabled>
+                                            
+                                            <div class="password-strength">
+                                                <div class="password-strength-bar">
+                                                    <div class="password-strength-fill" id="passwordStrengthFill"></div>
+                                                </div>
+                                                <div class="password-strength-text" id="passwordStrengthText">
+                                                    <i class="fas fa-info-circle"></i>
+                                                    <span>Enter new password</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="password-requirements" id="passwordRequirements">
+                                                <small><i class="fas fa-shield-alt"></i> Password must contain:</small>
+                                                <ul>
+                                                    <li id="req-length"><i class="fas fa-circle"></i> At least 8 characters</li>
+                                                    <li id="req-upper"><i class="fas fa-circle"></i> At least 1 uppercase letter (A-Z)</li>
+                                                    <li id="req-lower"><i class="fas fa-circle"></i> At least 1 lowercase letter (a-z)</li>
+                                                    <li id="req-number"><i class="fas fa-circle"></i> At least 1 number (0-9)</li>
+                                                    <li id="req-special"><i class="fas fa-circle"></i> At least 1 special character (!@#$%^&*)</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label class="form-label">Confirm Password <span class="required">*</span></label>
+                                            <input type="password" name="confirm_password" id="confirmPassword" disabled>
+                                            <div class="password-strength-text" id="passwordMatchText">
+                                                <i class="fas fa-info-circle"></i> Re-enter new password
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" name="change_password" class="btn-submit" id="changePasswordBtn" disabled>
+                                        <i class="fas fa-key"></i> Change Password
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div class="info-box" style="margin-top: 15px; background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 8px; display: flex; align-items: center; gap: 12px;">
+                            <i class="fas fa-shield-alt" style="color: #f59e0b;"></i>
+                            <div style="font-size: 13px; color: #92400e;">
+                                <strong>2FA Protection:</strong> Since 2FA is enabled, you'll need to verify your identity via email when changing your password.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Image Upload Modal -->
+    <div class="modal" id="imageModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-camera"></i> Update Profile Picture</h3>
+                <button class="close-modal" onclick="closeImageModal()">&times;</button>
+            </div>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="image-preview" id="imagePreview">
+                        <div style="width: 150px; height: 150px; background: #1B2A4A; display: flex; align-items: center; justify-content: center; color: white; font-size: 56px; font-weight: bold; border-radius: 50%;">
+                            A
+                        </div>
+                    </div>
+                    <div class="file-input-wrapper">
+                        <input type="file" name="profile_picture" id="profilePicture" accept="image/jpeg,image/png,image/gif,image/webp" onchange="previewImage(this)">
+                        <label for="profilePicture" class="file-input-label">
+                            <i class="fas fa-upload"></i> Choose Image
+                        </label>
+                    </div>
+                    <p style="font-size: 12px; color: #94a3b8; margin-top: 10px;">
+                        <i class="fas fa-info-circle"></i> Allowed formats: JPG, PNG, GIF, WEBP. Max size: 5MB
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-danger" onclick="removeProfilePic()" style="background: #ef4444; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-weight: 500;">
+                        <i class="fas fa-trash"></i> Remove
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="closeImageModal()" style="background: #fff; color: #475569; border: 1.5px solid #e2e8f0; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: 500;">Cancel</button>
+                    <button type="submit" name="upload_profile_pic" class="btn-primary" style="background: #1B2A4A; color: #fff; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-weight: 600;">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/profile.js"></script>
+</body>
+</html>

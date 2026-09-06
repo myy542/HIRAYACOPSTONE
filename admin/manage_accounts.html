@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Accounts - PLSNHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- CSS Files -->
+    <link rel="stylesheet" href=" css/base.css">
+    <link rel="stylesheet" href=" css/manage_accounts.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <div class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                    </div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="admin-profile">
+                <div class="admin-avatar">
+                    <div class="avatar-initial">A</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="admin-name">Admin</div>
+                <div class="admin-role"><i class="fas fa-shield-alt"></i> Administrator</div>
+            </div>
+
+            <div class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="students.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+                        <li><a href="teachers.html"><i class="fas fa-chalkboard-user"></i> Teachers</a></li>
+                        <li><a href="sections.html"><i class="fas fa-layer-group"></i> Sections</a></li>
+                        <li><a href="subjects.html"><i class="fas fa-book"></i> Subjects</a></li>
+                        <li><a href="enrollments.html"><i class="fas fa-file-signature"></i> Enrollments</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">MANAGEMENT</div>
+                    <ul class="nav-items">
+                        <li><a href="manage_accounts.html" class="active"><i class="fas fa-users-cog"></i> Accounts</a></li>
+                        <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Attendance</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/logout.html"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1>Account Management</h1>
+                    <p class="subtitle">Manage user accounts, approvals, and roles in the system</p>
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Quick Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Total Users</h3>
+                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalUsers">0</div>
+                    <div class="stat-label">Approved accounts</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Pending Approval</h3>
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                    </div>
+                    <div class="stat-number" id="pendingCount">0</div>
+                    <div class="stat-label">Awaiting approval</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Approved</h3>
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                    <div class="stat-number" id="approvedCount">0</div>
+                    <div class="stat-label">Active accounts</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Rejected</h3>
+                        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+                    </div>
+                    <div class="stat-number" id="rejectedCount">0</div>
+                    <div class="stat-label">Rejected accounts</div>
+                </div>
+            </div>
+
+            <!-- Pending Accounts Section -->
+            <div class="pending-section" id="pendingSection">
+                <div class="pending-header">
+                    <h3><i class="fas fa-clock"></i> Pending Account Approvals</h3>
+                    <span class="pending-badge" id="pendingBadge"><i class="fas fa-users"></i> 0 pending</span>
+                </div>
+
+                <table class="pending-table">
+                    <thead>
+                        <tr>
+                            <th>ID Number</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Registered On</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pendingTableBody">
+                        <!-- Loaded by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Section Title and Add Button -->
+            <div class="section-title">
+                <h2><i class="fas fa-list"></i> All Accounts</h2>
+                <a href="add_account.html" class="btn-add"><i class="fas fa-plus-circle"></i> Add New Account</a>
+            </div>
+
+            <!-- Search and Filter -->
+            <div class="search-bar">
+                <form id="filterForm" class="filter-form">
+                    <input type="text" name="search" id="searchInput" class="search-input" placeholder="Search by name, email, or ID...">
+                    
+                    <select name="role" id="roleFilter" class="filter-select">
+                        <option value="">All Roles</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Registrar">Registrar</option>
+                        <option value="Teacher">Teacher</option>
+                        <option value="Student">Student</option>
+                    </select>
+
+                    <select name="status" id="statusFilter" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                    
+                    <button type="submit" class="btn-search"><i class="fas fa-search"></i> Filter</button>
+                    <button type="reset" class="btn-reset" onclick="resetFilters()"><i class="fas fa-redo-alt"></i> Reset</button>
+                </form>
+            </div>
+
+            <!-- Users Table -->
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID Number</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Loaded by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Reject Modal -->
+    <div class="modal" id="rejectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> Reject User</h3>
+                <button class="close-modal" onclick="closeRejectModal()">&times;</button>
+            </div>
+            <form id="rejectForm">
+                <input type="hidden" name="user_id" id="rejectUserId">
+                <div class="modal-body">
+                    <p>You are about to reject <strong id="rejectUserName"></strong>. Please provide a reason for rejection (optional):</p>
+                    <textarea name="rejection_reason" id="rejectionReason" placeholder="Enter rejection reason..." style="width: 100%; padding: 10px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-family: inherit; min-height: 80px; resize: vertical;"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeRejectModal()">Cancel</button>
+                    <button type="submit" class="btn-save"><i class="fas fa-times-circle"></i> Reject User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/manage_accounts.js"></script>
+</body>
+</html>

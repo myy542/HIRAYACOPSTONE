@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - Teacher Dashboard | PLSNHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Profile CSS -->
+    <link rel="stylesheet" href="css/profile.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <div class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <div class="app-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">P</div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="teacher-profile">
+                <div class="teacher-avatar">
+                    <div class="avatar-initial" id="teacherInitial">T</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="teacher-name" id="teacherName">Teacher</div>
+                <div class="teacher-role"><i class="fas fa-chalkboard-user"></i> Teacher</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="attendance-qr.html"><i class="fas fa-qrcode"></i> QR Attendance</a></li>
+                        <li><a href="classes.html"><i class="fas fa-users"></i> My Classes</a></li>
+                        <li><a href="schedule.html"><i class="fas fa-clock"></i> Schedule</a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> Grades</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html" class="active"><i class="fas fa-user-circle"></i> My Profile</a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1>My Profile</h1>
+                    <p>View and manage your personal information</p>
+                </div>
+                <a href="dashboard.html" class="back-btn" id="backBtn">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Profile Grid -->
+            <div class="profile-grid">
+                <!-- Left Column - Profile Info -->
+                <div>
+                    <div class="profile-card">
+                        <!-- Profile Avatar -->
+                        <div class="profile-avatar-large" onclick="openImageModal()">
+                            <div class="avatar-initial" id="profileInitial">T</div>
+                            <div class="avatar-overlay">
+                                <i class="fas fa-camera"></i>
+                            </div>
+                        </div>
+                        <h2 class="profile-name" id="profileName">Teacher</h2>
+                        <span class="profile-role">Teacher</span>
+
+                        <div class="profile-stats">
+                            <div class="stat-item">
+                                <div class="stat-value" id="daysActive">0</div>
+                                <div class="stat-label">Days Active</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="attendanceCount">0</div>
+                                <div class="stat-label">Attendance Records</div>
+                            </div>
+                        </div>
+
+                        <div class="profile-info-item">
+                            <div class="info-icon"><i class="fas fa-envelope"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">Email Address</div>
+                                <div class="info-value" id="profileEmail">Loading...</div>
+                                <span id="emailVerifiedBadge"></span>
+                            </div>
+                        </div>
+
+                        <div class="profile-info-item">
+                            <div class="info-icon"><i class="fas fa-id-card"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">Employee ID</div>
+                                <div class="info-value" id="teacherId">Not assigned</div>
+                            </div>
+                        </div>
+
+                        <div class="profile-info-item">
+                            <div class="info-icon"><i class="fas fa-calendar-alt"></i></div>
+                            <div class="info-content">
+                                <div class="info-label">Member Since</div>
+                                <div class="info-value" id="memberSince">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Professional Info -->
+                <div>
+                    <!-- Email Verification Section -->
+                    <div class="academic-card">
+                        <div class="verification-header">
+                            <i class="fas fa-envelope"></i>
+                            <h3>Email Verification</h3>
+                        </div>
+                        <div id="emailVerificationSection">
+                            <div class="verification-badge unverified">
+                                <i class="fas fa-exclamation-triangle"></i> Email Not Verified
+                            </div>
+                            <div class="verification-info">
+                                <p><i class="fas fa-info-circle"></i> Your email address has not been verified yet.</p>
+                                <p style="margin-top: 10px;">Verifying your email helps secure your account and ensures you receive important notifications.</p>
+                                <button id="verifyEmailBtn" class="btn-verify">
+                                    <i class="fas fa-paper-plane"></i> Verify Email Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Change Email Section -->
+                    <div class="academic-card">
+                        <div class="verification-header">
+                            <i class="fas fa-exchange-alt"></i>
+                            <h3>Change Email Address</h3>
+                        </div>
+                        <form id="emailChangeForm">
+                            <div class="form-group">
+                                <label>New Email Address</label>
+                                <input type="email" name="new_email" id="new_email" placeholder="Enter your new email address" required>
+                                <small><i class="fas fa-info-circle"></i> A verification code will be sent to the new email address for confirmation.</small>
+                            </div>
+                            <button type="submit" class="btn-verify">
+                                <i class="fas fa-paper-plane"></i> Send Verification Code
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Professional Information -->
+                    <div class="academic-card">
+                        <h3><i class="fas fa-chalkboard-user"></i> Professional Information</h3>
+                        
+                        <div class="academic-grid">
+                            <div class="academic-item">
+                                <div class="academic-value" id="sectionsCount">0</div>
+                                <div class="academic-label">Sections Handled</div>
+                            </div>
+                            <div class="academic-item">
+                                <div class="academic-value" id="subjectsCount">0</div>
+                                <div class="academic-label">Subjects Taught</div>
+                            </div>
+                            <div class="academic-item">
+                                <div class="academic-value" id="studentsCount">0</div>
+                                <div class="academic-label">Total Students</div>
+                            </div>
+                        </div>
+
+                        <div class="info-box">
+                            <i class="fas fa-info-circle"></i>
+                            <p id="teacherSummary">You are currently teaching 0 subject(s) to 0 student(s) across 0 section(s).</p>
+                        </div>
+                    </div>
+
+                    <!-- Edit Profile Form -->
+                    <div class="form-card">
+                        <h3><i class="fas fa-user-edit"></i> Edit Profile Information</h3>
+                        <form id="profileUpdateForm">
+                            <div class="form-group">
+                                <label>Full Name <span class="required">*</span></label>
+                                <input type="text" name="fullname" id="fullnameInput" value="" required>
+                            </div>
+                            <button type="submit" class="btn-submit">
+                                <i class="fas fa-save"></i> Update Profile
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Change Password Form -->
+                    <div class="form-card">
+                        <h3><i class="fas fa-lock"></i> Change Password</h3>
+                        
+                        <div class="password-section">
+                            <div class="password-header">
+                                <input type="checkbox" id="change_password_checkbox">
+                                <label for="change_password_checkbox">I want to change my password</label>
+                            </div>
+
+                            <form id="passwordForm">
+                                <div class="password-fields" id="passwordFields">
+                                    <div class="form-group">
+                                        <label>Current Password <span class="required">*</span></label>
+                                        <input type="password" name="current_password" id="current_password" disabled>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>New Password <span class="required">*</span></label>
+                                            <input type="password" name="new_password" id="new_password" disabled>
+                                            
+                                            <!-- Password strength meter -->
+                                            <div class="password-strength">
+                                                <div class="password-strength-bar">
+                                                    <div class="password-strength-fill" id="passwordStrengthFill"></div>
+                                                </div>
+                                                <div class="password-strength-text" id="passwordStrengthText">
+                                                    <i class="fas fa-info-circle"></i>
+                                                    <span>Enter new password</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Password requirements checklist -->
+                                            <div class="password-requirements" id="passwordRequirements">
+                                                <small><i class="fas fa-shield-alt"></i> Password must contain:</small>
+                                                <ul>
+                                                    <li id="req-length"><i class="fas fa-circle"></i> At least 8 characters</li>
+                                                    <li id="req-upper"><i class="fas fa-circle"></i> At least 1 uppercase letter (A-Z)</li>
+                                                    <li id="req-lower"><i class="fas fa-circle"></i> At least 1 lowercase letter (a-z)</li>
+                                                    <li id="req-number"><i class="fas fa-circle"></i> At least 1 number (0-9)</li>
+                                                    <li id="req-special"><i class="fas fa-circle"></i> At least 1 special character (!@#$%^&*)</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>Confirm Password <span class="required">*</span></label>
+                                            <input type="password" name="confirm_password" id="confirm_password" disabled>
+                                            <div class="password-strength-text" id="passwordMatchText">
+                                                <i class="fas fa-info-circle"></i> Re-enter new password
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" name="change_password" class="btn-submit" id="changePasswordBtn" disabled>
+                                        <i class="fas fa-key"></i> Change Password
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Image Upload Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-camera"></i> Update Profile Picture</h3>
+                <button class="close-modal" onclick="closeImageModal()">&times;</button>
+            </div>
+            <form id="profilePicForm">
+                <div class="modal-body">
+                    <div class="image-preview" id="imagePreview">
+                        <div class="avatar-initial" id="modalInitial">T</div>
+                    </div>
+                    <div class="file-input-wrapper">
+                        <input type="file" name="profile_picture" id="profile_picture" accept="image/jpeg,image/png,image/gif,image/webp" onchange="previewImage(this)">
+                        <label for="profile_picture" class="file-input-label">
+                            <i class="fas fa-upload"></i> Choose Image
+                        </label>
+                    </div>
+                    <p style="font-size: 12px; color: var(--gray-400); margin-top: 10px;">
+                        <i class="fas fa-info-circle"></i> Allowed formats: JPG, PNG, GIF, WEBP. Max size: 5MB
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeImageModal()">Cancel</button>
+                    <button type="submit" name="upload_profile_pic" class="btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script type="module" src="js/profile.js"></script>
+</body>
+</html>
