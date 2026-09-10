@@ -710,6 +710,242 @@
     font-size: 18px;
 }
 
+/* ===== DOCUMENT UPLOAD STYLES ===== */
+.doc-upload-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid #e9edf4;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    margin-top: 24px;
+}
+
+.doc-upload-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.doc-upload-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.doc-upload-header-left i {
+    font-size: 20px;
+    color: #1B2A4A;
+}
+
+.doc-upload-header h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.doc-upload-count {
+    font-size: 12px;
+    font-weight: 600;
+    background: #e8edf5;
+    color: #1B2A4A;
+    padding: 3px 10px;
+    border-radius: 12px;
+}
+
+.doc-drop-zone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 24px 20px;
+    text-align: center;
+    background: #f8fafc;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.doc-drop-zone:hover, .doc-drop-zone.dragover {
+    border-color: #1B2A4A;
+    background: #f1f5f9;
+}
+
+.doc-drop-zone i {
+    font-size: 32px;
+    color: #1B2A4A;
+    margin-bottom: 10px;
+}
+
+.doc-drop-zone h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0 0 4px 0;
+}
+
+.doc-drop-zone p {
+    font-size: 12px;
+    color: #64748b;
+    margin: 0;
+}
+
+.doc-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 12px;
+    margin-top: 14px;
+    align-items: flex-end;
+}
+
+.doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.doc-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #ffffff;
+    border: 1px solid #e9edf4;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.doc-item:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.doc-item-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+}
+
+.doc-item-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.doc-icon-pdf { background: #fee2e2; color: #dc2626; }
+.doc-icon-img { background: #dbeafe; color: #2563eb; }
+.doc-icon-doc { background: #fef3c7; color: #d97706; }
+
+.doc-item-info {
+    min-width: 0;
+}
+
+.doc-item-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+
+.doc-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    color: #64748b;
+    flex-wrap: wrap;
+}
+
+.doc-category-pill {
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.doc-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.doc-btn {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.doc-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #cbd5e1;
+}
+
+.doc-btn-danger:hover {
+    background: #fee2e2;
+    color: #dc2626;
+    border-color: #fca5a5;
+}
+
+.empty-docs-state {
+    text-align: center;
+    padding: 28px 16px;
+    color: #94a3b8;
+}
+
+.empty-docs-state i {
+    font-size: 32px;
+    color: #cbd5e1;
+    margin-bottom: 8px;
+}
+
+.empty-docs-state p {
+    font-size: 13px;
+    margin: 0;
+}
+
+/* Modal View Document */
+.doc-preview-modal-content {
+    max-width: 700px;
+    width: 90%;
+}
+
+.doc-preview-body {
+    padding: 20px;
+    text-align: center;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.doc-preview-body img {
+    max-width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
 .subtitle {
     color: #64748b;
     font-size: 14px;

@@ -1,26 +1,9 @@
 /**
- * Teacher QR Attendance - Firebase Integration
+ * Teacher QR Attendance - Supabase Integration
+ * Real-time Attendance Generation, Scanning & Logging
  */
 
-import { auth, db } from '../../firebase/config.js';
-import { 
-    onAuthStateChanged,
-    signOut 
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-import {
-    collection,
-    query,
-    where,
-    getDocs,
-    orderBy,
-    limit,
-    doc,
-    getDoc,
-    addDoc,
-    updateDoc,
-    serverTimestamp,
-    onSnapshot
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { supabase } from '../../supabase/config.js';
 
 (function() {
     'use strict';
@@ -35,9 +18,10 @@ import {
     const teacherInitial = document.getElementById('teacherInitial');
     const logoutBtn = document.getElementById('logoutBtn');
 
-    // Date display
+    // Date & Time display
     const dateBadge = document.querySelector('.date-badge');
     const phTimeDisplay = document.getElementById('phTimeDisplay');
+    const lateWarning = document.getElementById('lateWarning');
 
     // Stats
     const totalDays = document.getElementById('totalDays');
@@ -59,134 +43,253 @@ import {
     const stopCameraBtn = document.getElementById('stopCameraBtn');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas ? canvas.getContext('2d') : null;
     const scanResult = document.getElementById('scanResult');
 
     // Alert container
     const alertContainer = document.getElementById('alertContainer');
+    const historyList = document.getElementById('historyList');
 
     // ============================================
     // STATE
     // ============================================
 
-    let currentUser = null;
-    let userData = null;
+    let sessionUser = null;
+    let teacherId = null;
     let currentAttendance = null;
+    let attendanceHistory = [];
     let cameraStream = null;
     let isScanning = false;
+    let scanThrottle = false;
 
     // ============================================
-    // AUTH STATE
+    // SESSION CHECK & AUTH
     // ============================================
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            currentUser = user;
-            console.log('✅ User logged in:', user.email);
-            const displayName = user.displayName || user.email || 'Teacher';
-            const firstName = displayName.split('@')[0];
-            teacherName.textContent = firstName;
-            teacherInitial.textContent = firstName.charAt(0).toUpperCase();
-            
-            // Load user data and dashboard
-            await loadUserData(user.uid);
-            await loadAttendanceData(user.uid);
-            await loadAttendanceHistory(user.uid);
-            await loadStats(user.uid);
-            
-            // Set up real-time listener for attendance
-            setupAttendanceListener(user.uid);
-        } else {
-            console.log('❌ User logged out - redirecting to login');
-            window.location.href = '../auth/login.html';
+    try {
+        const stored = localStorage.getItem('currentUser');
+        if (stored) {
+            sessionUser = JSON.parse(stored);
         }
-    });
+    } catch(e) {
+        console.error('Error reading currentUser:', e);
+    }
+
+    if (!sessionUser) {
+        console.warn('⚠️ No active teacher session, redirecting...');
+        window.location.replace('../auth/login.html');
+        return;
+    }
+
+    if (sessionUser.role && sessionUser.role !== 'teacher' && sessionUser.role !== 'admin') {
+        const routes = {
+            'admin': '../admin/dashboard.html',
+            'student': '../student/dashboard.html',
+            'parent': '../parents/dashboard.html',
+            'registrar': '../registrar/dashboard.html'
+        };
+        window.location.replace(routes[sessionUser.role] || '../auth/login.html');
+        return;
+    }
+
+    teacherId = sessionUser.id || sessionUser.uid;
+    const displayName = sessionUser.firstName ? `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim() : (sessionUser.displayName || (sessionUser.email ? sessionUser.email.split('@')[0] : 'Teacher'));
+    if (teacherName) teacherName.textContent = displayName;
+    if (teacherInitial) teacherInitial.textContent = displayName.charAt(0).toUpperCase();
 
     // ============================================
     // LOGOUT
     // ============================================
 
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
+        logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
-            signOut(auth).then(() => {
-                window.location.href = '../auth/login.html';
-            }).catch((error) => {
-                console.error('Logout error:', error);
-                showAlert('❌ Error logging out: ' + error.message, 'error');
-            });
+            console.log('🚪 Teacher logging out...');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('plsnhs_teacher_avatar');
+            localStorage.removeItem('plsnhs_teacher_name');
+            try {
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                }
+                await supabase.auth.signOut();
+            } catch(err) {}
+            window.location.replace('../auth/login.html');
         });
     }
 
     // ============================================
-    // LOAD USER DATA
+    // DATE & TIME HELPERS
     // ============================================
 
-    async function loadUserData(userId) {
+    function getLocalDateString() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function getLocalTimeString() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
+    }
+
+    function formatTime(timeStr) {
+        if (!timeStr) return '--:--';
         try {
-            const userDoc = await getDoc(doc(db, 'users', userId));
-            if (userDoc.exists()) {
-                userData = userDoc.data();
-                console.log('📋 User data loaded:', userData);
-            }
-        } catch (error) {
-            console.error('Error loading user data:', error);
+            const parts = timeStr.split(':');
+            const h = parseInt(parts[0], 10);
+            const m = parts[1] || '00';
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const h12 = h % 12 || 12;
+            return `${h12}:${m} ${ampm}`;
+        } catch {
+            return timeStr;
         }
     }
 
+    function formatDate(dateStr) {
+        if (!dateStr) return 'N/A';
+        try {
+            const d = new Date(dateStr + 'T00:00:00');
+            if (isNaN(d.getTime())) return dateStr;
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+        } catch {
+            return dateStr;
+        }
+    }
+
+    function updateDateTime() {
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        if (dateBadge) {
+            dateBadge.innerHTML = `<i class="fas fa-calendar-alt"></i> ${now.toLocaleDateString('en-US', options)}`;
+        }
+        if (phTimeDisplay) {
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+            phTimeDisplay.textContent = now.toLocaleDateString('en-US', options) + ' • ' + now.toLocaleTimeString('en-US', timeOptions);
+        }
+
+        // Cutoff warning: after 8:00:00 AM
+        if (lateWarning) {
+            const isLateTime = now.getHours() > 8 || (now.getHours() === 8 && (now.getMinutes() > 0 || now.getSeconds() > 0));
+            lateWarning.style.display = isLateTime ? 'inline-block' : 'none';
+        }
+    }
+
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+
     // ============================================
-    // LOAD ATTENDANCE DATA
+    // SHOW ALERT
     // ============================================
 
-    async function loadAttendanceData(userId) {
+    function showAlert(message, type = 'success') {
+        if (!alertContainer) return;
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : (type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle')}"></i>
+            ${message}
+        `;
+        alertContainer.appendChild(alertDiv);
+
+        setTimeout(() => {
+            alertDiv.style.opacity = '0';
+            setTimeout(() => alertDiv.remove(), 300);
+        }, 5000);
+    }
+
+    // ============================================
+    // LOCAL STORAGE CACHE HELPERS
+    // ============================================
+
+    function getLocalAttendanceCache() {
         try {
-            const today = new Date().toISOString().split('T')[0];
-            const attendanceRef = collection(db, 'teacherAttendance');
-            const q = query(
-                attendanceRef,
-                where('teacherId', '==', userId),
-                where('date', '==', today),
-                orderBy('createdAt', 'desc'),
-                limit(1)
-            );
-            const snapshot = await getDocs(q);
-            
-            if (!snapshot.empty) {
-                const doc = snapshot.docs[0];
-                currentAttendance = { id: doc.id, ...doc.data() };
-                console.log('📋 Attendance loaded:', currentAttendance);
-                updateAttendanceUI();
+            const raw = localStorage.getItem('plsnhs_teacher_attendance_' + teacherId);
+            return raw ? JSON.parse(raw) : [];
+        } catch(e) {
+            return [];
+        }
+    }
+
+    function saveLocalAttendanceCache(records) {
+        try {
+            localStorage.setItem('plsnhs_teacher_attendance_' + teacherId, JSON.stringify(records));
+        } catch(e) {}
+    }
+
+    function syncToAdminAttendance(record) {
+        try {
+            const stored = localStorage.getItem('plsnhs_teacher_attendance');
+            let records = stored ? JSON.parse(stored) : [];
+            const today = getLocalDateString();
+            const timeInFmt = (record.time_in || record.timeIn) ? formatTime(record.time_in || record.timeIn) : '—';
+            const timeOutFmt = (record.time_out || record.timeOut) ? formatTime(record.time_out || record.timeOut) : '—';
+
+            const existingIdx = records.findIndex(r => r.name === displayName && r.date === today);
+            if (existingIdx >= 0) {
+                records[existingIdx].timeIn = timeInFmt;
+                if (record.time_out || record.timeOut) records[existingIdx].timeOut = timeOutFmt;
+                records[existingIdx].status = record.status || 'Present';
             } else {
-                currentAttendance = null;
-                updateAttendanceUI();
+                records.unshift({
+                    id: Date.now(),
+                    name: displayName,
+                    id_number: sessionUser.employee_id || ('PLSNHS-TCH-' + (teacherId ? String(teacherId).substring(0, 6).toUpperCase() : '001')),
+                    dept: sessionUser.department || sessionUser.specialization || 'Faculty',
+                    date: today,
+                    timeIn: timeInFmt,
+                    timeOut: timeOutFmt,
+                    status: record.status || 'Present',
+                    remarks: record.status === 'Late' ? 'Late arrival' : 'On time'
+                });
             }
-        } catch (error) {
-            console.error('Error loading attendance data:', error);
-        }
+            localStorage.setItem('plsnhs_teacher_attendance', JSON.stringify(records));
+        } catch(e) {}
     }
 
     // ============================================
-    // SETUP ATTENDANCE LISTENER
+    // LOAD ATTENDANCE DATA FROM SUPABASE
     // ============================================
 
-    function setupAttendanceListener(userId) {
-        const today = new Date().toISOString().split('T')[0];
-        const attendanceRef = collection(db, 'teacherAttendance');
-        const q = query(
-            attendanceRef,
-            where('teacherId', '==', userId),
-            where('date', '==', today)
-        );
+    async function loadAttendanceData() {
+        const today = getLocalDateString();
+        let loadedRecords = [];
 
-        onSnapshot(q, (snapshot) => {
-            if (!snapshot.empty) {
-                const doc = snapshot.docs[0];
-                currentAttendance = { id: doc.id, ...doc.data() };
-                updateAttendanceUI();
+        try {
+            const { data, error } = await supabase
+                .from('attendance')
+                .select('*')
+                .eq('teacher_id', teacherId)
+                .order('date', { ascending: false });
+
+            if (!error && data) {
+                loadedRecords = data;
+                saveLocalAttendanceCache(data);
+            } else {
+                console.warn('Using local attendance cache:', error?.message);
+                loadedRecords = getLocalAttendanceCache();
             }
-        }, (error) => {
-            console.error('Error listening to attendance:', error);
-        });
+        } catch(err) {
+            console.warn('Network error, falling back to cache:', err);
+            loadedRecords = getLocalAttendanceCache();
+        }
+
+        attendanceHistory = loadedRecords;
+
+        // Find today's record
+        currentAttendance = loadedRecords.find(r => r.date === today) || null;
+        console.log("📋 Today's attendance:", currentAttendance);
+
+        updateAttendanceUI();
+        renderHistory();
+        updateStats();
     }
 
     // ============================================
@@ -194,13 +297,15 @@ import {
     // ============================================
 
     function updateAttendanceUI() {
-        if (!currentAttendance) {
-            document.querySelector('.attendance-info').style.display = 'none';
+        if (!qrContainer) return;
+
+        if (!currentAttendance || (!currentAttendance.time_in && !currentAttendance.timeIn)) {
+            if (attendanceInfo) attendanceInfo.style.display = 'none';
             qrContainer.innerHTML = `
                 <div class="qr-container">
                     <h3><i class="fas fa-qrcode"></i> Time In QR Code</h3>
                     <p>Generate a QR code to record your Time In</p>
-                    <div class="qr-actions" style="text-align: center; padding: 30px;">
+                    <div class="qr-actions" style="text-align: center; padding: 25px 15px;">
                         <button onclick="window.generateQR('time_in')" class="btn-generate-timein">
                             <i class="fas fa-qrcode"></i> Generate Time In QR Code
                         </button>
@@ -214,58 +319,51 @@ import {
             return;
         }
 
-        const timeIn = currentAttendance.timeIn;
-        const timeOut = currentAttendance.timeOut;
-        const status = currentAttendance.status || 'Pending';
+        const timeIn = currentAttendance.time_in || currentAttendance.timeIn;
+        const timeOut = currentAttendance.time_out || currentAttendance.timeOut;
+        const status = currentAttendance.status || 'Present';
 
-        // Show attendance info
-        document.querySelector('.attendance-info').style.display = 'block';
-        timeInDisplay.textContent = timeIn ? formatTime(timeIn) : 'Not yet recorded';
-        timeOutDisplay.textContent = timeOut ? formatTime(timeOut) : 'Not yet recorded';
-        statusDisplay.innerHTML = `<span class="status-badge status-${status}">${status}</span>`;
+        if (attendanceInfo) {
+            attendanceInfo.style.display = 'block';
+            if (timeInDisplay) timeInDisplay.textContent = timeIn ? formatTime(timeIn) : 'Not yet recorded';
+            if (timeOutDisplay) timeOutDisplay.textContent = timeOut ? formatTime(timeOut) : 'Not yet recorded';
+            if (statusDisplay) statusDisplay.innerHTML = `<span class="status-badge status-${status}">${status}</span>`;
+        }
 
-        // Update QR section
         const isCompleted = timeIn && timeOut;
-        const hasTimeIn = timeIn && !timeOut;
+        const hasTimeInOnly = timeIn && !timeOut;
 
         if (isCompleted) {
             qrContainer.innerHTML = `
                 <div class="qr-container">
                     <i class="fas fa-check-circle success-icon"></i>
-                    <h3>Attendance Completed for Today</h3>
-                    <p>You have already recorded both Time In and Time Out.</p>
-                    <p><strong>Time In:</strong> ${formatTime(timeIn)}</p>
-                    <p><strong>Time Out:</strong> ${formatTime(timeOut)}</p>
-                    <p class="info-text">You can generate a new QR code tomorrow for the next attendance day.</p>
+                    <h3 style="color: var(--success); font-size: 1.4rem;">Attendance Completed for Today</h3>
+                    <p style="margin: 8px 0;">You have successfully recorded both Time In and Time Out for today.</p>
+                    <div style="background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 15px; max-width: 320px; margin: 15px auto; text-align: left;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                            <strong>⏰ Time In:</strong> <span>${formatTime(timeIn)}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 6px;">
+                            <strong>⏰ Time Out:</strong> <span>${formatTime(timeOut)}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <strong>📊 Status:</strong> <span class="status-badge status-${status}">${status}</span>
+                        </div>
+                    </div>
+                    <p class="info-text"><i class="fas fa-calendar-check"></i> You can generate a new QR code tomorrow for the next school day.</p>
                 </div>
             `;
-        } else if (hasTimeIn) {
+        } else if (hasTimeInOnly) {
             qrContainer.innerHTML = `
                 <div class="qr-container">
                     <h3><i class="fas fa-qrcode"></i> Time Out QR Code</h3>
-                    <p>Your Time In has been recorded. Generate a QR code for Time Out.</p>
-                    <div class="qr-actions" style="text-align: center; padding: 20px;">
+                    <p>Your Time In was recorded at <strong>${formatTime(timeIn)}</strong>. Generate a QR code for Time Out when leaving.</p>
+                    <div class="qr-actions" style="text-align: center; padding: 25px 15px;">
                         <button onclick="window.generateQR('time_out')" class="btn-generate-timeout">
                             <i class="fas fa-qrcode"></i> Generate Time Out QR Code
                         </button>
                         <p class="info-text" style="margin-top: 15px;">
-                            <i class="fas fa-info-circle"></i> Generate a QR code to record your Time Out. This will expire in 30 minutes.
-                        </p>
-                    </div>
-                </div>
-            `;
-        } else {
-            qrContainer.innerHTML = `
-                <div class="qr-container">
-                    <h3><i class="fas fa-qrcode"></i> Time In QR Code</h3>
-                    <p>Generate a QR code to record your Time In</p>
-                    <div class="qr-actions" style="text-align: center; padding: 30px;">
-                        <button onclick="window.generateQR('time_in')" class="btn-generate-timein">
-                            <i class="fas fa-qrcode"></i> Generate Time In QR Code
-                        </button>
-                        <p class="info-text" style="margin-top: 15px;">
-                            <i class="fas fa-info-circle"></i> Generate a QR code to record your Time In. This will expire in 30 minutes.
-                            <br><strong class="text-warning">⚠️ Note: Time In after 8:00 AM will be marked as LATE</strong>
+                            <i class="fas fa-info-circle"></i> Generate a QR code to record your Time Out at the end of the day.
                         </p>
                     </div>
                 </div>
@@ -274,196 +372,264 @@ import {
     }
 
     // ============================================
-    // LOAD ATTENDANCE HISTORY
+    // RENDER ATTENDANCE HISTORY
     // ============================================
 
-    async function loadAttendanceHistory(userId) {
-        try {
-            const attendanceRef = collection(db, 'teacherAttendance');
-            const q = query(
-                attendanceRef,
-                where('teacherId', '==', userId),
-                orderBy('date', 'desc'),
-                limit(10)
-            );
-            const snapshot = await getDocs(q);
-            
-            const historyList = document.getElementById('historyList');
-            
-            if (snapshot.empty) {
-                historyList.innerHTML = `
-                    <div class="no-data">
-                        <i class="fas fa-calendar-alt"></i>
-                        <p>No attendance records found</p>
-                        <p class="info-text">Generate a QR code to start recording your attendance</p>
-                    </div>
-                `;
-                return;
-            }
+    function renderHistory() {
+        if (!historyList) return;
 
-            let html = `<div class="table-container"><table class="data-table"><thead><tr>
-                <th>Date</th><th>Time In</th><th>Time Out</th><th>Status</th>
-            </tr></thead><tbody>`;
-
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                const date = data.date || 'N/A';
-                const timeIn = data.timeIn ? formatTime(data.timeIn) : '--:--';
-                const timeOut = data.timeOut ? formatTime(data.timeOut) : '--:--';
-                const status = data.status || 'Pending';
-
-                html += `
-                    <tr>
-                        <td>${formatDate(date)}</td>
-                        <td>${timeIn}</td>
-                        <td>${timeOut}</td>
-                        <td><span class="status-badge status-${status}">${status}</span></td>
-                    </tr>
-                `;
-            });
-
-            html += '</tbody></table></div>';
-            historyList.innerHTML = html;
-
-        } catch (error) {
-            console.error('Error loading attendance history:', error);
+        if (!attendanceHistory || attendanceHistory.length === 0) {
+            historyList.innerHTML = `
+                <div class="no-data">
+                    <i class="fas fa-calendar-alt"></i>
+                    <p>No attendance records found</p>
+                    <p class="info-text">Generate a QR code or scan to start recording your attendance</p>
+                </div>
+            `;
+            return;
         }
+
+        const recent = attendanceHistory.slice(0, 10);
+        let html = `
+            <div class="table-container">
+                <table class="data-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--gray-100); text-align: left;">
+                            <th style="padding: 12px 16px; border-bottom: 1px solid var(--gray-200);">Date</th>
+                            <th style="padding: 12px 16px; border-bottom: 1px solid var(--gray-200);">Time In</th>
+                            <th style="padding: 12px 16px; border-bottom: 1px solid var(--gray-200);">Time Out</th>
+                            <th style="padding: 12px 16px; border-bottom: 1px solid var(--gray-200);">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        recent.forEach(record => {
+            const date = record.date || 'N/A';
+            const timeIn = record.time_in || record.timeIn ? formatTime(record.time_in || record.timeIn) : '--:--';
+            const timeOut = record.time_out || record.timeOut ? formatTime(record.time_out || record.timeOut) : '--:--';
+            const status = record.status || 'Present';
+
+            html += `
+                <tr style="border-bottom: 1px solid var(--gray-100);">
+                    <td style="padding: 12px 16px; font-weight: 500;">${formatDate(date)}</td>
+                    <td style="padding: 12px 16px;">${timeIn}</td>
+                    <td style="padding: 12px 16px;">${timeOut}</td>
+                    <td style="padding: 12px 16px;"><span class="status-badge status-${status}">${status}</span></td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        historyList.innerHTML = html;
     }
 
     // ============================================
-    // LOAD STATS
+    // UPDATE STATS
     // ============================================
 
-    async function loadStats(userId) {
-        try {
-            const attendanceRef = collection(db, 'teacherAttendance');
-            const q = query(attendanceRef, where('teacherId', '==', userId));
-            const snapshot = await getDocs(q);
-            
-            let total = 0;
-            let present = 0;
-            let late = 0;
-            let absent = 0;
+    function updateStats() {
+        let total = attendanceHistory.length;
+        let present = 0;
+        let late = 0;
+        let absent = 0;
 
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                total++;
-                if (data.status === 'Present') present++;
-                else if (data.status === 'Late') late++;
-                else if (data.status === 'Absent') absent++;
-            });
+        attendanceHistory.forEach(item => {
+            const st = (item.status || '').toLowerCase();
+            if (st === 'present') present++;
+            else if (st === 'late') late++;
+            else if (st === 'absent') absent++;
+            else present++; // default to present if completed
+        });
 
-            totalDays.textContent = total;
-            presentDays.textContent = present;
-            lateDays.textContent = late;
-            absentDays.textContent = absent;
-
-        } catch (error) {
-            console.error('Error loading stats:', error);
-        }
+        if (totalDays) totalDays.textContent = total;
+        if (presentDays) presentDays.textContent = present;
+        if (lateDays) lateDays.textContent = late;
+        if (absentDays) absentDays.textContent = absent;
     }
 
     // ============================================
     // GENERATE QR CODE
     // ============================================
 
-    window.generateQR = async function(type) {
-        if (!currentUser) {
+    window.generateQR = function(type) {
+        if (!sessionUser) {
             showAlert('⚠️ Please login first', 'error');
             return;
         }
 
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            
-            // Check if attendance already completed
-            if (currentAttendance && currentAttendance.timeIn && currentAttendance.timeOut) {
-                showAlert('⚠️ Attendance already completed for today', 'error');
-                return;
-            }
+        const today = getLocalDateString();
+        const timeIn = currentAttendance ? (currentAttendance.time_in || currentAttendance.timeIn) : null;
+        const timeOut = currentAttendance ? (currentAttendance.time_out || currentAttendance.timeOut) : null;
 
-            // Check if time in already recorded for time_in generation
-            if (type === 'time_in' && currentAttendance && currentAttendance.timeIn) {
-                showAlert('⚠️ Time In already recorded for today', 'error');
-                return;
-            }
+        if (timeIn && timeOut) {
+            showAlert('⚠️ Attendance is already completed for today', 'warning');
+            return;
+        }
 
-            // Check if time out already recorded for time_out generation
-            if (type === 'time_out' && currentAttendance && currentAttendance.timeOut) {
-                showAlert('⚠️ Time Out already recorded for today', 'error');
-                return;
-            }
+        if (type === 'time_in' && timeIn) {
+            showAlert('⚠️ Time In is already recorded for today', 'warning');
+            return;
+        }
 
-            // Check if time in is required for time out
-            if (type === 'time_out' && !currentAttendance?.timeIn) {
-                showAlert('⚠️ Please record Time In first before generating Time Out QR code', 'error');
-                return;
-            }
+        if (type === 'time_out' && !timeIn) {
+            showAlert('⚠️ Please record Time In first before generating Time Out QR code', 'warning');
+            return;
+        }
 
-            // Generate QR token
-            const token = btoa(`${currentUser.uid}_${today}_${type}_${Date.now()}`);
-            const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+        // Generate token payload
+        const payload = {
+            system: 'PLSNHS_QR_ATTENDANCE',
+            teacher_id: teacherId,
+            teacher_name: displayName,
+            action: type,
+            date: today,
+            timestamp: Date.now()
+        };
 
-            if (currentAttendance) {
-                // Update existing attendance
-                await updateDoc(doc(db, 'teacherAttendance', currentAttendance.id), {
-                    qrToken: token,
-                    sessionStatus: 'active',
-                    expiresAt: expiresAt,
-                    sessionType: type,
-                    updatedAt: serverTimestamp()
-                });
-            } else {
-                // Create new attendance record
-                const docRef = await addDoc(collection(db, 'teacherAttendance'), {
-                    teacherId: currentUser.uid,
-                    date: today,
-                    qrToken: token,
-                    sessionStatus: 'active',
-                    expiresAt: expiresAt,
-                    sessionType: type,
-                    status: 'Pending',
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                });
-                currentAttendance = { id: docRef.id };
-            }
+        const qrDataString = JSON.stringify(payload);
+        const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(qrDataString)}`;
 
-            // Generate QR URL
-            const qrUrl = `${window.location.origin}/scan?token=${token}`;
-            
-            // Show QR code
-            const qrContainer = document.getElementById('qrDisplay');
-            qrContainer.innerHTML = `
+        const actionTitle = type === 'time_in' ? 'Time In' : 'Time Out';
+        const now = new Date();
+        const isLateTime = now.getHours() > 8 || (now.getHours() === 8 && (now.getMinutes() > 0 || now.getSeconds() > 0));
+
+        qrContainer.innerHTML = `
+            <div class="qr-container" style="animation: fadeIn 0.4s ease;">
+                <h3><i class="fas fa-qrcode"></i> ${actionTitle} QR Code</h3>
+                <p>Scan this QR code using the camera scanner or click "Record ${actionTitle} Now"</p>
+                
                 <div class="qr-code">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrUrl)}" alt="QR Code">
+                    <img src="${qrCodeUrl}" alt="${actionTitle} QR Code" style="width: 220px; height: 220px;">
                 </div>
-                <div class="qr-info">
-                    <h4>Scan this QR Code to Record ${type === 'time_in' ? 'Time In' : 'Time Out'}</h4>
-                    <p>📱 Scan this QR code using your phone or the camera above</p>
-                    <p class="expiry-text"><i class="fas fa-clock"></i> Expires in 30 minutes</p>
-                    <button onclick="window.generateQR('${type}')" class="btn-generate-${type === 'time_in' ? 'timein' : 'timeout'}" style="margin-top: 10px;">
-                        <i class="fas fa-sync-alt"></i> Generate New QR Code
-                    </button>
-                </div>
-            `;
 
-            showAlert('✅ QR Code generated successfully!', 'success');
+                <div class="qr-info">
+                    <h4>${displayName} — ${actionTitle}</h4>
+                    <p>📱 Use the camera scanner above or another device to scan</p>
+                    ${type === 'time_in' && isLateTime ? '<p class="expiry-text" style="color:var(--danger)!important;"><i class="fas fa-exclamation-triangle"></i> Note: Current time is past 8:00 AM, will be marked as LATE</p>' : ''}
+                    <p class="expiry-text"><i class="fas fa-clock"></i> Valid for today (${formatDate(today)})</p>
+                    
+                    <div style="display:flex; justify-content:center; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
+                        <button onclick="window.recordAttendance('${type}')" class="btn-scanner" style="background: var(--success); font-size: 0.95rem; padding: 10px 20px;">
+                            <i class="fas fa-check-circle"></i> Confirm / Record ${actionTitle} Now
+                        </button>
+                        <button onclick="window.generateQR('${type}')" class="btn-scanner" style="background: var(--gray-700); font-size: 0.95rem; padding: 10px 18px;">
+                            <i class="fas fa-sync-alt"></i> Refresh QR
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        showAlert(`✅ ${actionTitle} QR code generated! You can scan it or click Confirm to record.`, 'success');
+    };
+
+    // ============================================
+    // RECORD ATTENDANCE FUNCTION
+    // ============================================
+
+    window.recordAttendance = async function(type) {
+        const today = getLocalDateString();
+        const currentTime = getLocalTimeString();
+        const now = new Date();
+        const isLate = now.getHours() > 8 || (now.getHours() === 8 && (now.getMinutes() > 0 || now.getSeconds() > 0));
+        const status = (type === 'time_in') ? (isLate ? 'Late' : 'Present') : (currentAttendance?.status || 'Present');
+
+        try {
+            let updatedRecord = null;
+
+            if (currentAttendance && currentAttendance.id) {
+                // Update existing record
+                const updates = {};
+                if (type === 'time_in') {
+                    updates.time_in = currentTime;
+                    updates.status = status;
+                } else {
+                    updates.time_out = currentTime;
+                }
+
+                const { data, error } = await supabase
+                    .from('attendance')
+                    .update(updates)
+                    .eq('id', currentAttendance.id)
+                    .select();
+
+                if (!error && data && data.length > 0) {
+                    updatedRecord = data[0];
+                } else {
+                    // Update locally
+                    updatedRecord = {
+                        ...currentAttendance,
+                        ...updates
+                    };
+                }
+            } else {
+                // Insert new record
+                const newRow = {
+                    teacher_id: teacherId,
+                    date: today,
+                    time_in: type === 'time_in' ? currentTime : null,
+                    time_out: type === 'time_out' ? currentTime : null,
+                    status: status,
+                    created_at: new Date().toISOString()
+                };
+
+                const { data, error } = await supabase
+                    .from('attendance')
+                    .insert([newRow])
+                    .select();
+
+                if (!error && data && data.length > 0) {
+                    updatedRecord = data[0];
+                } else {
+                    // Fallback locally with generated id
+                    newRow.id = 'local_' + Date.now();
+                    updatedRecord = newRow;
+                }
+            }
+
+            // Update in-memory history and cache
+            const existingIdx = attendanceHistory.findIndex(r => r.date === today);
+            if (existingIdx >= 0) {
+                attendanceHistory[existingIdx] = updatedRecord;
+            } else {
+                attendanceHistory.unshift(updatedRecord);
+            }
+            saveLocalAttendanceCache(attendanceHistory);
+            syncToAdminAttendance(updatedRecord);
+
+            currentAttendance = updatedRecord;
+
+            const timeFormatted = formatTime(currentTime);
+            const actionTitle = type === 'time_in' ? 'Time In' : 'Time Out';
+            showAlert(`🎉 ${actionTitle} recorded at ${timeFormatted} (${status})!`, 'success');
+
+            if (scanResult) {
+                scanResult.className = 'scan-result success';
+                scanResult.innerHTML = `<strong><i class="fas fa-check-circle"></i> Success!</strong> ${actionTitle} recorded for ${displayName} at ${timeFormatted} (Status: ${status}).`;
+            }
+
+            updateAttendanceUI();
+            renderHistory();
+            updateStats();
 
         } catch (error) {
-            console.error('Error generating QR:', error);
-            showAlert('❌ Failed to generate QR code: ' + error.message, 'error');
+            console.error('Error recording attendance:', error);
+            showAlert('❌ Failed to record attendance: ' + error.message, 'error');
         }
     };
 
     // ============================================
-    // QR SCANNER
+    // QR SCANNER (CAMERA & IMAGE)
     // ============================================
 
-    // Load jsQR library dynamically
     function loadJsQR() {
         return new Promise((resolve, reject) => {
-            if (typeof jsQR !== 'undefined') {
+            if (typeof window.jsQR !== 'undefined') {
                 resolve();
                 return;
             }
@@ -478,20 +644,28 @@ import {
     window.startCamera = async function() {
         try {
             await loadJsQR();
-            
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showAlert('❌ Camera not supported by this browser', 'error');
+                return;
+            }
+
             const constraints = {
                 video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }
             };
 
             cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
-            video.srcObject = cameraStream;
-            await video.play();
+            if (video) {
+                video.srcObject = cameraStream;
+                await video.play();
+            }
 
-            startCameraBtn.style.display = 'none';
-            stopCameraBtn.style.display = 'inline-block';
+            if (startCameraBtn) startCameraBtn.style.display = 'none';
+            if (stopCameraBtn) stopCameraBtn.style.display = 'inline-block';
             isScanning = true;
 
             scanQRCode();
+            showAlert('📷 Camera started. Point at your QR code.', 'success');
 
         } catch (error) {
             console.error('Camera error:', error);
@@ -504,68 +678,78 @@ import {
             cameraStream.getTracks().forEach(track => track.stop());
             cameraStream = null;
         }
-        video.srcObject = null;
-        startCameraBtn.style.display = 'inline-block';
-        stopCameraBtn.style.display = 'none';
+        if (video) {
+            video.srcObject = null;
+        }
+        if (startCameraBtn) startCameraBtn.style.display = 'inline-block';
+        if (stopCameraBtn) stopCameraBtn.style.display = 'none';
         isScanning = false;
     };
 
     function scanQRCode() {
         if (!isScanning) return;
 
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        if (video && video.readyState === video.HAVE_ENOUGH_DATA && canvas && ctx) {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                inversionAttempts: 'dontInvert',
-            });
 
-            if (code && code.data) {
-                handleScannedData(code.data);
-                return;
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            if (typeof window.jsQR === 'function') {
+                const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: 'dontInvert',
+                });
+
+                if (code && code.data && !scanThrottle) {
+                    scanThrottle = true;
+                    setTimeout(() => { scanThrottle = false; }, 2000);
+                    handleScannedData(code.data);
+                    window.stopCamera();
+                    return;
+                }
             }
         }
 
-        requestAnimationFrame(scanQRCode);
+        if (isScanning) {
+            requestAnimationFrame(scanQRCode);
+        }
     }
 
     function handleScannedData(data) {
+        console.log('🔍 QR Data scanned:', data);
         try {
-            const url = new URL(data);
-            const token = url.searchParams.get('token');
-            
-            if (token) {
-                showAlert('✅ QR Code detected! Processing...', 'success');
-                processAttendance(token);
-                stopCamera();
-            } else {
-                showAlert('⚠️ Invalid QR code. Please scan the correct attendance QR.', 'warning');
+            let parsed = null;
+            try {
+                parsed = JSON.parse(data);
+            } catch(e) {
+                // Check url params
+                if (data.includes('token=')) {
+                    const url = new URL(data);
+                    const token = url.searchParams.get('token');
+                    if (token) {
+                        const decoded = atob(token);
+                        const parts = decoded.split('_');
+                        parsed = { action: parts[2] || 'time_in' };
+                    }
+                }
             }
-        } catch (error) {
-            // If it's not a URL, try to use as direct token
-            if (data.length > 20) {
-                showAlert('✅ QR Code detected! Processing...', 'success');
-                processAttendance(data);
-                stopCamera();
-            } else {
-                showAlert('⚠️ Invalid QR code. Please try again.', 'warning');
-            }
-        }
-    }
 
-    function processAttendance(token) {
-        // In a real app, you'd verify the token with Firebase
-        showAlert('✅ Attendance recorded successfully!', 'success');
-        
-        // Refresh attendance data
-        setTimeout(() => {
-            loadAttendanceData(currentUser.uid);
-            loadAttendanceHistory(currentUser.uid);
-            loadStats(currentUser.uid);
-        }, 1000);
+            if (parsed && (parsed.action === 'time_in' || parsed.action === 'time_out')) {
+                showAlert(`✅ QR Code detected! Recording ${parsed.action === 'time_in' ? 'Time In' : 'Time Out'}...`, 'success');
+                window.recordAttendance(parsed.action);
+            } else if (parsed && parsed.system === 'PLSNHS_QR_ATTENDANCE') {
+                const action = parsed.action || 'time_in';
+                window.recordAttendance(action);
+            } else {
+                // If simple string containing time_in or time_out
+                const action = (data.toLowerCase().includes('time_out') || (currentAttendance && currentAttendance.time_in)) ? 'time_out' : 'time_in';
+                showAlert(`✅ QR scanned! Recording ${action === 'time_in' ? 'Time In' : 'Time Out'}...`, 'success');
+                window.recordAttendance(action);
+            }
+        } catch(err) {
+            console.error('Error handling scanned data:', err);
+            showAlert('⚠️ Scanned QR is not valid for attendance', 'warning');
+        }
     }
 
     // ============================================
@@ -580,123 +764,68 @@ import {
         tabs.forEach(t => t.classList.remove('active'));
 
         if (tab === 'camera') {
-            cameraTab.classList.add('active-tab');
-            uploadTab.classList.remove('active-tab');
-            tabs[0].classList.add('active');
+            if (cameraTab) cameraTab.classList.add('active-tab');
+            if (uploadTab) uploadTab.classList.remove('active-tab');
+            if (tabs[0]) tabs[0].classList.add('active');
         } else {
-            uploadTab.classList.add('active-tab');
-            cameraTab.classList.remove('active-tab');
-            tabs[1].classList.add('active');
-            // Stop camera if running
-            if (isScanning) stopCamera();
+            if (uploadTab) uploadTab.classList.add('active-tab');
+            if (cameraTab) cameraTab.classList.remove('active-tab');
+            if (tabs[1]) tabs[1].classList.add('active');
+            if (isScanning) window.stopCamera();
         }
     };
 
     // ============================================
-    // UPLOAD IMAGE
+    // UPLOAD IMAGE SCANNER
     // ============================================
 
-    window.uploadImage = function(input) {
+    window.uploadImage = async function(input) {
         const file = input.files[0];
         if (!file) return;
 
+        await loadJsQR();
+
         const reader = new FileReader();
         reader.onload = function(e) {
-            const img = document.getElementById('previewImg');
+            const previewImg = document.getElementById('previewImg');
+            const previewImage = document.getElementById('previewImage');
+            if (previewImg && previewImage) {
+                previewImg.src = e.target.result;
+                previewImage.style.display = 'block';
+            }
+
+            const img = new Image();
+            img.onload = function() {
+                const canvas2 = document.createElement('canvas');
+                const ctx2 = canvas2.getContext('2d');
+                canvas2.width = img.naturalWidth || img.width;
+                canvas2.height = img.naturalHeight || img.height;
+                ctx2.drawImage(img, 0, 0, canvas2.width, canvas2.height);
+
+                const imageData = ctx2.getImageData(0, 0, canvas2.width, canvas2.height);
+                if (typeof window.jsQR === 'function') {
+                    const code = window.jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: 'dontInvert',
+                    });
+
+                    if (code && code.data) {
+                        handleScannedData(code.data);
+                    } else {
+                        showAlert('⚠️ No QR code recognized in the uploaded image. Please try a clearer picture.', 'warning');
+                    }
+                }
+            };
             img.src = e.target.result;
-            document.getElementById('previewImage').style.display = 'block';
-            
-            // Process the image for QR code
-            processQRImage(img);
         };
         reader.readAsDataURL(file);
     };
 
-    function processQRImage(img) {
-        const canvas2 = document.createElement('canvas');
-        const ctx2 = canvas2.getContext('2d');
-        canvas2.width = img.naturalWidth || img.width;
-        canvas2.height = img.naturalHeight || img.height;
-        ctx2.drawImage(img, 0, 0, canvas2.width, canvas2.height);
-
-        const imageData = ctx2.getImageData(0, 0, canvas2.width, canvas2.height);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: 'dontInvert',
-        });
-
-        if (code && code.data) {
-            handleScannedData(code.data);
-        } else {
-            showAlert('⚠️ No QR code found in the image. Please try again.', 'warning');
-        }
-    }
-
     // ============================================
-    // HELPERS
+    // INITIAL LOAD
     // ============================================
 
-    function formatTime(timeStr) {
-        if (!timeStr) return '--:--';
-        try {
-            const [hours, minutes] = timeStr.split(':');
-            const h = parseInt(hours);
-            const ampm = h >= 12 ? 'PM' : 'AM';
-            const h12 = h % 12 || 12;
-            return `${h12}:${minutes} ${ampm}`;
-        } catch {
-            return timeStr;
-        }
-    }
+    loadAttendanceData();
 
-    function formatDate(dateStr) {
-        if (!dateStr) return 'N/A';
-        try {
-            const parts = dateStr.split('-');
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            return `${months[parseInt(parts[1]) - 1]} ${parseInt(parts[2])}, ${parts[0]}`;
-        } catch {
-            return dateStr;
-        }
-    }
-
-    // ============================================
-    // SET CURRENT DATE AND TIME
-    // ============================================
-
-    function updateDateTime() {
-        const now = new Date();
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        if (dateBadge) {
-            dateBadge.innerHTML = `<i class="fas fa-calendar-alt"></i> ${now.toLocaleDateString('en-US', options)}`;
-        }
-        if (phTimeDisplay) {
-            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true };
-            phTimeDisplay.textContent = now.toLocaleDateString('en-US', options) + ' - ' + now.toLocaleTimeString('en-US', timeOptions);
-        }
-    }
-
-    updateDateTime();
-    setInterval(updateDateTime, 60000);
-
-    // ============================================
-    // ALERT SYSTEM
-    // ============================================
-
-    function showAlert(message, type = 'success') {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        alertDiv.innerHTML = `
-            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-            ${message}
-        `;
-        alertContainer.appendChild(alertDiv);
-
-        setTimeout(() => {
-            alertDiv.style.opacity = '0';
-            setTimeout(() => alertDiv.remove(), 300);
-        }, 5000);
-    }
-
-    console.log('✅ QR Attendance ready!');
+    console.log('✅ Teacher QR Attendance fully loaded with Supabase');
 
 })();

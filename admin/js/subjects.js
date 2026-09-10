@@ -1,420 +1,269 @@
-// ===== SUBJECTS JAVASCRIPT =====
+/**
+ * PLSNHS Admin - Subjects Management
+ */
 
-document.addEventListener('DOMContentLoaded', function() {
-    // DOM Elements
+import { supabase } from '../../supabase/config.js';
+
+(function() {
+    'use strict';
+
+    console.log('📚 Admin Subjects page ready');
+
+    // ============================================
+    // CHECK ADMIN SESSION
+    // ============================================
+
+    const currentUserStr = localStorage.getItem('currentUser');
+
+    if (!currentUserStr) {
+        console.warn('⚠️ No session, redirecting to login...');
+        window.location.replace('../auth/login.html');
+        return;
+    }
+
+    let currentUser;
+    try {
+        currentUser = JSON.parse(currentUserStr);
+    } catch (e) {
+        localStorage.removeItem('currentUser');
+        window.location.replace('../auth/login.html');
+        return;
+    }
+
+    if (currentUser.role !== 'admin') {
+        console.warn('⚠️ Not admin, redirecting...');
+        const routes = {
+            'teacher': '../teacher/dashboard.html',
+            'student': '../student/dashboard.html',
+            'parent': '../parents/dashboard.html',
+            'registrar': '../registrar/dashboard.html'
+        };
+        window.location.replace(routes[currentUser.role] || '../auth/login.html');
+        return;
+    }
+
+    console.log('✅ Admin session verified:', currentUser.email);
+
+    // ============================================
+    // DOM ELEMENTS
+    // ============================================
+
+    const adminAvatar = document.getElementById('adminAvatar');
+    const adminName = document.getElementById('adminName');
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+
     const alertContainer = document.getElementById('alertContainer');
-    const subjectsContainer = document.getElementById('subjectsContainer');
-    const gradeCards = document.getElementById('gradeCards');
-    const filterForm = document.getElementById('filterForm');
-    const gradeSelect = document.getElementById('gradeSelect');
-    const strandSelect = document.getElementById('strandSelect');
-    const strandFilterGroup = document.getElementById('strandFilterGroup');
+    const totalSubjectsEl = document.getElementById('totalSubjects');
+    const jhsSubjectsEl = document.getElementById('jhsSubjects');
+    const shsSubjectsEl = document.getElementById('shsSubjects');
+    const totalStrandsEl = document.getElementById('totalStrands');
+
+    const gradeCardsContainer = document.getElementById('gradeCards');
+    const gradeFilter = document.getElementById('gradeFilter');
+    const strandFilterWrapper = document.getElementById('strandFilterWrapper');
+    const strandFilter = document.getElementById('strandFilter');
     const searchInput = document.getElementById('searchInput');
+    const resetBtn = document.getElementById('resetBtn');
+    const subjectsContainer = document.getElementById('subjectsContainer');
 
-    // Modal Elements
-    const addModal = document.getElementById('addModal');
     const editModal = document.getElementById('editModal');
-    const viewModal = document.getElementById('viewModal');
-    const addForm = document.getElementById('addSubjectForm');
-    const editForm = document.getElementById('editSubjectForm');
+    const closeEditModal = document.getElementById('closeEditModal');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const editSubjectForm = document.getElementById('editSubjectForm');
+    const editSubjectId = document.getElementById('editSubjectId');
+    const editSubjectName = document.getElementById('editSubjectName');
+    const editGradeId = document.getElementById('editGradeId');
+    const editStrandGroup = document.getElementById('editStrandGroup');
+    const editStrand = document.getElementById('editStrand');
+    const editDescription = document.getElementById('editDescription');
 
-    // ===== DATA =====
+    // ============================================
+    // DISPLAY ADMIN INFO
+    // ============================================
 
-    // Sample subjects data
-    let subjects = [
-        { id: 1, subject_name: 'Mathematics', grade_id: 1, grade_name: 'Grade 7', strand: null, description: 'Basic arithmetic, algebra, and geometry' },
-        { id: 2, subject_name: 'Science', grade_id: 1, grade_name: 'Grade 7', strand: null, description: 'Introduction to scientific method and basic sciences' },
-        { id: 3, subject_name: 'English', grade_id: 1, grade_name: 'Grade 7', strand: null, description: 'English grammar, reading, and writing' },
-        { id: 4, subject_name: 'Mathematics', grade_id: 2, grade_name: 'Grade 8', strand: null, description: 'Intermediate algebra and geometry' },
-        { id: 5, subject_name: 'Science', grade_id: 2, grade_name: 'Grade 8', strand: null, description: 'Biology, chemistry, and physics basics' },
-        { id: 6, subject_name: 'Mathematics', grade_id: 3, grade_name: 'Grade 9', strand: null, description: 'Advanced algebra and trigonometry' },
-        { id: 7, subject_name: 'Science', grade_id: 3, grade_name: 'Grade 9', strand: null, description: 'Earth science and environmental studies' },
-        { id: 8, subject_name: 'Mathematics', grade_id: 4, grade_name: 'Grade 10', strand: null, description: 'Geometry and statistics' },
-        { id: 9, subject_name: 'English', grade_id: 4, grade_name: 'Grade 10', strand: null, description: 'Advanced reading and writing' },
-        { id: 10, subject_name: 'General Mathematics', grade_id: 5, grade_name: 'Grade 11', strand: 'GAS', description: 'Basic mathematics for general academic strand' },
-        { id: 11, subject_name: 'Statistics and Probability', grade_id: 5, grade_name: 'Grade 11', strand: 'TVL-Cookery', description: 'Basic statistics and probability' },
-        { id: 12, subject_name: 'Earth Science', grade_id: 5, grade_name: 'Grade 11', strand: 'GAS', description: 'Earth science fundamentals' },
-        { id: 13, subject_name: 'Physical Science', grade_id: 5, grade_name: 'Grade 11', strand: 'HUMMS', description: 'Physical science basics' },
-        { id: 14, subject_name: '21st Century Literature', grade_id: 6, grade_name: 'Grade 12', strand: 'HUMMS', description: '21st century literature studies' },
-        { id: 15, subject_name: 'Introduction to Philosophy', grade_id: 6, grade_name: 'Grade 12', strand: 'HUMMS', description: 'Introduction to philosophy' }
+    let adminFirstName = currentUser.firstName || currentUser.first_name || 'Justine';
+    if (adminFirstName.toLowerCase().includes('mylene') || adminFirstName.toLowerCase() === 'student' || adminFirstName.toLowerCase() === 'admin') {
+        adminFirstName = 'Justine';
+    }
+    if (adminAvatar) adminAvatar.textContent = adminFirstName.charAt(0).toUpperCase();
+    if (adminName) adminName.textContent = adminFirstName;
+
+    // ============================================
+    // MOBILE MENU TOGGLE
+    // ============================================
+
+    if (menuToggle && sidebar) {
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            sidebar.classList.toggle('active');
+        });
+    }
+
+    document.addEventListener('click', function(e) {
+        if (sidebar && sidebar.classList.contains('active') && !sidebar.contains(e.target) && (!menuToggle || !menuToggle.contains(e.target))) {
+            sidebar.classList.remove('active');
+        }
+    });
+
+    // ============================================
+    // INITIAL CURRICULUM DATA
+    // ============================================
+
+    const DEFAULT_SUBJECTS = [
+        // Grade 7
+        { id: 'sub-7-1', name: 'English 7', grade: 7, strand: null, category: 'Core', description: 'Grammar, Philippine Literature, and Oral Communication' },
+        { id: 'sub-7-2', name: 'Mathematics 7', grade: 7, strand: null, category: 'Core', description: 'Sets, Real Numbers, Algebra, Geometry, and Statistics' },
+        { id: 'sub-7-3', name: 'Science 7', grade: 7, strand: null, category: 'Core', description: 'Integrated General Science, Living Things, Matter, Energy' },
+        { id: 'sub-7-4', name: 'Filipino 7', grade: 7, strand: null, category: 'Core', description: 'Ibong Adarna at Panitikang Rehiyonal' },
+        { id: 'sub-7-5', name: 'Araling Panlipunan 7', grade: 7, strand: null, category: 'Core', description: 'Araling Asyano - Heograpiya, Kultura, at Kasaysayan' },
+        { id: 'sub-7-6', name: 'MAPEH 7', grade: 7, strand: null, category: 'Core', description: 'Music, Arts, Physical Education, and Health' },
+        { id: 'sub-7-7', name: 'Edukasyon sa Pagpapakatao 7', grade: 7, strand: null, category: 'Core', description: 'Values Education and Self-Development' },
+        { id: 'sub-7-8', name: 'Technology and Livelihood Education 7', grade: 7, strand: null, category: 'Core', description: 'Exploratory ICT, Agri-Fishery, and Industrial Arts' },
+        { id: 'sub-7-9', name: 'Computer Education 7', grade: 7, strand: null, category: 'Elective', description: 'Basic Computing and Productivity Tools' },
+
+        // Grade 8
+        { id: 'sub-8-1', name: 'English 8', grade: 8, strand: null, category: 'Core', description: 'Afro-Asian Literature and Advanced Grammar' },
+        { id: 'sub-8-2', name: 'Mathematics 8', grade: 8, strand: null, category: 'Core', description: 'Linear Equations, Rational Expressions, Geometry, Probability' },
+        { id: 'sub-8-3', name: 'Science 8', grade: 8, strand: null, category: 'Core', description: 'Forces, Motion, Work, Energy, Earthquakes, and Typhoons' },
+        { id: 'sub-8-4', name: 'Filipino 8', grade: 8, strand: null, category: 'Core', description: 'Florante at Laura at Panitikang Tradisyunal' },
+        { id: 'sub-8-5', name: 'Araling Panlipunan 8', grade: 8, strand: null, category: 'Core', description: 'Kasaysayan ng Daigdig' },
+        { id: 'sub-8-6', name: 'MAPEH 8', grade: 8, strand: null, category: 'Core', description: 'Asian Music & Arts, Team Sports, and Family Health' },
+        { id: 'sub-8-7', name: 'Edukasyon sa Pagpapakatao 8', grade: 8, strand: null, category: 'Core', description: 'Family, Interpersonal Relations, and Society' },
+        { id: 'sub-8-8', name: 'Technology and Livelihood Education 8', grade: 8, strand: null, category: 'Core', description: 'Specialized TLE and Home Economics' },
+        { id: 'sub-8-9', name: 'Journalism 8', grade: 8, strand: null, category: 'Elective', description: 'Campus Journalism and News Writing' },
+
+        // Grade 9
+        { id: 'sub-9-1', name: 'English 9', grade: 9, strand: null, category: 'Core', description: 'Anglo-American Literature and Communicative Competence' },
+        { id: 'sub-9-2', name: 'Mathematics 9', grade: 9, strand: null, category: 'Core', description: 'Quadratic Equations, Variations, Radicals, Trigonometry' },
+        { id: 'sub-9-3', name: 'Science 9', grade: 9, strand: null, category: 'Core', description: 'Living Things, Chemical Bonding, Earth and Space' },
+        { id: 'sub-9-4', name: 'Filipino 9', grade: 9, strand: null, category: 'Core', description: 'Noli Me Tangere at Panitikang Asyano' },
+        { id: 'sub-9-5', name: 'Araling Panlipunan 9', grade: 9, strand: null, category: 'Core', description: 'Ekonomiks - Pambansang Ekonomiya at Kaunlaran' },
+        { id: 'sub-9-6', name: 'MAPEH 9', grade: 9, strand: null, category: 'Core', description: 'Western Music & Arts, Community and Environmental Health' },
+        { id: 'sub-9-7', name: 'Edukasyon sa Pagpapakatao 9', grade: 9, strand: null, category: 'Core', description: 'Lipunan, Katarungang Panlipunan, at Kagalingan sa Paggawa' },
+        { id: 'sub-9-8', name: 'Technology and Livelihood Education 9', grade: 9, strand: null, category: 'Core', description: 'Technical Skills and Entrepreneurship' },
+
+        // Grade 10
+        { id: 'sub-10-1', name: 'English 10', grade: 10, strand: null, category: 'Core', description: 'World Literature, Argumentation, and Research Writing' },
+        { id: 'sub-10-2', name: 'Mathematics 10', grade: 10, strand: null, category: 'Core', description: 'Sequences, Polynomials, Coordinate Geometry, Statistics' },
+        { id: 'sub-10-3', name: 'Science 10', grade: 10, strand: null, category: 'Core', description: 'Plate Tectonics, Electromagnetic Spectrum, Heredity, Evolution' },
+        { id: 'sub-10-4', name: 'Filipino 10', grade: 10, strand: null, category: 'Core', description: 'El Filibusterismo at Panitikang Pandaigdig' },
+        { id: 'sub-10-5', name: 'Araling Panlipunan 10', grade: 10, strand: null, category: 'Core', description: 'Mga Kontemporaryong Isyu' },
+        { id: 'sub-10-6', name: 'MAPEH 10', grade: 10, strand: null, category: 'Core', description: '20th Century Music & Arts, Global Health Trends' },
+        { id: 'sub-10-7', name: 'Edukasyon sa Pagpapakatao 10', grade: 10, strand: null, category: 'Core', description: 'Moral Choices, Dignity, and Career Orientation' },
+        { id: 'sub-10-8', name: 'Technology and Livelihood Education 10', grade: 10, strand: null, category: 'Core', description: 'National Certificate (NC) Preparedness' },
+
+        // Grade 11 - Core
+        { id: 'sub-11-core-1', name: 'Oral Communication in Context', grade: 11, strand: null, category: 'Core', description: 'Speech communication and public speaking' },
+        { id: 'sub-11-core-2', name: 'Reading and Writing Skills', grade: 11, strand: null, category: 'Core', description: 'Academic and professional reading and writing' },
+        { id: 'sub-11-core-3', name: 'Komunikasyon at Pananaliksik sa Wika at Kulturang Pilipino', grade: 11, strand: null, category: 'Core', description: 'Gamit ng wika sa lipunang Pilipino' },
+        { id: 'sub-11-core-4', name: '21st Century Literature from the Philippines and the World', grade: 11, strand: null, category: 'Core', description: 'Contemporary literary genres and forms' },
+        { id: 'sub-11-core-5', name: 'General Mathematics', grade: 11, strand: null, category: 'Core', description: 'Functions, Business Math, and Logic' },
+        { id: 'sub-11-core-6', name: 'Statistics and Probability', grade: 11, strand: null, category: 'Core', description: 'Random variables, sampling, hypothesis testing' },
+        { id: 'sub-11-core-7', name: 'Earth and Life Science', grade: 11, strand: null, category: 'Core', description: 'Earth history, processes, and biological systems' },
+        { id: 'sub-11-core-8', name: 'Physical Education and Health 1', grade: 11, strand: null, category: 'Core', description: 'Fitness and aerobic training' },
+
+        // Grade 11 - STEM
+        { id: 'sub-11-stem-1', name: 'Major: Pre-Calculus', grade: 11, strand: 'STEM', category: 'Major', description: 'Conic sections, systems of equations, trigonometry' },
+        { id: 'sub-11-stem-2', name: 'Major: Basic Calculus', grade: 11, strand: 'STEM', category: 'Major', description: 'Limits, continuity, derivatives, and integrals' },
+        { id: 'sub-11-stem-3', name: 'Major: General Biology 1', grade: 11, strand: 'STEM', category: 'Major', description: 'Cell biology, bioenergetics, and genetics' },
+        { id: 'sub-11-stem-4', name: 'Major: General Chemistry 1', grade: 11, strand: 'STEM', category: 'Major', description: 'Atomic structure, stoichiometry, and thermochemistry' },
+
+        // Grade 11 - ABM
+        { id: 'sub-11-abm-1', name: 'Major: Fundamentals of Accountancy, Business and Management 1', grade: 11, strand: 'ABM', category: 'Major', description: 'Accounting cycle of service and merchandising businesses' },
+        { id: 'sub-11-abm-2', name: 'Major: Business Mathematics', grade: 11, strand: 'ABM', category: 'Major', description: 'Fractions, decimals, percentages, mark-up, payroll' },
+        { id: 'sub-11-abm-3', name: 'Major: Organization and Management', grade: 11, strand: 'ABM', category: 'Major', description: 'Principles and functions of management' },
+        { id: 'sub-11-abm-4', name: 'Major: Principles of Marketing', grade: 11, strand: 'ABM', category: 'Major', description: 'Marketing concepts, strategic planning, customer value' },
+
+        // Grade 11 - HUMSS
+        { id: 'sub-11-humss-1', name: 'Major: Creative Writing', grade: 11, strand: 'HUMSS', category: 'Major', description: 'Poetry, fiction, drama, and literary techniques' },
+        { id: 'sub-11-humss-2', name: 'Major: Introduction to World Religions and Belief Systems', grade: 11, strand: 'HUMSS', category: 'Major', description: 'Comparative religious studies and philosophies' },
+        { id: 'sub-11-humss-3', name: 'Major: Disciplines and Ideas in the Social Sciences', grade: 11, strand: 'HUMSS', category: 'Major', description: 'Anthropology, Economics, Geography, History, Linguistics' },
+        { id: 'sub-11-humss-4', name: 'Major: Philippine Politics and Governance', grade: 11, strand: 'HUMSS', category: 'Major', description: 'Constitutional framework and governmental branches' },
+
+        // Grade 11 - TVL
+        { id: 'sub-11-tvl-1', name: 'Major: Computer Systems Servicing NC II', grade: 11, strand: 'TVL', category: 'Major', description: 'Hardware installation, configuration, and networking' },
+        { id: 'sub-11-tvl-2', name: 'Major: Bread and Pastry Production NC II', grade: 11, strand: 'TVL', category: 'Major', description: 'Baking techniques, food safety, and pastry preparation' },
+        { id: 'sub-11-tvl-3', name: 'Major: Cookery NC II', grade: 11, strand: 'TVL', category: 'Major', description: 'Commercial kitchen management and culinary skills' },
+        { id: 'sub-11-tvl-4', name: 'Major: Shielded Metal Arc Welding NC I', grade: 11, strand: 'TVL', category: 'Major', description: 'Welding safety, arc welding, and metal fabrication' },
+
+        // Grade 11 - GAS
+        { id: 'sub-11-gas-1', name: 'Major: Humanities 1', grade: 11, strand: 'GAS', category: 'Major', description: 'Interdisciplinary cultural and literary studies' },
+        { id: 'sub-11-gas-2', name: 'Major: Social Science 1', grade: 11, strand: 'GAS', category: 'Major', description: 'Contemporary human behavior and social systems' },
+        { id: 'sub-11-gas-3', name: 'Major: Applied Economics', grade: 11, strand: 'GAS', category: 'Major', description: 'Economic principles applied to contemporary issues' },
+        { id: 'sub-11-gas-4', name: 'Major: Disaster Readiness and Risk Reduction', grade: 11, strand: 'GAS', category: 'Major', description: 'Hazard management and disaster preparedness' },
+
+        // Grade 12 - Core
+        { id: 'sub-12-core-1', name: 'Contemporary Philippine Arts from the Regions', grade: 12, strand: null, category: 'Core', description: 'Contemporary art forms, practices, and artists' },
+        { id: 'sub-12-core-2', name: 'Media and Information Literacy', grade: 12, strand: null, category: 'Core', description: 'Information evaluation and digital citizenship' },
+        { id: 'sub-12-core-3', name: 'Introduction to the Philosophy of the Human Person', grade: 12, strand: null, category: 'Core', description: 'Philosophical inquiry, freedom, and human embodiment' },
+        { id: 'sub-12-core-4', name: 'Physical Science', grade: 12, strand: null, category: 'Core', description: 'Physics and chemistry principles and discoveries' },
+        { id: 'sub-12-core-5', name: 'Personal Development', grade: 12, strand: null, category: 'Core', description: 'Self-awareness, stress management, relationships' },
+        { id: 'sub-12-core-6', name: 'Understanding Culture, Society and Politics', grade: 12, strand: null, category: 'Core', description: 'Cultural evolution, socialization, and governance' },
+        { id: 'sub-12-core-7', name: 'Physical Education and Health 3', grade: 12, strand: null, category: 'Core', description: 'Individual, dual, and team sports' },
+
+        // Grade 12 - STEM
+        { id: 'sub-12-stem-1', name: 'Major: General Physics 1 & 2', grade: 12, strand: 'STEM', category: 'Major', description: 'Mechanics, thermodynamics, electromagnetism, optics' },
+        { id: 'sub-12-stem-2', name: 'Major: General Biology 2', grade: 12, strand: 'STEM', category: 'Major', description: 'Organismal biology, systematics, ecology' },
+        { id: 'sub-12-stem-3', name: 'Major: General Chemistry 2', grade: 12, strand: 'STEM', category: 'Major', description: 'Intermolecular forces, kinetics, equilibria' },
+        { id: 'sub-12-stem-4', name: 'Major: Capstone Research Project in Science & Tech', grade: 12, strand: 'STEM', category: 'Major', description: 'Original scientific research and innovation defense' },
+
+        // Grade 12 - ABM
+        { id: 'sub-12-abm-1', name: 'Major: Fundamentals of Accountancy, Business and Management 2', grade: 12, strand: 'ABM', category: 'Major', description: 'Financial statements, ratios, cash flows' },
+        { id: 'sub-12-abm-2', name: 'Major: Business Finance', grade: 12, strand: 'ABM', category: 'Major', description: 'Financial management, capital budgeting, working capital' },
+        { id: 'sub-12-abm-3', name: 'Major: Applied Economics in Business', grade: 12, strand: 'ABM', category: 'Major', description: 'Industry and market analysis' },
+        { id: 'sub-12-abm-4', name: 'Major: Business Enterprise Simulation / Practicum', grade: 12, strand: 'ABM', category: 'Major', description: 'Actual business simulation and trade show' },
+
+        // Grade 12 - HUMSS
+        { id: 'sub-12-humss-1', name: 'Major: Creative Nonfiction', grade: 12, strand: 'HUMSS', category: 'Major', description: 'Memoir, travelogue, personal essay, profile' },
+        { id: 'sub-12-humss-2', name: 'Major: Trends, Networks, and Critical Thinking in the 21st Century', grade: 12, strand: 'HUMSS', category: 'Major', description: 'Pattern analysis, global networks, strategic thinking' },
+        { id: 'sub-12-humss-3', name: 'Major: Community Engagement, Solidarity and Citizenship', grade: 12, strand: 'HUMSS', category: 'Major', description: 'Community development and active citizenship' },
+        { id: 'sub-12-humss-4', name: 'Major: Culminating Activity / Social Science Inquiries', grade: 12, strand: 'HUMSS', category: 'Major', description: 'Applied research in social sciences and community defense' },
+
+        // Grade 12 - TVL
+        { id: 'sub-12-tvl-1', name: 'Major: Food and Beverage Services NC II', grade: 12, strand: 'TVL', category: 'Major', description: 'Dining area operations, bar service, guest relations' },
+        { id: 'sub-12-tvl-2', name: 'Major: Animation NC II', grade: 12, strand: 'TVL', category: 'Major', description: '2D and 3D digital animation and storyboarding' },
+        { id: 'sub-12-tvl-3', name: 'Major: Electrical Installation and Maintenance NC II', grade: 12, strand: 'TVL', category: 'Major', description: 'Residential and commercial wiring and circuits' },
+        { id: 'sub-12-tvl-4', name: 'Major: Work Immersion / On-the-Job Training', grade: 12, strand: 'TVL', category: 'Major', description: 'Industry immersion and actual workplace training' },
+
+        // Grade 12 - GAS
+        { id: 'sub-12-gas-1', name: 'Major: Humanities 2', grade: 12, strand: 'GAS', category: 'Major', description: 'Philosophy, arts, and ethics in modern society' },
+        { id: 'sub-12-gas-2', name: 'Major: Social Science 2', grade: 12, strand: 'GAS', category: 'Major', description: 'Applied social science research and governance' },
+        { id: 'sub-12-gas-3', name: 'Major: Organization and Management for General Track', grade: 12, strand: 'GAS', category: 'Major', description: 'Organizational leadership and teamwork' },
+        { id: 'sub-12-gas-4', name: 'Major: Culminating Activity / Work Immersion', grade: 12, strand: 'GAS', category: 'Major', description: 'Career exploration and portfolio defense' }
     ];
 
-    // Grade levels
-    const gradeLevels = [
-        { id: 1, name: 'Grade 7' },
-        { id: 2, name: 'Grade 8' },
-        { id: 3, name: 'Grade 9' },
-        { id: 4, name: 'Grade 10' },
-        { id: 5, name: 'Grade 11' },
-        { id: 6, name: 'Grade 12' }
-    ];
+    // ============================================
+    // STATE
+    // ============================================
 
-    const strandOptions = ['TVL-Cookery', 'HUMMS', 'GAS'];
+    let subjects = loadSavedSubjects();
+    let currentActiveGrade = 'all'; // 'all', 7, 8, 9, 10, 11, 12
+    let currentActiveStrand = '';
 
-    // ===== FUNCTIONS =====
-
-    // Update statistics
-    function updateStats() {
-        const total = subjects.length;
-        const jhs = subjects.filter(s => s.grade_id >= 1 && s.grade_id <= 4).length;
-        const shs = subjects.filter(s => s.grade_id >= 5 && s.grade_id <= 6).length;
-
-        document.getElementById('totalSubjects').textContent = total;
-        document.getElementById('jhsCount').textContent = jhs;
-        document.getElementById('shsCount').textContent = shs;
-    }
-
-    // Render grade cards
-    function renderGradeCards() {
-        const filter = gradeSelect.value;
-        let html = '';
-        gradeLevels.forEach(grade => {
-            const count = subjects.filter(s => s.grade_id === grade.id).length;
-            const active = filter == grade.id ? 'active' : '';
-            html += `
-                <a href="#" class="grade-card ${active}" data-grade="${grade.id}">
-                    <div class="grade-number">${grade.name.replace('Grade ', '')}</div>
-                    <div class="grade-name">${grade.name}</div>
-                </a>
-            `;
-        });
-        gradeCards.innerHTML = html;
-
-        // Add click events
-        document.querySelectorAll('.grade-card').forEach(card => {
-            card.addEventListener('click', function(e) {
-                e.preventDefault();
-                const grade = this.dataset.grade;
-                gradeSelect.value = grade;
-                renderSubjects();
-                renderGradeCards();
-            });
-        });
-    }
-
-    // Render subjects
-    function renderSubjects() {
-        const grade = gradeSelect.value;
-        const strand = strandSelect.value;
-        const search = searchInput.value.toLowerCase().trim();
-
-        let filtered = [...subjects];
-
-        if (grade) {
-            filtered = filtered.filter(s => s.grade_id == grade);
-        }
-        if (strand) {
-            filtered = filtered.filter(s => s.strand === strand);
-        }
-        if (search) {
-            filtered = filtered.filter(s => 
-                s.subject_name.toLowerCase().includes(search) ||
-                (s.description && s.description.toLowerCase().includes(search))
-            );
-        }
-
-        // Group by grade
-        const grouped = {};
-        filtered.forEach(subject => {
-            if (!grouped[subject.grade_id]) {
-                grouped[subject.grade_id] = {
-                    grade_id: subject.grade_id,
-                    grade_name: subject.grade_name,
-                    subjects: []
-                };
+    function loadSavedSubjects() {
+        const saved = localStorage.getItem('plsnhs_admin_subjects');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                console.warn('Error parsing saved subjects, resetting to defaults');
             }
-            grouped[subject.grade_id].subjects.push(subject);
-        });
-
-        // Separate JHS and SHS
-        const jhsGrades = [1, 2, 3, 4];
-        const shsGrades = [5, 6];
-
-        let html = '';
-
-        // Render JHS
-        jhsGrades.forEach(gradeId => {
-            if (grouped[gradeId]) {
-                const data = grouped[gradeId];
-                html += `
-                    <div class="grade-section">
-                        <div class="grade-section-header" onclick="toggleGradeSection(this)">
-                            <h2><i class="fas fa-layer-group"></i> ${data.grade_name}</h2>
-                            <div style="display: flex; gap: 15px; align-items: center;">
-                                <span class="badge">${data.subjects.length} Subjects</span>
-                                <i class="fas fa-chevron-down toggle-icon"></i>
-                            </div>
-                        </div>
-                        <div class="grade-section-content">
-                            <div class="strand-table-wrapper">
-                                <table class="strand-subject-table">
-                                    <thead>
-                                        <tr>
-                                            <th width="70%">Subject</th>
-                                            <th width="30%">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${data.subjects.map(subject => renderSubjectRow(subject)).join('')}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-        });
-
-        // Render SHS by strand
-        shsGrades.forEach(gradeId => {
-            if (grouped[gradeId]) {
-                const data = grouped[gradeId];
-                const gradeSubjects = data.subjects;
-                
-                // Group by strand
-                const strandGroups = {};
-                gradeSubjects.forEach(subject => {
-                    const strandKey = subject.strand || 'Unspecified';
-                    if (!strandGroups[strandKey]) {
-                        strandGroups[strandKey] = [];
-                    }
-                    strandGroups[strandKey].push(subject);
-                });
-
-                html += `
-                    <div class="grade-section">
-                        <div class="grade-section-header" onclick="toggleGradeSection(this)">
-                            <h2><i class="fas fa-layer-group"></i> ${data.grade_name}</h2>
-                            <div style="display: flex; gap: 15px; align-items: center;">
-                                <span class="badge">${Object.keys(strandGroups).length} Strands</span>
-                                <i class="fas fa-chevron-down toggle-icon"></i>
-                            </div>
-                        </div>
-                        <div class="grade-section-content">
-                            ${Object.keys(strandGroups).map(strandName => {
-                                const strandSubjects = strandGroups[strandName];
-                                return `
-                                    <div class="strand-subject-section">
-                                        <div class="strand-subject-header" data-strand="${strandName}" onclick="toggleStrandSection(this)">
-                                            <i class="fas fa-tag"></i>
-                                            <h4>${strandName === 'Unspecified' ? 'No Strand' : strandName}</h4>
-                                            <span class="badge">${strandSubjects.length} Subjects</span>
-                                            <i class="fas fa-chevron-down strand-subject-toggle"></i>
-                                        </div>
-                                        <div class="strand-subject-content">
-                                            <div class="strand-table-wrapper">
-                                                <table class="strand-subject-table">
-                                                    <thead>
-                                                        <tr>
-                                                            <th width="70%">Subject</th>
-                                                            <th width="30%">Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        ${strandSubjects.map(subject => renderSubjectRow(subject)).join('')}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-        });
-
-        if (!html) {
-            html = `
-                <div class="grade-section">
-                    <div class="no-data">
-                        <i class="fas fa-book"></i>
-                        <h3>No Subjects Found</h3>
-                        <p>Click "Add New Subject" to get started.</p>
-                    </div>
-                </div>
-            `;
         }
-
-        subjectsContainer.innerHTML = html;
+        return [...DEFAULT_SUBJECTS];
     }
 
-    // Render subject row
-    function renderSubjectRow(subject) {
-        return `
-            <tr>
-                <td>
-                    <div class="subject-info">
-                        <div class="subject-icon"><i class="fas fa-book-open"></i></div>
-                        <div class="subject-details">
-                            <h4>${escapeHtml(subject.subject_name)}</h4>
-                            ${subject.description ? `<span class="description-text">${escapeHtml(subject.description.substring(0, 60))}${subject.description.length > 60 ? '...' : ''}</span>` : ''}
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <div class="action-btns">
-                        <button class="action-btn view" onclick="viewSubject(${subject.id})" title="View"><i class="fas fa-eye"></i></button>
-                        <button class="action-btn edit" onclick="openEditModal(${subject.id})" title="Edit"><i class="fas fa-edit"></i></button>
-                        <button class="action-btn delete" onclick="deleteSubject(${subject.id})" title="Delete"><i class="fas fa-trash"></i></button>
-                    </div>
-                </td>
-            </tr>
-        `;
+    function saveSubjects() {
+        localStorage.setItem('plsnhs_admin_subjects', JSON.stringify(subjects));
+        updateStats();
     }
 
-    // Escape HTML
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
+    // ============================================
+    // ALERTS
+    // ============================================
 
-    // Toggle grade section
-    window.toggleGradeSection = function(element) {
-        const gradeSection = element.closest('.grade-section');
-        const content = gradeSection.querySelector('.grade-section-content');
-        const icon = element.querySelector('.toggle-icon');
-        
-        if (content.classList.contains('collapsed')) {
-            content.classList.remove('collapsed');
-            if (icon) icon.classList.remove('rotated');
-        } else {
-            content.classList.add('collapsed');
-            if (icon) icon.classList.add('rotated');
-        }
-    };
-
-    // Toggle strand section
-    window.toggleStrandSection = function(element) {
-        const strandSection = element.closest('.strand-subject-section');
-        const content = strandSection.querySelector('.strand-subject-content');
-        const icon = element.querySelector('.strand-subject-toggle');
-        
-        if (content.classList.contains('collapsed')) {
-            content.classList.remove('collapsed');
-            if (icon) icon.classList.remove('rotated');
-        } else {
-            content.classList.add('collapsed');
-            if (icon) icon.classList.add('rotated');
-        }
-    };
-
-    // View subject
-    window.viewSubject = function(id) {
-        const subject = subjects.find(s => s.id === id);
-        if (!subject) return;
-
-        const gradeName = gradeLevels.find(g => g.id === subject.grade_id)?.name || 'Unknown';
-        const strandHtml = subject.strand ? `
-            <div class="form-group">
-                <label>Strand</label>
-                <p style="background: #f8fafc; padding: 10px; border-radius: 8px; margin: 0;">
-                    <i class="fas fa-tag"></i> ${escapeHtml(subject.strand)}
-                </p>
-            </div>
-        ` : '';
-
-        document.getElementById('viewContent').innerHTML = `
-            <div class="form-group">
-                <label>Subject Name</label>
-                <p style="background: #f8fafc; padding: 10px; border-radius: 8px; margin: 0;">${escapeHtml(subject.subject_name)}</p>
-            </div>
-            <div class="form-group">
-                <label>Grade Level</label>
-                <p style="background: #f8fafc; padding: 10px; border-radius: 8px; margin: 0;">${escapeHtml(gradeName)}</p>
-            </div>
-            ${strandHtml}
-            <div class="form-group">
-                <label>Description</label>
-                <p style="background: #f8fafc; padding: 10px; border-radius: 8px; margin: 0;">${escapeHtml(subject.description) || 'No description provided.'}</p>
-            </div>
-        `;
-        viewModal.classList.add('show');
-    };
-
-    // Delete subject
-    window.deleteSubject = function(id) {
-        const subject = subjects.find(s => s.id === id);
-        if (!subject) return;
-
-        if (confirm(`Delete subject "${subject.subject_name}"?`)) {
-            subjects = subjects.filter(s => s.id !== id);
-            showAlert('✅ Subject deleted successfully!', 'success');
-            updateStats();
-            renderSubjects();
-        }
-    };
-
-    // Open add modal
-    window.openAddModal = function() {
-        addModal.classList.add('show');
-        document.getElementById('addSubjectName').value = '';
-        document.getElementById('addGradeId').value = '';
-        document.getElementById('addStrand').value = '';
-        document.getElementById('addDescription').value = '';
-        document.getElementById('addStrandGroup').style.display = 'none';
-    };
-
-    // Close add modal
-    window.closeAddModal = function() {
-        addModal.classList.remove('show');
-    };
-
-    // Open edit modal
-    window.openEditModal = function(id) {
-        const subject = subjects.find(s => s.id === id);
-        if (!subject) return;
-
-        document.getElementById('editSubjectId').value = subject.id;
-        document.getElementById('editSubjectName').value = subject.subject_name;
-        document.getElementById('editGradeId').value = subject.grade_id;
-        document.getElementById('editDescription').value = subject.description || '';
-
-        const strandSelect = document.getElementById('editStrand');
-        const strandGroup = document.getElementById('editStrandGroup');
-
-        if (subject.strand && strandSelect) {
-            strandSelect.value = subject.strand;
-        } else if (strandSelect) {
-            strandSelect.value = '';
-        }
-
-        if (subject.grade_id === 5 || subject.grade_id === 6) {
-            strandGroup.style.display = 'block';
-            if (strandSelect) strandSelect.required = true;
-        } else {
-            strandGroup.style.display = 'none';
-            if (strandSelect) strandSelect.required = false;
-        }
-
-        editModal.classList.add('show');
-    };
-
-    // Close edit modal
-    window.closeEditModal = function() {
-        editModal.classList.remove('show');
-    };
-
-    // Close view modal
-    window.closeViewModal = function() {
-        viewModal.classList.remove('show');
-    };
-
-    // Reset filters
-    window.resetFilters = function() {
-        gradeSelect.value = '';
-        strandSelect.value = '';
-        searchInput.value = '';
-        strandFilterGroup.style.display = 'none';
-        renderSubjects();
-        renderGradeCards();
-    };
-
-    // Show alert
-    function showAlert(message, type = 'error') {
+    function showAlert(message, type = 'success') {
+        if (!alertContainer) return;
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type}`;
         const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
@@ -423,206 +272,498 @@ document.addEventListener('DOMContentLoaded', function() {
 
         setTimeout(() => {
             alertDiv.style.opacity = '0';
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 300);
-        }, 5000);
+            setTimeout(() => alertDiv.remove(), 300);
+        }, 4000);
     }
 
-    // ===== FORM HANDLERS =====
+    // ============================================
+    // STATS
+    // ============================================
 
-    // Add form
-    if (addForm) {
-        addForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+    function updateStats() {
+        const total = subjects.length;
+        const jhs = subjects.filter(s => s.grade >= 7 && s.grade <= 10).length;
+        const shs = subjects.filter(s => s.grade >= 11 && s.grade <= 12).length;
 
-            const name = document.getElementById('addSubjectName').value.trim();
-            const gradeId = parseInt(document.getElementById('addGradeId').value);
-            const strand = document.getElementById('addStrand').value;
-            const description = document.getElementById('addDescription').value.trim();
+        if (totalSubjectsEl) totalSubjectsEl.textContent = total;
+        if (jhsSubjectsEl) jhsSubjectsEl.textContent = jhs;
+        if (shsSubjectsEl) shsSubjectsEl.textContent = shs;
+        if (totalStrandsEl) totalStrandsEl.textContent = 5;
+    }
 
-            if (!name || !gradeId) {
-                showAlert('Please fill in all required fields.', 'error');
-                return;
-            }
+    // ============================================
+    // RENDER SUBJECTS ACCORDION
+    // ============================================
 
-            if ((gradeId === 5 || gradeId === 6) && !strand) {
-                showAlert('Strand is required for Senior High School subjects (Grades 11-12).', 'error');
-                return;
-            }
+    function renderSubjects() {
+        if (!subjectsContainer) return;
 
-            const gradeName = gradeLevels.find(g => g.id === gradeId)?.name || 'Unknown';
+        const search = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        const gradeVal = gradeFilter ? gradeFilter.value : '';
+        const strandVal = strandFilter ? strandFilter.value : '';
 
-            // Check duplicate
-            const exists = subjects.some(s => 
-                s.subject_name === name && 
-                s.grade_id === gradeId && 
-                (s.strand === strand || (!s.strand && !strand))
-            );
+        // Filter subjects
+        let filtered = subjects.filter(s => {
+            const matchSearch = !search ||
+                s.name.toLowerCase().includes(search) ||
+                (s.description || '').toLowerCase().includes(search) ||
+                (s.category || '').toLowerCase().includes(search) ||
+                (s.strand || '').toLowerCase().includes(search);
 
-            if (exists) {
-                showAlert('Subject with this name already exists for this grade level.', 'error');
-                return;
-            }
+            const matchGrade = !gradeVal || s.grade.toString() === gradeVal.toString();
+            const matchStrand = !strandVal || (s.strand && s.strand.toUpperCase() === strandVal.toUpperCase());
 
-            const newSubject = {
-                id: subjects.length + 1,
-                subject_name: name,
-                grade_id: gradeId,
-                grade_name: gradeName,
-                strand: strand || null,
-                description: description || null
-            };
-
-            subjects.push(newSubject);
-            showAlert('✅ Subject added successfully!', 'success');
-            updateStats();
-            renderSubjects();
-            closeAddModal();
-            addForm.reset();
+            return matchSearch && matchGrade && matchStrand;
         });
-    }
 
-    // Edit form
-    if (editForm) {
-        editForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+        if (filtered.length === 0) {
+            subjectsContainer.innerHTML = `
+                <div class="no-data">
+                    <i class="fas fa-book-open"></i>
+                    <h3>No subjects found</h3>
+                    <p>Try adjusting your search query or grade level filter.</p>
+                </div>
+            `;
+            return;
+        }
 
-            const id = parseInt(document.getElementById('editSubjectId').value);
-            const name = document.getElementById('editSubjectName').value.trim();
-            const gradeId = parseInt(document.getElementById('editGradeId').value);
-            const strand = document.getElementById('editStrand').value;
-            const description = document.getElementById('editDescription').value.trim();
+        // Determine which grades to display
+        let gradesToRender = [7, 8, 9, 10, 11, 12];
+        if (gradeVal) {
+            gradesToRender = [parseInt(gradeVal)];
+        }
 
-            if (!name || !gradeId) {
-                showAlert('Please fill in all required fields.', 'error');
-                return;
-            }
+        let html = '';
 
-            if ((gradeId === 5 || gradeId === 6) && !strand) {
-                showAlert('Strand is required for Senior High School subjects.', 'error');
-                return;
-            }
+        gradesToRender.forEach(gradeNum => {
+            const gradeSubjects = filtered.filter(s => s.grade === gradeNum);
+            if (gradeSubjects.length === 0) return;
 
-            const subject = subjects.find(s => s.id === id);
-            if (subject) {
-                subject.subject_name = name;
-                subject.grade_id = gradeId;
-                subject.grade_name = gradeLevels.find(g => g.id === gradeId)?.name || 'Unknown';
-                subject.strand = strand || null;
-                subject.description = description || null;
+            const isSeniorHigh = gradeNum === 11 || gradeNum === 12;
 
-                showAlert('✅ Subject updated successfully!', 'success');
-                updateStats();
-                renderSubjects();
-                closeEditModal();
-            }
-        });
-    }
+            html += `
+                <div class="grade-section" data-grade="${gradeNum}">
+                    <div class="grade-section-header" onclick="toggleGradeSection(${gradeNum})">
+                        <h2>
+                            <i class="fas fa-graduation-cap"></i>
+                            Grade ${gradeNum} Curriculum
+                            <span class="badge">${gradeSubjects.length} ${gradeSubjects.length === 1 ? 'Subject' : 'Subjects'}</span>
+                        </h2>
+                        <i class="fas fa-chevron-down toggle-icon" id="toggle-icon-${gradeNum}"></i>
+                    </div>
+                    <div class="grade-section-content" id="grade-content-${gradeNum}">
+            `;
 
-    // ===== EVENT LISTENERS =====
+            if (!isSeniorHigh) {
+                // Junior High School Table (Grades 7 - 10)
+                html += `
+                    <div class="strand-table-wrapper">
+                        <table class="strand-subject-table">
+                            <thead>
+                                <tr>
+                                    <th>Subject Details</th>
+                                    <th>Category</th>
+                                    <th>Prerequisites / Notes</th>
+                                    <th style="width: 110px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
 
-    // Grade select change - show/hide strand filter
-    if (gradeSelect) {
-        gradeSelect.addEventListener('change', function() {
-            const gradeId = parseInt(this.value);
-            if (gradeId === 5 || gradeId === 6) {
-                strandFilterGroup.style.display = 'inline-block';
+                gradeSubjects.forEach(s => {
+                    const catBadge = s.category === 'Elective' 
+                        ? `<span class="badge" style="background: #e0e7ff; color: #3730a3;">Elective</span>`
+                        : `<span class="badge" style="background: #dbeafe; color: #1e40af;">Core</span>`;
+
+                    html += `
+                        <tr>
+                            <td>
+                                <div class="subject-info">
+                                    <div class="subject-icon">
+                                        <i class="fas ${s.category === 'Elective' ? 'fa-star' : 'fa-book'}"></i>
+                                    </div>
+                                    <div class="subject-details">
+                                        <h4>${s.name}</h4>
+                                        <span class="description-text">Grade ${s.grade} Junior High Subject</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>${catBadge}</td>
+                            <td><span style="font-size: 12.5px; color: #64748b;">${s.description || 'Standard DepEd K-12 Subject'}</span></td>
+                            <td>
+                                <div class="action-btns">
+                                    <button class="action-btn edit" onclick="openEditModal('${s.id}')" title="Edit Subject">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="action-btn delete" onclick="deleteSubject('${s.id}')" title="Delete Subject">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
             } else {
-                strandFilterGroup.style.display = 'none';
-                strandSelect.value = '';
+                // Senior High School (Grades 11 - 12) - Core & Strands
+                const coreSubjects = gradeSubjects.filter(s => !s.strand);
+                const strands = ['STEM', 'ABM', 'HUMSS', 'TVL', 'GAS'];
+
+                // Core Section
+                if (coreSubjects.length > 0 && !strandVal) {
+                    html += `
+                        <div class="strand-subject-section">
+                            <div class="strand-subject-header" onclick="toggleStrandContent('core-${gradeNum}')">
+                                <i class="fas fa-book-open"></i>
+                                <h4>Core Curriculum Subjects (Common to all strands)</h4>
+                                <span class="badge">${coreSubjects.length} Subjects</span>
+                                <i class="fas fa-chevron-down strand-subject-toggle" id="toggle-core-${gradeNum}"></i>
+                            </div>
+                            <div class="strand-subject-content" id="strand-content-core-${gradeNum}">
+                                <div class="strand-table-wrapper">
+                                    <table class="strand-subject-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Subject Name</th>
+                                                <th>Category</th>
+                                                <th>Description</th>
+                                                <th style="width: 110px;">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                    `;
+
+                    coreSubjects.forEach(s => {
+                        html += `
+                            <tr>
+                                <td>
+                                    <div class="subject-info">
+                                        <div class="subject-icon"><i class="fas fa-book"></i></div>
+                                        <div class="subject-details">
+                                            <h4>${s.name}</h4>
+                                            <span class="description-text">Grade ${s.grade} Senior High Core</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge" style="background: #dbeafe; color: #1e40af;">Core</span></td>
+                                <td><span style="font-size: 12.5px; color: #64748b;">${s.description || 'DepEd SHS Core Subject'}</span></td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="action-btn edit" onclick="openEditModal('${s.id}')" title="Edit Subject"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn delete" onclick="deleteSubject('${s.id}')" title="Delete Subject"><i class="fas fa-trash-alt"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    html += `
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Strands
+                strands.forEach(strandName => {
+                    if (strandVal && strandVal.toUpperCase() !== strandName.toUpperCase()) return;
+
+                    const strandSubjects = gradeSubjects.filter(s => s.strand === strandName);
+                    if (strandSubjects.length === 0) return;
+
+                    const strandColors = {
+                        'STEM': '#0284c7',
+                        'ABM': '#16a34a',
+                        'HUMSS': '#9333ea',
+                        'TVL': '#ea580c',
+                        'GAS': '#4b5563'
+                    };
+
+                    const strandColor = strandColors[strandName] || '#1B2A4A';
+
+                    html += `
+                        <div class="strand-subject-section">
+                            <div class="strand-subject-header" onclick="toggleStrandContent('${strandName}-${gradeNum}')">
+                                <i class="fas fa-layer-group" style="color: ${strandColor};"></i>
+                                <h4>${strandName} Track — Specialized / Major Subjects</h4>
+                                <span class="badge" style="background: ${strandColor};">${strandSubjects.length} Subjects</span>
+                                <i class="fas fa-chevron-down strand-subject-toggle" id="toggle-${strandName}-${gradeNum}"></i>
+                            </div>
+                            <div class="strand-subject-content" id="strand-content-${strandName}-${gradeNum}">
+                                <div class="strand-table-wrapper">
+                                    <table class="strand-subject-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Specialized Subject</th>
+                                                <th>Track</th>
+                                                <th>Description</th>
+                                                <th style="width: 110px;">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                    `;
+
+                    strandSubjects.forEach(s => {
+                        html += `
+                            <tr>
+                                <td>
+                                    <div class="subject-info">
+                                        <div class="subject-icon" style="background: rgba(27, 42, 74, 0.08); color: ${strandColor};">
+                                            <i class="fas fa-atom"></i>
+                                        </div>
+                                        <div class="subject-details">
+                                            <h4>${s.name}</h4>
+                                            <span class="description-text">Grade ${s.grade} • ${s.strand} Major</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge" style="background: rgba(27, 42, 74, 0.1); color: #1B2A4A; font-weight: 700;">${s.strand}</span></td>
+                                <td><span style="font-size: 12.5px; color: #64748b;">${s.description || 'Specialized Track Subject'}</span></td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="action-btn edit" onclick="openEditModal('${s.id}')" title="Edit Subject"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn delete" onclick="deleteSubject('${s.id}')" title="Delete Subject"><i class="fas fa-trash-alt"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    html += `
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
             }
-            renderSubjects();
-            renderGradeCards();
+
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+
+        subjectsContainer.innerHTML = html;
+    }
+
+    // ============================================
+    // TOGGLE ACCORDIONS
+    // ============================================
+
+    window.toggleGradeSection = function(gradeNum) {
+        const content = document.getElementById(`grade-content-${gradeNum}`);
+        const icon = document.getElementById(`toggle-icon-${gradeNum}`);
+        if (!content) return;
+
+        content.classList.toggle('collapsed');
+        if (icon) icon.classList.toggle('rotated');
+    };
+
+    window.toggleStrandContent = function(key) {
+        const content = document.getElementById(`strand-content-${key}`);
+        const icon = document.getElementById(`toggle-${key}`);
+        if (!content) return;
+
+        content.classList.toggle('collapsed');
+        if (icon) icon.classList.toggle('rotated');
+    };
+
+    // ============================================
+    // EDIT & DELETE SUBJECT
+    // ============================================
+
+    window.openEditModal = function(id) {
+        const subject = subjects.find(s => s.id === id);
+        if (!subject || !editModal) return;
+
+        editSubjectId.value = subject.id;
+        editSubjectName.value = subject.name;
+        editGradeId.value = subject.grade;
+        editDescription.value = subject.description || '';
+
+        const isSeniorHigh = subject.grade === 11 || subject.grade === 12;
+        if (editStrandGroup) {
+            editStrandGroup.style.display = isSeniorHigh ? 'block' : 'none';
+            editStrand.value = subject.strand || '';
+        }
+
+        editModal.classList.add('show');
+    };
+
+    function closeEdit() {
+        if (editModal) editModal.classList.remove('show');
+    }
+
+    if (closeEditModal) closeEditModal.addEventListener('click', closeEdit);
+    if (cancelEditBtn) cancelEditBtn.addEventListener('click', closeEdit);
+
+    if (editGradeId) {
+        editGradeId.addEventListener('change', function() {
+            const gradeNum = parseInt(this.value);
+            const isSeniorHigh = gradeNum === 11 || gradeNum === 12;
+            if (editStrandGroup) {
+                editStrandGroup.style.display = isSeniorHigh ? 'block' : 'none';
+                if (!isSeniorHigh && editStrand) editStrand.value = '';
+            }
         });
     }
 
-    // Strand select change
-    if (strandSelect) {
-        strandSelect.addEventListener('change', function() {
+    if (editSubjectForm) {
+        editSubjectForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = editSubjectId.value;
+            const name = editSubjectName.value.trim();
+            const grade = parseInt(editGradeId.value);
+            const strand = (grade === 11 || grade === 12) && editStrand.value ? editStrand.value : null;
+            const description = editDescription.value.trim();
+
+            if (!name) {
+                showAlert('Please enter a subject name', 'error');
+                return;
+            }
+
+            const index = subjects.findIndex(s => s.id === id);
+            if (index !== -1) {
+                subjects[index] = {
+                    ...subjects[index],
+                    name,
+                    grade,
+                    strand,
+                    description,
+                    category: strand ? 'Major' : (name.toLowerCase().includes('elective') ? 'Elective' : 'Core')
+                };
+
+                saveSubjects();
+                closeEdit();
+                renderSubjects();
+                showAlert(`✅ Subject "${name}" updated successfully!`, 'success');
+            }
+        });
+    }
+
+    window.deleteSubject = function(id) {
+        const subject = subjects.find(s => s.id === id);
+        if (!subject) return;
+
+        if (confirm(`Are you sure you want to delete "${subject.name}"? This action cannot be undone.`)) {
+            subjects = subjects.filter(s => s.id !== id);
+            saveSubjects();
+            renderSubjects();
+            showAlert(`🗑️ Subject "${subject.name}" has been deleted.`, 'success');
+        }
+    };
+
+    // ============================================
+    // GRADE CARDS FILTER
+    // ============================================
+
+    if (gradeCardsContainer) {
+        gradeCardsContainer.querySelectorAll('.grade-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                e.preventDefault();
+                gradeCardsContainer.querySelectorAll('.grade-card').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+
+                const grade = this.dataset.grade;
+                currentActiveGrade = grade;
+
+                if (gradeFilter) {
+                    gradeFilter.value = grade === 'all' ? '' : grade;
+                }
+
+                // Show/hide strand filter
+                if (strandFilterWrapper) {
+                    strandFilterWrapper.style.display = (grade === '11' || grade === '12') ? 'block' : 'none';
+                    if (grade !== '11' && grade !== '12' && strandFilter) strandFilter.value = '';
+                }
+
+                renderSubjects();
+            });
+        });
+    }
+
+    // ============================================
+    // ACTIONS BAR FILTER LISTENERS
+    // ============================================
+
+    if (gradeFilter) {
+        gradeFilter.addEventListener('change', function() {
+            const grade = this.value;
+            currentActiveGrade = grade || 'all';
+
+            // Sync grade cards
+            if (gradeCardsContainer) {
+                gradeCardsContainer.querySelectorAll('.grade-card').forEach(c => {
+                    c.classList.toggle('active', c.dataset.grade === (grade || 'all'));
+                });
+            }
+
+            // Show/hide strand filter
+            if (strandFilterWrapper) {
+                strandFilterWrapper.style.display = (grade === '11' || grade === '12') ? 'block' : 'none';
+                if (grade !== '11' && grade !== '12' && strandFilter) strandFilter.value = '';
+            }
+
             renderSubjects();
         });
     }
 
-    // Search input
+    if (strandFilter) {
+        strandFilter.addEventListener('change', function() {
+            renderSubjects();
+        });
+    }
+
     if (searchInput) {
         searchInput.addEventListener('input', function() {
             renderSubjects();
         });
     }
 
-    // Filter form
-    if (filterForm) {
-        filterForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function() {
+            if (gradeFilter) gradeFilter.value = '';
+            if (strandFilter) strandFilter.value = '';
+            if (searchInput) searchInput.value = '';
+            if (strandFilterWrapper) strandFilterWrapper.style.display = 'none';
+
+            if (gradeCardsContainer) {
+                gradeCardsContainer.querySelectorAll('.grade-card').forEach(c => {
+                    c.classList.toggle('active', c.dataset.grade === 'all');
+                });
+            }
+
             renderSubjects();
         });
     }
 
-    // Add grade change handler for strand toggle
-    document.getElementById('addGradeId')?.addEventListener('change', function() {
-        const gradeId = parseInt(this.value);
-        const strandGroup = document.getElementById('addStrandGroup');
-        const strandSelect = document.getElementById('addStrand');
-        
-        if (gradeId === 5 || gradeId === 6) {
-            strandGroup.style.display = 'block';
-            if (strandSelect) strandSelect.required = true;
-        } else {
-            strandGroup.style.display = 'none';
-            if (strandSelect) {
-                strandSelect.required = false;
-                strandSelect.value = '';
-            }
+    // Close modal on click outside
+    window.addEventListener('click', function(e) {
+        if (e.target === editModal) closeEdit();
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && editModal && editModal.classList.contains('show')) {
+            closeEdit();
         }
     });
 
-    document.getElementById('editGradeId')?.addEventListener('change', function() {
-        const gradeId = parseInt(this.value);
-        const strandGroup = document.getElementById('editStrandGroup');
-        const strandSelect = document.getElementById('editStrand');
-        
-        if (gradeId === 5 || gradeId === 6) {
-            strandGroup.style.display = 'block';
-            if (strandSelect) strandSelect.required = true;
-        } else {
-            strandGroup.style.display = 'none';
-            if (strandSelect) {
-                strandSelect.required = false;
-                strandSelect.value = '';
-            }
-        }
-    });
-
-    // Close modals on outside click
-    document.addEventListener('click', function(e) {
-        if (e.target === addModal) closeAddModal();
-        if (e.target === editModal) closeEditModal();
-        if (e.target === viewModal) closeViewModal();
-    });
-
-    // ===== MOBILE MENU =====
-
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('sidebar');
-
-    if (menuToggle) {
-        menuToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
-        });
-    }
-
-    document.addEventListener('click', function(e) {
-        if (window.innerWidth <= 768) {
-            if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-                sidebar.classList.remove('active');
-            }
-        }
-    });
-
-    // ===== INIT =====
+    // ============================================
+    // INIT
+    // ============================================
 
     updateStats();
-    renderGradeCards();
     renderSubjects();
-});
+
+    console.log('✅ Subjects page fully initialized');
+
+})();

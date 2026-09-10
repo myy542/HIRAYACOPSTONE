@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,6 +13,7 @@
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/view_section.css">
 </head>
+
 <body data-section-id="1" data-section-name="Grade 10 - Section A">
     <!-- Mobile Menu Toggle -->
     <div class="menu-toggle" id="menuToggle">
@@ -24,7 +26,8 @@
             <div class="sidebar-header">
                 <div class="logo">
                     <div class="logo-icon">
-                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo"
+                            onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
                     </div>
                     <div class="logo-text">PLS<span>NHS</span></div>
                 </div>
@@ -33,10 +36,10 @@
 
             <div class="admin-profile">
                 <div class="admin-avatar">
-                    <div class="avatar-initial">A</div>
+                    <div class="avatar-initial" id="adminAvatar">J</div>
                     <div class="online-dot"></div>
                 </div>
-                <div class="admin-name">Admin</div>
+                <div class="admin-name" id="adminName">Justine</div>
                 <div class="admin-role"><i class="fas fa-shield-alt"></i> Administrator</div>
             </div>
 
@@ -45,7 +48,7 @@
                     <div class="nav-section-title">MAIN MENU</div>
                     <ul class="nav-items">
                         <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                        <li><a href="students.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+                        <li><a href="student.html"><i class="fas fa-user-graduate"></i> Students</a></li>
                         <li><a href="teachers.html"><i class="fas fa-chalkboard-user"></i> Teachers</a></li>
                         <li><a href="sections.html" class="active"><i class="fas fa-layer-group"></i> Sections</a></li>
                         <li><a href="subjects.html"><i class="fas fa-book"></i> Subjects</a></li>
@@ -177,5 +180,7 @@
     </div>
 
     <script src="js/view_section.js"></script>
+    <script src="js/admin_avatar_sync.js"></script>
 </body>
+
 </html>

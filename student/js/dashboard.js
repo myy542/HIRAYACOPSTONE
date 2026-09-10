@@ -1,28 +1,14 @@
 /**
- * Student Dashboard - Firebase Integration
+ * Student Dashboard - Supabase Integration
+ * PLSNHS - Placido L. Señor National High School
  */
 
-import { auth, db } from '../../firebase/config.js';
-import { 
-    onAuthStateChanged,
-    signOut 
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-import {
-    collection,
-    query,
-    where,
-    getDocs,
-    orderBy,
-    limit,
-    doc,
-    getDoc,
-    onSnapshot
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { supabase } from '../../supabase/config.js';
 
 (function() {
     'use strict';
 
-    console.log('📊 Student Dashboard ready');
+    console.log('📊 Student Dashboard (Supabase) ready');
 
     // ============================================
     // DOM ELEMENTS
@@ -58,69 +44,150 @@ import {
     const recentActivities = document.getElementById('recentActivities');
     const completeHistory = document.getElementById('completeHistory');
 
+    function getStudentInitials(name) {
+        if (!name || typeof name !== 'string') return 'S';
+        const cleanName = name.replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?)\s+/i, '').trim();
+        if (!cleanName || cleanName.toLowerCase() === 'student' || cleanName.toLowerCase().includes('mylene') || cleanName.toLowerCase().includes('raganas')) return 'S';
+        const words = cleanName.split(/[\s,&-]+/).filter(w => w.length > 0 && !['and', 'the', 'of', '&'].includes(w.toLowerCase()));
+        if (words.length === 0) return 'S';
+        if (words.length === 1) return words[0].charAt(0).toUpperCase();
+        return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+    }
+
+    function sanitizeStudentName(name, email) {
+        if (!name && email) {
+            if (email.toLowerCase().includes('mylene') || email.toLowerCase().includes('student')) return 'Student';
+            name = email.split('@')[0];
+        }
+        if (!name || name.toLowerCase().includes('mylene') || name.toLowerCase().includes('raganas') || name.toLowerCase() === 'admin') {
+            return 'Student';
+        }
+        return name;
+    }
+
     // ============================================
-    // AUTH STATE
+    // SESSION CHECK (Supabase / localStorage)
     // ============================================
 
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            console.log('✅ User logged in:', user.email);
-            const displayName = user.displayName || user.email || 'Student';
-            const firstName = displayName.split('@')[0];
-            studentName.textContent = firstName;
-            studentNameHeader.textContent = firstName;
-            studentInitial.textContent = firstName.charAt(0).toUpperCase();
-            
-            // REMOVED: Role validation check
-            // Any authenticated user can access this page
-            
-            // Load dashboard data
-            loadDashboardData(user.uid);
-            loadNotifications();
-            loadEnrollmentHistory(user.uid);
-        } else {
-            console.log('❌ User logged out - redirecting to login');
-            window.location.href = '../auth/login.html';
+    let sessionUser = null;
+    try {
+        const stored = localStorage.getItem('currentUser');
+        if (stored) {
+            sessionUser = JSON.parse(stored);
         }
-    });
+    } catch(e) {}
+
+    if (!sessionUser) {
+        console.warn('⚠️ No active student session, redirecting...');
+        window.location.replace('../auth/login.html');
+        return;
+    }
+
+    // Check if another role is accessing student dashboard
+    if (sessionUser && sessionUser.role && sessionUser.role !== 'student') {
+        const routes = {
+            'admin': '../admin/dashboard.html',
+            'teacher': '../teacher/dashboard.html',
+            'parent': '../parents/dashboard.html',
+            'registrar': '../registrar/dashboard.html'
+        };
+        window.location.replace(routes[sessionUser.role] || '../auth/login.html');
+        return;
+    }
+
+    // Pre-populate student name from session immediately
+    let studentDisplayName = (sessionUser.firstName ? `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim() : (sessionUser.email ? sessionUser.email.split('@')[0] : 'Student'));
+    studentDisplayName = sanitizeStudentName(studentDisplayName, sessionUser.email);
+    if (studentName) studentName.textContent = studentDisplayName;
+    if (studentNameHeader) studentNameHeader.textContent = studentDisplayName;
+    if (studentInitial) studentInitial.textContent = getStudentInitials(studentDisplayName);
 
     // ============================================
     // LOGOUT
     // ============================================
 
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
+        logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
-            signOut(auth).then(() => {
-                window.location.href = '../auth/login.html';
-            }).catch((error) => {
-                console.error('Logout error:', error);
-            });
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('plsnhs_student_avatar');
+            localStorage.removeItem('plsnhs_student_name');
+            try {
+                await supabase.auth.signOut();
+            } catch(err) {}
+            window.location.replace('../auth/login.html');
         });
     }
 
     // ============================================
-    // LOAD DASHBOARD DATA
+    // LOAD DASHBOARD DATA FROM SUPABASE
     // ============================================
 
-    async function loadDashboardData(userId) {
+    async function loadDashboardData() {
         try {
-            // Get enrollments without requiring composite index
-            const enrollmentsRef = collection(db, 'enrollments');
-            const q = query(enrollmentsRef, where('userId', '==', userId));
-            const snapshot = await getDocs(q);
-            
-            let enrollments = [];
-            snapshot.forEach((doc) => {
-                enrollments.push({ id: doc.id, ...doc.data() });
-            });
+            const userEmail = sessionUser.email || '';
+            const userUid = sessionUser.uid || '';
 
-            // Sort in memory by createdAt descending
-            enrollments.sort((a, b) => {
-                const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (new Date(a.createdAt || 0).getTime() || 0));
-                const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (new Date(b.createdAt || 0).getTime() || 0));
-                return timeB - timeA;
-            });
+            // 1. Fetch student info
+            let studentRow = null;
+            try {
+                const { data: studentsData } = await supabase
+                    .from('students')
+                    .select('*')
+                    .or(`email.eq.${userEmail},id.eq.${userUid}`);
+
+                if (studentsData && studentsData.length > 0) {
+                    studentRow = studentsData[0];
+                    let fullName = `${studentRow.first_name || ''} ${studentRow.last_name || ''}`.trim();
+                    fullName = sanitizeStudentName(fullName, userEmail);
+                    if (fullName) {
+                        if (studentName) studentName.textContent = fullName;
+                        if (studentNameHeader) studentNameHeader.textContent = fullName;
+                        if (studentInitial) studentInitial.textContent = getStudentInitials(fullName);
+                    }
+                }
+            } catch(e) {
+                console.warn('Student query error:', e);
+            }
+
+            // 2. Fetch enrollments
+            let enrollments = [];
+            const studentId = studentRow?.id || userUid;
+
+            try {
+                let query = supabase
+                    .from('enrollments')
+                    .select('*');
+
+                if (userEmail && studentId) {
+                    query = query.or(`email.eq.${userEmail},student_id.eq.${studentId}`);
+                } else if (userEmail) {
+                    query = query.eq('email', userEmail);
+                } else if (studentId) {
+                    query = query.eq('student_id', studentId);
+                }
+
+                const { data, error } = await query.order('created_at', { ascending: false });
+
+                if (!error && data) {
+                    enrollments = data;
+                }
+            } catch (err) {
+                console.warn('Enrollment query error:', err);
+            }
+
+            // 3. Fallback to localStorage dummy data if empty
+            if (enrollments.length === 0) {
+                try {
+                    const localSaved = localStorage.getItem('plsnhs_enrollments');
+                    if (localSaved) {
+                        const parsed = JSON.parse(localSaved);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            enrollments = parsed;
+                        }
+                    }
+                } catch(e) {}
+            }
 
             // Latest enrollment
             const latest = enrollments[0] || null;
@@ -128,41 +195,56 @@ import {
             // Update enrollment display
             if (latest) {
                 const status = latest.status || 'Pending';
-                const grade = latest.grade || 'Not Enrolled';
-                enrollmentDisplay.textContent = grade;
-                enrollmentStatus.innerHTML = `<i class="fas fa-circle" style="font-size: 8px; margin-right: 5px;"></i> ${status}`;
-                
-                if (status.toLowerCase() === 'enrolled' || status.toLowerCase() === 'approved') {
-                    enrollmentStatus.style.color = '#10b981';
-                } else if (status.toLowerCase() === 'pending') {
-                    enrollmentStatus.style.color = '#f59e0b';
-                } else {
-                    enrollmentStatus.style.color = '#ef4444';
+                const grade = latest.grade_level || latest.grade || studentRow?.grade_level || 'Not Enrolled';
+                if (enrollmentDisplay) enrollmentDisplay.textContent = grade;
+                if (enrollmentStatus) {
+                    enrollmentStatus.innerHTML = `<i class="fas fa-circle" style="font-size: 8px; margin-right: 5px;"></i> ${status}`;
+                    
+                    const stLower = status.toLowerCase();
+                    if (stLower === 'enrolled' || stLower === 'approved') {
+                        enrollmentStatus.style.color = '#10b981';
+                    } else if (stLower === 'pending') {
+                        enrollmentStatus.style.color = '#f59e0b';
+                    } else {
+                        enrollmentStatus.style.color = '#ef4444';
+                    }
                 }
             } else {
-                enrollmentDisplay.textContent = 'Not Enrolled';
-                enrollmentStatus.innerHTML = `<i class="fas fa-circle" style="font-size: 8px; margin-right: 5px;"></i> No Record`;
-                enrollmentStatus.style.color = '#6c757d';
+                if (enrollmentDisplay) enrollmentDisplay.textContent = studentRow?.grade_level || 'Not Enrolled';
+                if (enrollmentStatus) {
+                    enrollmentStatus.innerHTML = `<i class="fas fa-circle" style="font-size: 8px; margin-right: 5px;"></i> No Record`;
+                    enrollmentStatus.style.color = '#6c757d';
+                }
             }
 
-            // Subjects count
-            subjectsCount.textContent = latest ? (Math.floor(Math.random() * 4) + 6) : 0;
+            // Fetch subjects count
+            try {
+                const { count } = await supabase
+                    .from('subjects')
+                    .select('*', { count: 'exact', head: true });
+                if (subjectsCount) {
+                    subjectsCount.textContent = count && count > 0 ? count : (latest ? 8 : 0);
+                }
+            } catch(e) {
+                if (subjectsCount) subjectsCount.textContent = latest ? 8 : 0;
+            }
 
             // Average grade
-            const avg = latest ? (Math.random() * 10 + 85).toFixed(2) + '%' : '--';
-            averageGrade.textContent = avg;
+            const avg = latest?.general_average ? `${latest.general_average}%` : (latest ? '88.50%' : '--');
+            if (averageGrade) averageGrade.textContent = avg;
 
             // Total enrollments
-            totalEnrollments.textContent = enrollments.length || 0;
+            if (totalEnrollments) totalEnrollments.textContent = enrollments.length || 0;
             if (totalEnrollmentsLabel) {
                 totalEnrollmentsLabel.textContent = `Total: ${enrollments.length} enrollments`;
             }
 
             // Student Type
-            determineStudentType(enrollments);
+            determineStudentType(enrollments, studentRow);
 
             // Recent activities
             renderRecentActivities(enrollments.slice(0, 5));
+            renderCompleteHistory(enrollments);
 
         } catch (error) {
             console.error('Error loading dashboard data:', error);
@@ -173,30 +255,24 @@ import {
     // DETERMINE STUDENT TYPE
     // ============================================
 
-    function determineStudentType(enrollments) {
+    function determineStudentType(enrollments, studentRow) {
         const count = enrollments.length;
         let icon = 'fa-star';
-        let color = '#197e2f';
+        let color = '#0b2b4a';
         let display = 'New Student';
         let description = 'First time enrollee';
-        let subtext = 'First time enrollment';
 
         if (count > 1) {
             icon = 'fa-undo-alt';
-            color = '#197e2f';
             display = 'Continuing Student';
             description = 'Continuing student - progressing to next grade level';
-            subtext = 'Progressing to next grade level';
         }
 
-        // Check if transferee
-        const hasOldSchool = enrollments.some(e => e.previousSchool);
-        if (hasOldSchool && count === 1) {
+        const hasOldSchool = enrollments.some(e => e.previous_school || e.previousSchool);
+        if (hasOldSchool && count <= 1) {
             icon = 'fa-exchange-alt';
-            color = '#197e2f';
             display = 'Transferee Student';
-            description = 'Transferred from another school - requirements may vary';
-            subtext = 'Additional requirements may apply';
+            description = 'Transferred from another school - requirements verified';
         }
 
         if (studentTypeBadge) {
@@ -231,7 +307,7 @@ import {
                     <div class="activity-content" style="text-align: center; padding: 30px;">
                         <i class="fas fa-file-signature" style="font-size: 40px; color: #999; opacity: 0.3; margin-bottom: 10px;"></i>
                         <p style="color: #999;">No enrollment history found.</p>
-                        <a href="enrollment-form.html" style="color: #0B4F2E; text-decoration: none; font-weight: 500; display: inline-block; margin-top: 10px;">
+                        <a href="enrollment.html" style="color: #0b2b4a; text-decoration: none; font-weight: 600; display: inline-block; margin-top: 10px;">
                             Enroll Now <i class="fas fa-arrow-right"></i>
                         </a>
                     </div>
@@ -241,38 +317,77 @@ import {
         }
 
         recentActivities.innerHTML = enrollments.map((item, index) => {
-            const statusClass = item.status === 'Pending' ? 'dot-pending' : 
-                               item.status === 'Enrolled' ? 'dot-approved' : 'dot-completed';
-            const statusTextClass = item.status === 'Pending' ? 'status-pending' : 
-                                   item.status === 'Enrolled' ? 'status-approved' : 'status-rejected';
+            const stLower = (item.status || 'pending').toLowerCase();
+            const statusClass = stLower === 'pending' ? 'dot-pending' : 
+                               (stLower === 'enrolled' || stLower === 'approved') ? 'dot-approved' : 'dot-completed';
+            const statusTextClass = stLower === 'pending' ? 'status-pending' : 
+                                   (stLower === 'enrolled' || stLower === 'approved') ? 'status-approved' : 'status-rejected';
             
             let dateStr = 'N/A';
-            if (item.createdAt) {
-                if (item.createdAt.seconds) {
-                    dateStr = new Date(item.createdAt.seconds * 1000).toLocaleDateString('en-US', { 
-                        month: 'long', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                    });
-                } else if (item.createdAt.toDate) {
-                    dateStr = item.createdAt.toDate().toLocaleDateString('en-US', { 
-                        month: 'long', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                    });
-                }
+            const created = item.created_at || item.createdAt;
+            if (created) {
+                dateStr = new Date(created).toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                });
             }
+
+            const schoolYear = item.school_year || item.schoolYear || item.last_school_year || '2025-2026';
 
             return `
                 <div class="activity-item">
                     <div class="activity-dot ${statusClass}"></div>
                     <div class="activity-content">
                         <div class="activity-title">
-                            Enrollment Request - SY ${item.schoolYear || '2024-2025'}
-                            ${index === 0 ? '<span style="margin-left: 10px; font-size: 11px; background: #10b981; color: white; padding: 2px 8px; border-radius: 12px;">Current</span>' : ''}
+                            Enrollment Application - SY ${schoolYear}
+                            ${index === 0 ? '<span style="margin-left: 10px; font-size: 11px; background: #10b981; color: white; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Latest</span>' : ''}
                         </div>
                         <div class="activity-time">
-                            <i class="far fa-clock"></i> ${dateStr}
+                            <i class="far fa-clock"></i> ${dateStr} • ${item.grade_level || item.grade || 'Grade 11'}
+                        </div>
+                    </div>
+                    <div class="activity-status ${statusTextClass}">
+                        ${item.status || 'Pending'}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderCompleteHistory(enrollments) {
+        if (!completeHistory) return;
+
+        if (enrollments.length === 0) {
+            completeHistory.innerHTML = `
+                <div class="activity-item">
+                    <div class="activity-content" style="text-align: center; padding: 30px;">
+                        <i class="fas fa-file-signature" style="font-size: 40px; color: #999; opacity: 0.3; margin-bottom: 10px;"></i>
+                        <p style="color: #999;">No enrollment history found.</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        completeHistory.innerHTML = enrollments.map((item) => {
+            const stLower = (item.status || 'pending').toLowerCase();
+            const statusClass = stLower === 'pending' ? 'dot-pending' : 
+                               (stLower === 'enrolled' || stLower === 'approved') ? 'dot-approved' : 'dot-completed';
+            const statusTextClass = stLower === 'pending' ? 'status-pending' : 
+                                   (stLower === 'enrolled' || stLower === 'approved') ? 'status-approved' : 'status-rejected';
+            const schoolYear = item.school_year || item.schoolYear || item.last_school_year || '2025-2026';
+
+            return `
+                <div class="activity-item">
+                    <div class="activity-dot ${statusClass}"></div>
+                    <div class="activity-content">
+                        <div class="activity-title">
+                            <strong>School Year ${schoolYear}</strong>
+                        </div>
+                        <div class="activity-time">
+                            <i class="fas fa-layer-group"></i> ${item.grade_level || item.grade || 'Grade 11'}
+                            ${item.strand ? ` • ${item.strand}` : ''}
                         </div>
                     </div>
                     <div class="activity-status ${statusTextClass}">
@@ -284,81 +399,38 @@ import {
     }
 
     // ============================================
-    // LOAD ENROLLMENT HISTORY
+    // LOAD NOTIFICATIONS (from Supabase or Local)
     // ============================================
 
-    async function loadEnrollmentHistory(userId) {
+    async function loadNotifications() {
+        let notifications = [];
         try {
-            const enrollmentsRef = collection(db, 'enrollments');
-            const q = query(enrollmentsRef, where('userId', '==', userId));
-            const snapshot = await getDocs(q);
+            const { data } = await supabase
+                .from('notifications')
+                .select('*')
+                .or(`user_id.eq.${sessionUser.uid},role.eq.student`)
+                .order('created_at', { ascending: false })
+                .limit(10);
             
-            let enrollments = [];
-            snapshot.forEach((doc) => {
-                enrollments.push({ id: doc.id, ...doc.data() });
-            });
-
-            // Sort in memory by createdAt descending
-            enrollments.sort((a, b) => {
-                const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (new Date(a.createdAt || 0).getTime() || 0));
-                const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (new Date(b.createdAt || 0).getTime() || 0));
-                return timeB - timeA;
-            });
-
-            if (completeHistory) {
-                if (enrollments.length === 0) {
-                    completeHistory.innerHTML = `
-                        <div class="activity-item">
-                            <div class="activity-content" style="text-align: center; padding: 30px;">
-                                <i class="fas fa-file-signature" style="font-size: 40px; color: #999; opacity: 0.3; margin-bottom: 10px;"></i>
-                                <p style="color: #999;">No enrollment history found.</p>
-                            </div>
-                        </div>
-                    `;
-                    return;
-                }
-
-                completeHistory.innerHTML = enrollments.map((item) => {
-                    const statusClass = item.status === 'Pending' ? 'dot-pending' : 
-                                       item.status === 'Enrolled' ? 'dot-approved' : 'dot-completed';
-                    const statusTextClass = item.status === 'Pending' ? 'status-pending' : 
-                                           item.status === 'Enrolled' ? 'status-approved' : 'status-rejected';
-
-                    return `
-                        <div class="activity-item">
-                            <div class="activity-dot ${statusClass}"></div>
-                            <div class="activity-content">
-                                <div class="activity-title">
-                                    <strong>School Year ${item.schoolYear || '2024-2025'}</strong>
-                                </div>
-                                <div class="activity-time">
-                                    <i class="fas fa-layer-group"></i> Grade: ${item.grade || 'N/A'}
-                                    ${item.section ? `- Section: ${item.section}` : ''}
-                                </div>
-                            </div>
-                            <div class="activity-status ${statusTextClass}">
-                                ${item.status || 'Pending'}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+            if (data && data.length > 0) {
+                notifications = data.map(n => ({
+                    id: n.id,
+                    type: n.type || 'update',
+                    title: n.title,
+                    message: n.message,
+                    time: new Date(n.created_at).toLocaleDateString(),
+                    read: n.read || false
+                }));
             }
+        } catch(e) {}
 
-        } catch (error) {
-            console.error('Error loading enrollment history:', error);
+        if (notifications.length === 0) {
+            notifications = [
+                { id: 1, type: 'update', title: '📢 Enrollment Period Open', message: 'The enrollment period for SY 2026-2027 is now open.', time: 'Today', read: false },
+                { id: 2, type: 'reminder', title: '⏰ Requirements Submission', message: 'Please submit your enrollment requirements before the deadline.', time: 'Yesterday', read: false },
+                { id: 3, type: 'action', title: '✅ Enrollment Approved', message: 'Your enrollment has been successfully recorded in the system.', time: '3 days ago', read: true }
+            ];
         }
-    }
-
-    // ============================================
-    // LOAD NOTIFICATIONS
-    // ============================================
-
-    function loadNotifications() {
-        const notifications = [
-            { id: 1, type: 'update', title: '📢 Enrollment Period Open', message: 'The enrollment period for SY 2026-2027 is now open.', time: '2 hours ago', read: false },
-            { id: 2, type: 'reminder', title: '⏰ Requirements Submission', message: 'Please submit your enrollment requirements before the deadline.', time: '5 hours ago', read: false },
-            { id: 3, type: 'action', title: '✅ Enrollment Approved', message: 'Your enrollment for Grade 7 has been approved!', time: '1 day ago', read: false },
-        ];
         
         renderNotifications(notifications);
         updateNotificationCount(notifications.filter(n => !n.read).length);
@@ -378,7 +450,7 @@ import {
         }
         
         const icons = {
-            update: 'fa-megaphone',
+            update: 'fa-bullhorn',
             action: 'fa-check-circle',
             reminder: 'fa-clock',
             alert: 'fa-exclamation-triangle',
@@ -395,7 +467,7 @@ import {
                     <div class="notif-message">${notif.message}</div>
                     <div class="notif-time">${notif.time}</div>
                 </div>
-                ${!notif.read ? `<button class="mark-read-btn" data-id="${notif.id}"><i class="fas fa-check"></i></button>` : ''}
+                ${!notif.read ? `<button type="button" class="mark-read-btn" data-id="${notif.id}"><i class="fas fa-check"></i></button>` : ''}
             </div>
         `).join('');
         
@@ -456,6 +528,8 @@ import {
         });
     }
 
-    console.log('✅ Student Dashboard ready!');
+    // Initialize
+    loadDashboardData();
+    loadNotifications();
 
 })();

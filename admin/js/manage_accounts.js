@@ -19,8 +19,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ===== DATA =====
 
-    // Sample user data
-    let users = [
+    // Default sample user data
+    const defaultUsers = [
         { id: 1, id_number: 'PLSNHS-ADM-00001', fullname: 'Admin User', email: 'admin@plshs.edu.ph', role: 'Admin', status: 'approved', created_at: '2026-01-01 08:00:00', rejection_reason: null },
         { id: 2, id_number: 'PLSNHS-TCH-000001', fullname: 'Maria Santos', email: 'maria.santos@plshs.edu.ph', role: 'Teacher', status: 'pending', created_at: '2026-06-20 10:30:00', rejection_reason: null },
         { id: 3, id_number: 'PLSNHS-STU-000001', fullname: 'Juan Dela Cruz', email: 'juan.dela@plshs.edu.ph', role: 'Student', status: 'approved', created_at: '2026-06-15 14:20:00', rejection_reason: null },
@@ -29,6 +29,29 @@ document.addEventListener('DOMContentLoaded', function() {
         { id: 6, id_number: 'PLSNHS-STU-000002', fullname: 'Carlos Mendoza', email: 'carlos.m@plshs.edu.ph', role: 'Student', status: 'rejected', created_at: '2026-06-18 16:00:00', rejection_reason: 'Incomplete requirements' },
         { id: 7, id_number: null, fullname: 'Elena Garcia', email: 'elena.g@plshs.edu.ph', role: 'Teacher', status: 'pending', created_at: '2026-06-23 08:30:00', rejection_reason: null }
     ];
+
+    let users = [];
+    try {
+        const stored = localStorage.getItem('plsnhs_accounts');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            // Deduplicate with defaultUsers
+            const storedIds = new Set(parsed.map(p => p.id));
+            const extraDefaults = defaultUsers.filter(d => !storedIds.has(d.id));
+            users = [...parsed, ...extraDefaults];
+        } else {
+            users = [...defaultUsers];
+            localStorage.setItem('plsnhs_accounts', JSON.stringify(users));
+        }
+    } catch(e) {
+        users = [...defaultUsers];
+    }
+
+    function persistUsers() {
+        try {
+            localStorage.setItem('plsnhs_accounts', JSON.stringify(users));
+        } catch(e) {}
+    }
 
     // Current user ID (logged in)
     const currentUserId = 1;
@@ -201,6 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (confirm(`Approve ${user.fullname}?`)) {
             user.status = 'approved';
+            persistUsers();
             showAlert(`✅ ${user.fullname} approved successfully!`, 'success');
             updateStats();
             renderPendingUsers();
@@ -231,16 +255,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Check if user has related records (simulated)
-        const hasRelated = false; // In real app, check for enrollments, sections, etc.
-
-        if (hasRelated) {
-            showAlert('Cannot delete user because they have related records.', 'error');
-            return;
-        }
-
         if (confirm(`Delete ${user.fullname}?`)) {
             users = users.filter(u => u.id !== id);
+            persistUsers();
             showAlert(`✅ ${user.fullname} deleted successfully!`, 'success');
             updateStats();
             renderPendingUsers();
@@ -314,6 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (user) {
                 user.status = 'rejected';
                 user.rejection_reason = reason || 'No reason provided';
+                persistUsers();
                 showAlert(`✅ ${user.fullname} rejected successfully!`, 'success');
                 closeRejectModal();
                 updateStats();

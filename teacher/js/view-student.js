@@ -74,52 +74,51 @@ import {
     const quarters = ['1st Quarter', '2nd Quarter', '3rd Quarter', '4th Quarter'];
 
     // ============================================
-    // AUTH STATE
+    // SESSION CHECK & AUTH
     // ============================================
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            currentUser = user;
-            console.log('✅ User logged in:', user.email);
-            const displayName = user.displayName || user.email || 'Teacher';
-            const firstName = displayName.split('@')[0];
-            teacherName.textContent = firstName;
-            teacherInitial.textContent = firstName.charAt(0).toUpperCase();
-
-            // Get student ID from URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const studentIdParam = urlParams.get('id');
-
-            if (studentIdParam) {
-                await loadUserData(user.uid);
-                await loadStudentData(studentIdParam);
-                await loadEnrollmentData(studentIdParam);
-                await loadGradesData(studentIdParam);
-            } else {
-                showAlert('⚠️ No student ID provided', 'error');
-                setTimeout(() => {
-                    window.location.href = 'classes.html';
-                }, 1500);
-            }
-        } else {
-            console.log('❌ User logged out - redirecting to login');
-            window.location.href = '../auth/login.html';
+    let sessionUser = null;
+    try {
+        const stored = localStorage.getItem('currentUser');
+        if (stored) {
+            sessionUser = JSON.parse(stored);
         }
-    });
+    } catch(e) {}
+
+    if (!sessionUser) {
+        console.warn('⚠️ No active teacher session, redirecting...');
+        window.location.replace('../auth/login.html');
+        return;
+    }
+
+    if (sessionUser.role && sessionUser.role !== 'teacher') {
+        const routes = {
+            'admin': '../admin/dashboard.html',
+            'student': '../student/dashboard.html',
+            'parent': '../parents/dashboard.html',
+            'registrar': '../registrar/dashboard.html'
+        };
+        window.location.replace(routes[sessionUser.role] || '../auth/login.html');
+        return;
+    }
+
+    currentUser = { uid: sessionUser.uid, email: sessionUser.email };
+    const displayName = (sessionUser.firstName ? `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim() : (sessionUser.email ? sessionUser.email.split('@')[0] : 'Teacher'));
+    if (teacherName) teacherName.textContent = displayName;
+    if (teacherInitial) teacherInitial.textContent = displayName.charAt(0).toUpperCase();
 
     // ============================================
     // LOGOUT
     // ============================================
 
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
+        logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
-            signOut(auth).then(() => {
-                window.location.href = '../auth/login.html';
-            }).catch((error) => {
-                console.error('Logout error:', error);
-                showAlert('❌ Error logging out: ' + error.message, 'error');
-            });
+            console.log('🚪 Teacher logging out...');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('plsnhs_teacher_avatar');
+            localStorage.removeItem('plsnhs_teacher_name');
+            window.location.replace('../auth/login.html');
         });
     }
 

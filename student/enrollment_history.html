@@ -96,7 +96,7 @@
                     <h3>No Active Enrollment</h3>
                     <p>You are not currently enrolled for any school year.</p>
                 </div>
-                <a href="enrollment-form.html" class="enroll-now-btn">
+                <a href="enrollment.html" class="enroll-now-btn">
                     <i class="fas fa-pen-fancy"></i> Enroll Now
                 </a>
             </div>
@@ -121,14 +121,65 @@
                 </div>
             </div>
 
-            <!-- History List -->
+            <!-- History Table Card -->
             <div class="history-card">
                 <div class="history-card-header">
-                    <h3><i class="fas fa-list-ul"></i> All Enrollment Records</h3>
-                    <span class="history-count" id="historyCount">0 record(s)</span>
+                    <div class="header-left">
+                        <h3><i class="fas fa-table"></i> All Enrollment Records</h3>
+                        <span class="history-count" id="historyCount">0 record(s)</span>
+                    </div>
+                    <div class="header-controls">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="historySearchInput" placeholder="Search school year, grade, section, strand...">
+                        </div>
+                        <select id="historyStatusFilter" class="filter-select">
+                            <option value="">All Statuses</option>
+                            <option value="Enrolled">Approved / Enrolled</option>
+                            <option value="Pending">Pending Review</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="history-list" id="historyList">
-                    <!-- Dynamic content -->
+                <div class="table-responsive">
+                    <table class="enrollment-table" id="enrollmentTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>School Year</th>
+                                <th>Grade & Section</th>
+                                <th>Strand / Track</th>
+                                <th>Student Type</th>
+                                <th>Date Submitted</th>
+                                <th>Status</th>
+                                <th style="text-align: center; width: 110px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <tr>
+                                <td colspan="8" class="loading-cell" style="text-align: center; padding: 40px; color: var(--gray-400);">
+                                    <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 10px; display: block; color: var(--primary);"></i>
+                                    Loading enrollment records...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Enrollment Details Modal -->
+            <div class="modal" id="enrollmentDetailModal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="modalEnrollmentTitle"><i class="fas fa-file-invoice"></i> Enrollment Record Details</h3>
+                        <button type="button" class="close-modal" id="closeDetailModalBtn">&times;</button>
+                    </div>
+                    <div class="modal-body" id="modalEnrollmentBody">
+                        <!-- Loaded dynamically -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secondary" id="dismissDetailModalBtn">Close</button>
+                    </div>
                 </div>
             </div>
 
@@ -157,6 +208,7 @@
         </main>
     </div>
 
+    <script src="js/student_avatar_sync.js"></script>
     <script type="module" src="js/enrollment_history.js"></script>
 </body>
 </html>

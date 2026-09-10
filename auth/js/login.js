@@ -1,19 +1,10 @@
 /**
- * PLSNHS Login - Firebase Integration
+ * PLSNHS Login - Custom Login using 'users' table
+ * Wala nag-gamit og Supabase Authentication
+ * Nag-query sa 'users' table para sa email + password + role
  */
 
-import { auth, db } from '../../firebase/config.js';
-import { 
-    signInWithEmailAndPassword,
-    onAuthStateChanged,
-    sendPasswordResetEmail
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-import {
-    collection,
-    query,
-    where,
-    getDocs
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { supabase } from '../../supabase/config.js';
 
 (function() {
     'use strict';
@@ -32,33 +23,87 @@ import {
     const alertContainer = document.getElementById('alertContainer');
     const toast = document.getElementById('toast');
     const toastMessage = document.getElementById('toastMessage');
+    const togglePasswordBtn = document.getElementById('togglePassword');
+
+    let isRedirecting = false;
 
     // ============================================
-    // PASSWORD TOGGLE
+    // PASSWORD TOGGLE (Mata)
     // ============================================
 
-    const toggleBtn = document.querySelector('.toggle-password');
-    if (toggleBtn) {
-        toggleBtn.addEventListener('click', function() {
-            const type = passwordInput.type === 'password' ? 'text' : 'password';
-            passwordInput.type = type;
-            this.querySelector('i').className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+    if (togglePasswordBtn) {
+        togglePasswordBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const icon = this.querySelector('i');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.className = 'fas fa-eye-slash';
+                console.log('👁️ Password visible');
+            } else {
+                passwordInput.type = 'password';
+                icon.className = 'fas fa-eye';
+                console.log('🔒 Password hidden');
+            }
         });
+        console.log('✅ Password toggle attached');
+    } else {
+        console.error('❌ Toggle password button not found!');
     }
 
     // ============================================
-    // CHECK IF ALREADY LOGGED IN
+    // REDIRECT BASED ON ROLE
     // ============================================
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            console.log('✅ User already logged in:', user.email);
-            window.location.href = '../student/dashboard.html';
+    function redirectToDashboard(role) {
+        if (isRedirecting) {
+            console.log('⏭️ Already redirecting, skipping...');
+            return;
         }
-    });
+        isRedirecting = true;
+
+        console.log('🔄 Redirecting with role:', role);
+
+        const roleRoutes = {
+            'admin': '../admin/dashboard.html',
+            'teacher': '../teacher/dashboard.html',
+            'student': '../student/dashboard.html',
+            'parent': '../parents/dashboard.html',
+            'registrar': '../registrar/dashboard.html',
+            'principal': '../principal/dashboard.html',
+            'guidance': '../guidance/dashboard.html'
+        };
+
+        const route = roleRoutes[role] || '../student/dashboard.html';
+
+        console.log(`📍 Redirecting to: ${route} (role: ${role})`);
+
+        window.location.replace(route);
+    }
 
     // ============================================
-    // CHECK REMEMBER ME COOKIE
+    // AUTO-REDIRECT KUNG NAA NAY SESSION
+    // ============================================
+
+    const existingUser = localStorage.getItem('currentUser');
+    if (existingUser) {
+        try {
+            const user = JSON.parse(existingUser);
+            if (user && user.role) {
+                console.log('✅ Existing session found:', user.email);
+                redirectToDashboard(user.role);
+                return;
+            }
+        } catch (e) {
+            console.warn('⚠️ Invalid session, clearing...');
+            localStorage.removeItem('currentUser');
+        }
+    }
+
+    // ============================================
+    // REMEMBER ME - GET COOKIE
     // ============================================
 
     function getCookie(name) {
@@ -98,7 +143,7 @@ import {
     function showToast(message, type = 'success') {
         const icon = toast.querySelector('i');
         toastMessage.textContent = message;
-        
+
         if (type === 'error') {
             toast.style.background = '#e74c3c';
             icon.className = 'fas fa-exclamation-circle';
@@ -109,7 +154,7 @@ import {
             toast.style.background = '#1a2a6c';
             icon.className = 'fas fa-check-circle';
         }
-        
+
         toast.classList.add('show');
         setTimeout(() => {
             toast.classList.remove('show');
@@ -117,7 +162,7 @@ import {
     }
 
     // ============================================
-    // LOGIN FORM SUBMIT - WALAY VALIDATION
+    // LOGIN FORM SUBMIT - CUSTOM LOGIN
     // ============================================
 
     loginForm.addEventListener('submit', async function(e) {
@@ -127,40 +172,108 @@ import {
         const password = passwordInput.value;
         const remember = rememberCheck.checked;
 
-        // Disable button
+        console.log('📝 Login attempt for:', email);
+
         loginBtn.disabled = true;
         loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
 
         try {
-            // Diretso login sa Firebase Authentication
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-            
-            showToast('✅ Login successful! Welcome back!', 'success');
-            
-            // Store current user session
+            // ============================================
+            // QUERY SA 'users' TABLE
+            // ============================================
+
+            console.log('🔍 Querying users table...');
+
+            const { data, error } = await supabase
+                .from('users')
+                .select('id, email, password, role, first_name, last_name')
+                .eq('email', email)
+                .eq('password', password)
+                .maybeSingle();
+
+            if (error) {
+                console.error('❌ Query error:', error);
+                throw new Error('Database error: ' + error.message);
+            }
+
+            if (!data) {
+                console.log('❌ No matching user found');
+                throw new Error('Invalid email or password');
+            }
+
+            console.log('✅ User found:', data.email, '| Role:', data.role);
+
+            // ============================================
+            // STORE SESSION
+            // ============================================
+
+            const userRole = (data.role || 'student').toLowerCase();
+            let firstName = data.first_name || '';
+            let lastName = data.last_name || '';
+            let fullName = `${firstName} ${lastName}`.trim() || data.email.split('@')[0];
+
+            if (userRole === 'student') {
+                if (!firstName || firstName.toLowerCase().includes('mylene') || data.email.toLowerCase().includes('mylene')) {
+                    firstName = 'Student';
+                    lastName = '';
+                    fullName = 'Student';
+                }
+            }
+
             localStorage.setItem('currentUser', JSON.stringify({
-                uid: user.uid,
-                email: user.email
+                uid: data.id,
+                email: data.email,
+                role: userRole,
+                firstName: firstName,
+                lastName: lastName
             }));
 
-            // Set remember me cookie
+            // Store portal-specific display names
+            if (userRole === 'student') {
+                localStorage.setItem('plsnhs_student_name', fullName);
+            } else if (userRole === 'admin') {
+                localStorage.setItem('plsnhs_admin_name', fullName);
+            } else if (userRole === 'teacher') {
+                localStorage.setItem('plsnhs_teacher_name', fullName);
+            } else if (userRole === 'registrar') {
+                localStorage.setItem('plsnhs_registrar_name', fullName);
+            } else if (userRole === 'parent') {
+                localStorage.setItem('plsnhs_parent_name', fullName);
+            }
+
+            showToast('✅ Login successful! Welcome back!', 'success');
+
+            // ============================================
+            // REMEMBER ME
+            // ============================================
+
             if (remember) {
                 document.cookie = `user_email=${email}; path=/; max-age=${60 * 60 * 24 * 30}`;
             } else {
                 document.cookie = 'user_email=; path=/; max-age=0';
             }
 
-            // Redirect to student dashboard after 1.5 seconds
+            // ============================================
+            // REDIRECT BASED ON ROLE
+            // ============================================
+
             setTimeout(() => {
-                window.location.href = '../student/dashboard.html';
-            }, 1500);
+                redirectToDashboard(userRole);
+            }, 800);
 
         } catch (error) {
-            console.error('Login error:', error);
-            showAlert('❌ Login failed: ' + error.message, 'error');
-            showToast('❌ Login failed. Please try again.', 'error');
-            
+            console.error('❌ Login error:', error);
+
+            let errorMessage = 'Login failed. Please try again.';
+            if (error.message.includes('Invalid email or password')) {
+                errorMessage = 'Invalid email or password. Please try again.';
+            } else if (error.message.includes('Database')) {
+                errorMessage = 'Database error. Please try again later.';
+            }
+
+            showAlert('❌ ' + errorMessage, 'error');
+            showToast('❌ ' + errorMessage, 'error');
+
             loginBtn.disabled = false;
             loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> LOGIN';
         }
@@ -172,26 +285,12 @@ import {
 
     const forgotLink = document.querySelector('.forgot-password a');
     if (forgotLink) {
-        forgotLink.addEventListener('click', async function(e) {
+        forgotLink.addEventListener('click', function(e) {
             e.preventDefault();
-            const email = emailInput.value.trim();
-            
-            if (!email) {
-                showAlert('⚠️ Please enter your email address first.', 'error');
-                return;
-            }
-
-            try {
-                await sendPasswordResetEmail(auth, email);
-                showToast('📧 Password reset email sent! Check your inbox.', 'success');
-                showAlert('✅ Password reset email sent to ' + email, 'success');
-            } catch (error) {
-                console.error('Password reset error:', error);
-                showAlert('❌ Error sending password reset: ' + error.message, 'error');
-            }
+            showAlert('⚠️ Please contact the administrator to reset your password.', 'error');
         });
     }
 
-    console.log('✅ Login ready!');
+    console.log('✅ Login ready');
 
 })();

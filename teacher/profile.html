@@ -125,6 +125,55 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Teacher Credentials & Documents Card -->
+                    <div class="doc-upload-card">
+                        <div class="doc-upload-header">
+                            <div class="doc-upload-header-left">
+                                <i class="fas fa-certificate"></i>
+                                <h3>Teacher Credentials</h3>
+                            </div>
+                            <span class="doc-upload-count" id="teacherDocCount">0 Files</span>
+                        </div>
+
+                        <!-- Dropzone / Picker -->
+                        <div class="doc-drop-zone" id="teacherDocDropZone">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h4>Upload Professional Documents</h4>
+                            <p>Click or drag PRC License, Diploma, CSC Eligibility, Training Certs (PDF, PNG, JPG up to 10MB)</p>
+                            <input type="file" id="teacherDocFileInput" accept=".pdf,image/png,image/jpeg,image/webp" style="display: none;">
+                        </div>
+
+                        <div id="teacherDocUploadForm" style="display: none; margin-bottom: 16px; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 8px;">Selected: <span id="teacherDocSelectedName" style="color: var(--primary);"></span></div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                <div>
+                                    <label style="font-size: 11px; font-weight: 600; color: #64748b; display: block; margin-bottom: 4px;">Credential Type</label>
+                                    <select id="teacherDocTypeSelect" style="width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12.5px;">
+                                        <option value="PRC License ID">PRC Professional License</option>
+                                        <option value="CSC Eligibility">CSC Eligibility / Board Rating</option>
+                                        <option value="Diploma / Transcript">Bachelor / Master's Diploma</option>
+                                        <option value="Training Certificate">Seminar / Training Certificate</option>
+                                        <option value="Service Record">DepEd Service Record</option>
+                                        <option value="Other Document">Other Document</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size: 11px; font-weight: 600; color: #64748b; display: block; margin-bottom: 4px;">Document Label</label>
+                                    <input type="text" id="teacherDocCustomTitle" placeholder="e.g. PRC License 2026" style="width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12.5px;">
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                <button type="button" class="btn-secondary" id="teacherDocCancelBtn" style="padding: 6px 14px; font-size: 12px; border-radius: 6px; cursor: pointer; background: #fff; border: 1px solid #cbd5e1;">Cancel</button>
+                                <button type="button" class="btn-primary" id="teacherDocSaveBtn" style="padding: 6px 16px; font-size: 12px; border-radius: 6px; background: var(--primary); color: #fff; border: none; cursor: pointer;"><i class="fas fa-upload"></i> Upload</button>
+                            </div>
+                        </div>
+
+                        <!-- Document List -->
+                        <div class="doc-list" id="teacherDocList">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Right Column - Professional Info -->
@@ -296,6 +345,7 @@
                     </p>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn-danger" onclick="removeProfilePic()" style="background:#ef4444;color:#fff;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;"><i class="fas fa-trash"></i> Remove</button>
                     <button type="button" class="btn-secondary" onclick="closeImageModal()">Cancel</button>
                     <button type="submit" name="upload_profile_pic" class="btn-primary">Upload</button>
                 </div>
@@ -303,7 +353,27 @@
         </div>
     </div>
 
+    <!-- Document Preview Modal -->
+    <div class="modal" id="docPreviewModal">
+        <div class="modal-content doc-preview-modal-content">
+            <div class="modal-header">
+                <h3 id="docPreviewTitle"><i class="fas fa-file-alt"></i> Document Preview</h3>
+                <button type="button" class="close-modal" id="closeDocPreviewBtn">&times;</button>
+            </div>
+            <div class="modal-body doc-preview-body" id="docPreviewContainer">
+                <!-- Preview loaded by JS -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="dismissDocPreviewBtn">Close</button>
+                <a href="#" id="docDownloadBtn" class="btn-primary" download style="background: var(--primary); color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-download"></i> Download
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript -->
+    <script src="js/teacher_avatar_sync.js"></script>
     <script type="module" src="js/profile.js"></script>
 </body>
 </html>

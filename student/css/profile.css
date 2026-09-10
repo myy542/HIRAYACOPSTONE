@@ -1420,3 +1420,226 @@ body {
         padding: 0.1rem 0.6rem;
     }
 }
+
+/* ===== STUDENT DOCUMENT UPLOAD STYLES ===== */
+.doc-upload-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.doc-upload-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.2rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.doc-upload-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.doc-upload-header-left i {
+    font-size: 1.25rem;
+    color: var(--primary);
+}
+
+.doc-upload-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin: 0;
+}
+
+.doc-upload-count {
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #e0e7ff;
+    color: var(--primary);
+    padding: 0.2rem 0.7rem;
+    border-radius: 20px;
+}
+
+.doc-drop-zone {
+    border: 2px dashed var(--gray-300);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    text-align: center;
+    background: var(--gray-50);
+    transition: var(--transition);
+    cursor: pointer;
+    margin-bottom: 1.25rem;
+}
+
+.doc-drop-zone:hover, .doc-drop-zone.dragover {
+    border-color: var(--primary);
+    background: #f1f5f9;
+}
+
+.doc-drop-zone i {
+    font-size: 2rem;
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+}
+
+.doc-drop-zone h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    margin: 0 0 0.25rem 0;
+}
+
+.doc-drop-zone p {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+    margin: 0;
+}
+
+.doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.doc-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    transition: var(--transition);
+}
+
+.doc-item:hover {
+    border-color: var(--gray-300);
+    box-shadow: var(--shadow-sm);
+}
+
+.doc-item-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.doc-item-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.doc-icon-pdf { background: #fee2e2; color: #dc2626; }
+.doc-icon-img { background: #dbeafe; color: #2563eb; }
+.doc-icon-doc { background: #fef3c7; color: #d97706; }
+
+.doc-item-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-900);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.doc-item-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    flex-wrap: wrap;
+}
+
+.doc-category-pill {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.1rem 0.5rem;
+    border-radius: 8px;
+    background: var(--gray-100);
+    color: var(--gray-700);
+}
+
+.doc-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+}
+
+.doc-btn {
+    background: white;
+    border: 1px solid var(--gray-200);
+    color: var(--gray-600);
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: var(--transition);
+    text-decoration: none;
+}
+
+.doc-btn:hover {
+    background: var(--gray-50);
+    color: var(--gray-900);
+    border-color: var(--gray-300);
+}
+
+.doc-btn-danger:hover {
+    background: #fee2e2;
+    color: #dc2626;
+    border-color: #fca5a5;
+}
+
+.empty-docs-state {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--gray-400);
+}
+
+.empty-docs-state i {
+    font-size: 2rem;
+    color: var(--gray-300);
+    margin-bottom: 0.5rem;
+}
+
+.empty-docs-state p {
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* Document preview modal */
+.doc-preview-modal-content {
+    max-width: 650px;
+    width: 90%;
+}
+
+.doc-preview-body {
+    padding: 1.25rem;
+    text-align: center;
+    max-height: 65vh;
+    overflow-y: auto;
+}
+
+.doc-preview-body img {
+    max-width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}

@@ -56,12 +56,22 @@
     const API_URL = window.location.origin + '/api/enrollments.php';
 
     // ============================================
-    // SET ADMIN NAME (from localStorage)
+    // SET REGISTRAR NAME (from session/localStorage)
     // ============================================
 
-    const storedName = localStorage.getItem('registrarName') || 'Registrar';
-    if (adminName) adminName.textContent = storedName;
-    if (adminInitial) adminInitial.textContent = storedName.charAt(0).toUpperCase();
+    try {
+        const currentUserStr = localStorage.getItem('currentUser');
+        if (currentUserStr) {
+            const user = JSON.parse(currentUserStr);
+            const name = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : (user.displayName || (user.email ? user.email.split('@')[0] : 'Registrar'));
+            if (adminName) adminName.textContent = name;
+            if (adminInitial) adminInitial.textContent = name.charAt(0).toUpperCase();
+        } else {
+            const storedName = localStorage.getItem('registrarName') || 'Registrar';
+            if (adminName) adminName.textContent = storedName;
+            if (adminInitial) adminInitial.textContent = storedName.charAt(0).toUpperCase();
+        }
+    } catch(e) {}
 
     // ============================================
     // LOGOUT
@@ -70,8 +80,12 @@
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            console.log('🚪 Registrar logging out...');
+            localStorage.removeItem('currentUser');
             localStorage.removeItem('registrarName');
-            window.location.href = '../auth/login.html';
+            localStorage.removeItem('plsnhs_registrar_avatar');
+            localStorage.removeItem('plsnhs_registrar_name');
+            window.location.replace('../auth/login.html');
         });
     }
 

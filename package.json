@@ -1,5 +1,17 @@
 {
+  "name": "plsnhs-enrollment",
+  "version": "1.0.0",
+  "description": "Placido L. Señor National High School Enrollment System",
+  "main": "final.js",
+  "type": "module",
+  "scripts": {
+    "start": "node final.js"
+  },
   "dependencies": {
-    "firebase": "^12.15.0"
+    "@supabase/supabase-js": "^2.115.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
   }
 }

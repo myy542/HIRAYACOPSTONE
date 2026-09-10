@@ -1,28 +1,12 @@
 /**
- * Student Enrollment Form - Firebase Integration
- * Complete working enrollment submission with Notification
+ * Student Enrollment Form - Supabase Integration
+ * PLSNHS - Placido L. Señor National High School
  */
 
-import { auth, db } from '../../firebase/config.js';
-import {
-    onAuthStateChanged,
-    signOut
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-import {
-    collection,
-    query,
-    where,
-    getDocs,
-    addDoc,
-    doc,
-    getDoc,
-    serverTimestamp
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { supabase } from '../../supabase/config.js';
 
 // ============================================================
 // REQUIREMENTS DATA
-// Continuing (gikan same school) → Form 138 ra
-// Transferee/New (gikan laing school) → 5 ka requirements
 // ============================================================
 const requirementsData = {
     'Grade 7': {
@@ -97,8 +81,43 @@ const requirementsData = {
 };
 
 // ============================================================
-// HELPER FUNCTIONS
+// DOM REFS
 // ============================================================
+const $ = (id) => document.getElementById(id);
+
+const gradeRadios = document.querySelectorAll('input[name="gradeLevel"]');
+const studentTypeGroup = $('studentTypeGroup');
+const studentTypeSelect = $('student_type');
+const strandDiv = $('strandDiv');
+const schoolYearInput = $('school_year');
+const requirementsSection = $('requirementsSection');
+const requirementsList = $('requirementsList');
+const enrollmentForm = $('enrollmentForm');
+const alertContainer = $('alertContainer');
+const existingEnrollmentDiv = $('existingEnrollment');
+const enrollmentDisplay = $('enrollmentDisplay');
+const logoutBtn = $('logoutBtn');
+const backBtn = $('backBtn');
+const submitBtn = $('submitBtn');
+
+let sessionUser = null;
+try {
+    const stored = localStorage.getItem('currentUser');
+    if (stored) {
+        sessionUser = JSON.parse(stored);
+    }
+} catch(e) {}
+
+if (!sessionUser) {
+    window.location.replace('../auth/login.html');
+}
+
+// Auto-populate school year
+if (schoolYearInput) {
+    const today = new Date();
+    const year = today.getFullYear();
+    schoolYearInput.value = year + '-' + (year + 1);
+}
 
 function getStudentTypeOptions(gradeName) {
     const map = {
@@ -125,46 +144,13 @@ function getSelectedStrand() {
     return checked ? checked.value : '';
 }
 
-// ============================================================
-// DOM REFS
-// ============================================================
-const $ = (id) => document.getElementById(id);
-
-const gradeRadios = document.querySelectorAll('input[name="gradeLevel"]');
-const studentTypeGroup = $('studentTypeGroup');
-const studentTypeSelect = $('student_type');
-const strandDiv = $('strandDiv');
-const schoolYearInput = $('school_year');
-const requirementsSection = $('requirementsSection');
-const requirementsList = $('requirementsList');
-const enrollmentForm = $('enrollmentForm');
-const alertContainer = $('alertContainer');
-const existingEnrollmentDiv = $('existingEnrollment');
-const enrollmentDisplay = $('enrollmentDisplay');
-const logoutBtn = $('logoutBtn');
-const backBtn = $('backBtn');
-const submitBtn = $('submitBtn');
-
-let currentUser = null;
-
-// ============================================================
-// AUTO-POPULATE SCHOOL YEAR
-// ============================================================
-if (schoolYearInput) {
-    const today = new Date();
-    const year = today.getFullYear();
-    schoolYearInput.value = year + '-' + (year + 1);
-}
-
-// ============================================================
-// SHOW ALERT
-// ============================================================
 function showAlert(message, type = 'success') {
+    if (!alertContainer) return;
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type}`;
     alertDiv.innerHTML = `
         <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-        ${message}
+        <span>${message}</span>
     `;
     alertContainer.appendChild(alertDiv);
 
@@ -174,9 +160,6 @@ function showAlert(message, type = 'success') {
     }, 5000);
 }
 
-// ============================================================
-// UPDATE STUDENT TYPE OPTIONS
-// ============================================================
 function updateStudentTypeOptions() {
     const gradeName = getSelectedGrade();
 
@@ -210,9 +193,6 @@ function updateStudentTypeOptions() {
     }
 }
 
-// ============================================================
-// UPDATE REQUIREMENTS
-// ============================================================
 function updateRequirements() {
     const gradeName = getSelectedGrade();
     const studentType = studentTypeSelect.value;
@@ -226,16 +206,9 @@ function updateRequirements() {
             const reqDiv = document.createElement('div');
             reqDiv.className = 'requirement-item';
 
-            let badgeHtml = '';
-            if (req.required) {
-                badgeHtml = '<span class="req-badge badge-required">Required</span>';
-            } else {
-                badgeHtml = '<span class="req-badge badge-optional">Optional</span>';
-            }
-
-            if (req.can_follow) {
-                badgeHtml += ' <span class="req-badge badge-follow">Can be followed up</span>';
-            }
+            let badgeHtml = req.required ? 
+                '<span class="req-badge badge-required">Required</span>' : 
+                '<span class="req-badge badge-optional">Optional</span>';
 
             reqDiv.innerHTML = `
                 <div class="requirement-name">
@@ -269,9 +242,6 @@ function updateRequirements() {
     }
 }
 
-// ============================================================
-// GRADE RADIO EVENT LISTENERS
-// ============================================================
 gradeRadios.forEach(radio => {
     radio.addEventListener('change', function() {
         updateStudentTypeOptions();
@@ -280,65 +250,49 @@ gradeRadios.forEach(radio => {
     });
 });
 
-// ============================================================
-// STUDENT TYPE EVENT LISTENER
-// ============================================================
-studentTypeSelect.addEventListener('change', function() {
-    updateRequirements();
-});
+if (studentTypeSelect) {
+    studentTypeSelect.addEventListener('change', updateRequirements);
+}
 
 // ============================================================
-// LOAD EXISTING ENROLLMENT
+// LOAD EXISTING ENROLLMENT FROM SUPABASE
 // ============================================================
-async function loadExistingEnrollment(userId) {
+async function loadExistingEnrollment() {
     try {
-        const enrollmentsRef = collection(db, 'enrollments');
-        const q = query(enrollmentsRef, where('userId', '==', userId));
-        const snapshot = await getDocs(q);
+        const userEmail = sessionUser?.email || '';
+        const userUid = sessionUser?.uid || '';
 
-        if (!snapshot.empty) {
-            let enrollments = [];
-            snapshot.forEach(d => enrollments.push({ id: d.id, ...d.data() }));
+        let query = supabase.from('enrollments').select('*');
+        if (userEmail && userUid) {
+            query = query.or(`email.eq.${userEmail},student_id.eq.${userUid}`);
+        } else if (userEmail) {
+            query = query.eq('email', userEmail);
+        }
 
-            enrollments.sort((a, b) => {
-                const getTime = (d) => {
-                    if (d.createdAt?.toDate) return d.createdAt.toDate().getTime();
-                    if (d.createdAt?.seconds) return d.createdAt.seconds * 1000;
-                    return new Date(d.createdAt || 0).getTime() || 0;
-                };
-                return getTime(b) - getTime(a);
-            });
+        const { data, error } = await query.order('created_at', { ascending: false });
 
-            const data = enrollments[0];
+        if (!error && data && data.length > 0) {
+            const latest = data[0];
+            const isPendingOrApproved = latest.status?.toLowerCase() === 'pending' || latest.status?.toLowerCase() === 'approved' || latest.status?.toLowerCase() === 'enrolled';
 
-            existingEnrollmentDiv.style.display = 'block';
-            enrollmentForm.style.display = 'none';
+            if (isPendingOrApproved && existingEnrollmentDiv && enrollmentForm) {
+                existingEnrollmentDiv.style.display = 'block';
+                enrollmentForm.style.display = 'none';
 
-            let dateStr = 'N/A';
-            if (data.createdAt) {
-                if (data.createdAt.toDate) {
-                    dateStr = data.createdAt.toDate().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                } else if (data.createdAt.seconds) {
-                    dateStr = new Date(data.createdAt.seconds * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                } else {
-                    dateStr = new Date(data.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-                }
+                const dateStr = latest.created_at ? new Date(latest.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A';
+
+                enrollmentDisplay.innerHTML = `
+                    <div class="enrollment-badge status-${(latest.status || 'pending').toLowerCase()}">
+                        Status: ${latest.status || 'Pending'}
+                    </div>
+                    <div class="enrollment-details">
+                        <p><strong>Grade Level:</strong> ${latest.grade_level || 'N/A'}</p>
+                        ${latest.strand ? `<p><strong>Strand:</strong> ${latest.strand}</p>` : ''}
+                        <p><strong>School Year:</strong> ${latest.school_year || latest.last_school_year || '2025-2026'}</p>
+                        <p><strong>Date Submitted:</strong> ${dateStr}</p>
+                    </div>
+                `;
             }
-
-            enrollmentDisplay.innerHTML = `
-                <div class="enrollment-badge status-${(data.status || 'pending').toLowerCase()}">
-                    Status: ${data.status || 'Pending'}
-                </div>
-                <div class="enrollment-details">
-                    <p><strong>Grade Level:</strong> ${data.grade || 'N/A'}</p>
-                    ${data.strand ? `<p><strong>Strand:</strong> ${data.strand}</p>` : ''}
-                    <p><strong>School Year:</strong> ${data.schoolYear || 'N/A'}</p>
-                    <p><strong>Date Submitted:</strong> ${dateStr}</p>
-                </div>
-            `;
-        } else {
-            existingEnrollmentDiv.style.display = 'none';
-            enrollmentForm.style.display = 'block';
         }
     } catch (error) {
         console.error('Error loading existing enrollment:', error);
@@ -346,86 +300,29 @@ async function loadExistingEnrollment(userId) {
 }
 
 // ============================================================
-// SEND NOTIFICATION TO REGISTRAR
-// ============================================================
-async function sendNotificationToRegistrar(enrollmentData, enrollmentId) {
-    try {
-        // Get student name
-        const firstName = document.getElementById('firstName')?.value || 'N/A';
-        const lastName = document.getElementById('lastName')?.value || 'N/A';
-        const fullName = `${firstName} ${lastName}`.trim();
-
-        // Get guardian contact
-        const guardianContact = document.getElementById('guardianContact')?.value || 'N/A';
-
-        // Build notification data
-        const notificationData = {
-            type: 'new_enrollment',
-            title: '📋 New Enrollment Submission',
-            message: `
-                <strong>Student:</strong> ${fullName}<br>
-                <strong>Grade:</strong> ${enrollmentData.grade || 'N/A'}<br>
-                <strong>Student Type:</strong> ${enrollmentData.studentType || 'N/A'}<br>
-                ${enrollmentData.strand ? `<strong>Strand:</strong> ${enrollmentData.strand}<br>` : ''}
-                <strong>School Year:</strong> ${enrollmentData.schoolYear || 'N/A'}<br>
-                <strong>Contact:</strong> ${guardianContact}<br>
-                <strong>Status:</strong> Pending Review
-            `,
-            enrollmentId: enrollmentId,
-            userId: enrollmentData.userId,
-            userEmail: enrollmentData.userEmail,
-            studentName: fullName,
-            grade: enrollmentData.grade,
-            studentType: enrollmentData.studentType,
-            strand: enrollmentData.strand || '',
-            schoolYear: enrollmentData.schoolYear,
-            status: 'pending',
-            isRead: false,
-            createdAt: serverTimestamp(),
-            timestamp: serverTimestamp()
-        };
-
-        // Save to Firestore 'notifications' collection
-        const docRef = await addDoc(collection(db, 'notifications'), notificationData);
-        console.log('✅ Notification sent to registrar with ID:', docRef.id);
-
-        return docRef.id;
-
-    } catch (error) {
-        console.error('❌ Error sending notification:', error);
-        // Don't throw error - enrollment already saved, notification is secondary
-        return null;
-    }
-}
-
-// ============================================================
-// SUBMIT ENROLLMENT - MAIN FUNCTION
+// SUBMIT ENROLLMENT TO SUPABASE
 // ============================================================
 async function submitEnrollment(e) {
     e.preventDefault();
 
-    // 1. Get selected grade
     const gradeName = getSelectedGrade();
     if (!gradeName) {
         showAlert('⚠️ Please select your grade level', 'error');
         return;
     }
 
-    // 2. Get student type
     const studentType = studentTypeSelect.value;
     if (!studentType) {
         showAlert('⚠️ Please select your student type', 'error');
         return;
     }
 
-    // 3. Get school year
     const schoolYear = schoolYearInput.value.trim();
     if (!schoolYear) {
         showAlert('⚠️ Please enter the school year', 'error');
         return;
     }
 
-    // 4. Get strand (if SHS)
     let strand = '';
     if (gradeName === 'Grade 11' || gradeName === 'Grade 12') {
         strand = getSelectedStrand();
@@ -435,7 +332,6 @@ async function submitEnrollment(e) {
         }
     }
 
-    // 5. Check required documents
     const requirements = requirementsData[gradeName]?.[studentType] || [];
     const missingFiles = [];
 
@@ -453,94 +349,86 @@ async function submitEnrollment(e) {
         return;
     }
 
-    // 6. Disable submit button
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    }
 
     try {
-        // 7. Build enrollment data
-        const enrollmentData = {
-            userId: currentUser.uid,
-            userEmail: currentUser.email,
-            grade: gradeName,
-            studentType: studentType,
-            schoolYear: schoolYear,
-            status: 'Pending',
-            createdAt: serverTimestamp()
-        };
+        const firstName = document.getElementById('firstName')?.value || sessionUser?.firstName || '';
+        const lastName = document.getElementById('lastName')?.value || sessionUser?.lastName || '';
+        const previousSchool = document.getElementById('previousSchool')?.value || 'N/A';
+        const previousGrade = document.getElementById('previousGrade')?.value || 'N/A';
 
-        // Add strand if SHS
-        if (strand) {
-            enrollmentData.strand = strand;
-        }
+        // 1. Insert enrollment in Supabase
+        const { data: newEnr, error: enrError } = await supabase
+            .from('enrollments')
+            .insert([{
+                student_id: sessionUser.uid,
+                email: sessionUser.email,
+                first_name: firstName,
+                last_name: lastName,
+                grade_level: gradeName,
+                strand: strand || null,
+                previous_school: previousSchool,
+                previous_grade: previousGrade,
+                last_school_year: schoolYear,
+                status: 'pending',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            }])
+            .select();
 
-        // Add file names
-        requirements.forEach(req => {
-            const fileInput = document.getElementById(req.field);
-            if (fileInput && fileInput.files && fileInput.files.length > 0) {
-                enrollmentData[req.field + '_filename'] = fileInput.files[0].name;
-                enrollmentData[req.field + '_size'] = fileInput.files[0].size;
-                enrollmentData[req.field + '_type'] = fileInput.files[0].type;
-            }
-        });
+        if (enrError) throw enrError;
 
-        // 8. Save to Firestore 'enrollments'
-        const docRef = await addDoc(collection(db, 'enrollments'), enrollmentData);
-        console.log('✅ Enrollment saved with ID:', docRef.id);
+        // 2. Notify Registrar via notifications table
+        try {
+            await supabase
+                .from('notifications')
+                .insert([{
+                    role: 'registrar',
+                    title: '📋 New Enrollment Submission',
+                    message: `New enrollment application from ${firstName} ${lastName} (${gradeName} ${strand || ''}).`,
+                    type: 'enrollment',
+                    read: false,
+                    created_at: new Date().toISOString()
+                }]);
+        } catch(e) {}
 
-        // 9. SEND NOTIFICATION TO REGISTRAR
-        await sendNotificationToRegistrar(enrollmentData, docRef.id);
-
-        // 10. Show success
         showAlert('✅ Enrollment submitted successfully! The registrar has been notified.', 'success');
 
-        // 11. Reset form
-        enrollmentForm.reset();
-        gradeRadios.forEach(r => r.checked = false);
-        document.querySelectorAll('input[name="strand"]').forEach(r => r.checked = false);
-        studentTypeSelect.value = '';
-        studentTypeGroup.style.display = 'none';
-        strandDiv.style.display = 'none';
-        requirementsSection.style.display = 'none';
-        requirementsList.innerHTML = '';
-        document.querySelectorAll('.file-name').forEach(el => el.innerHTML = '');
-
-        // 12. Reload to show existing enrollment
         setTimeout(() => {
-            loadExistingEnrollment(currentUser.uid);
-        }, 1500);
+            window.location.href = 'enrollment_history.html';
+        }, 1200);
 
     } catch (error) {
         console.error('❌ Error submitting enrollment:', error);
         showAlert('❌ Error: ' + error.message, 'error');
     } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right:8px;"></i> Submit Enrollment';
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-paper-plane" style="margin-right:8px;"></i> Submit Enrollment';
+        }
     }
 }
 
-// ============================================================
-// EVENT LISTENERS
-// ============================================================
-
-// Form submit
 if (enrollmentForm) {
     enrollmentForm.addEventListener('submit', submitEnrollment);
 }
 
-// Logout
 if (logoutBtn) {
-    logoutBtn.addEventListener('click', function(e) {
+    logoutBtn.addEventListener('click', async function(e) {
         e.preventDefault();
-        signOut(auth).then(() => {
-            window.location.href = '../auth/login.html';
-        }).catch((error) => {
-            console.error('Logout error:', error);
-        });
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('plsnhs_student_avatar');
+        localStorage.removeItem('plsnhs_student_name');
+        try {
+            await supabase.auth.signOut();
+        } catch(err) {}
+        window.location.replace('../auth/login.html');
     });
 }
 
-// Back button
 if (backBtn) {
     backBtn.addEventListener('click', function(e) {
         e.preventDefault();
@@ -548,18 +436,5 @@ if (backBtn) {
     });
 }
 
-// ============================================================
-// AUTH STATE
-// ============================================================
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        currentUser = user;
-        console.log('✅ User logged in:', user.email);
-        await loadExistingEnrollment(user.uid);
-    } else {
-        console.log('❌ User logged out - redirecting to login');
-        window.location.href = '../auth/login.html';
-    }
-});
-
-console.log('✅ Enrollment Form ready!');
+// Initialize
+loadExistingEnrollment();

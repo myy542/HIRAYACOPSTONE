@@ -311,7 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (confirm('Are you sure you want to delete this student? This action cannot be undone and will remove all associated data.')) {
             showAlert('✅ Student deleted successfully!', 'success');
             setTimeout(() => {
-                window.location.href = 'students.html';
+                window.location.href = 'student.html';
             }, 1500);
         }
     };

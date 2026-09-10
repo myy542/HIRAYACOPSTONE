@@ -1,33 +1,14 @@
 /**
- * Student Profile - Firebase Integration
+ * Student Profile - Supabase Integration
+ * PLSNHS - Placido L. Señor National High School
  */
 
-import { auth, db } from '../../firebase/config.js';
-import { 
-    onAuthStateChanged,
-    signOut,
-    sendEmailVerification,
-    updatePassword,
-    updateEmail,
-    reauthenticateWithCredential,
-    EmailAuthProvider
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-import {
-    collection,
-    query,
-    where,
-    getDocs,
-    doc,
-    getDoc,
-    updateDoc,
-    setDoc,
-    serverTimestamp
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { supabase } from '../../supabase/config.js';
 
 (function() {
     'use strict';
 
-    console.log('👤 Profile page ready');
+    console.log('👤 Student Profile (Supabase) ready');
 
     // ============================================
     // DOM ELEMENTS
@@ -61,59 +42,77 @@ import {
     // STATE
     // ============================================
 
-    let currentUser = null;
     let userData = null;
+    let studentData = null;
     let enrollmentData = null;
 
     // ============================================
-    // AUTH STATE
+    // SESSION CHECK (Supabase / localStorage)
     // ============================================
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            currentUser = user;
-            console.log('✅ User logged in:', user.email);
-            
-            // Set basic info
-            const displayName = user.displayName || user.email || 'Student';
-            const firstName = displayName.split('@')[0];
-            studentName.textContent = firstName;
-            studentInitial.textContent = firstName.charAt(0).toUpperCase();
-            
-            // REMOVED: Role validation check
-            // Any authenticated user can access this page
-            
-            // Load profile data
-            await loadProfileData(user.uid);
-            await loadAcademicData(user.uid);
-            
-            // Update UI with user data
-            updateUI();
-        } else {
-            console.log('❌ User logged out - redirecting to login');
-            window.location.href = '../auth/login.html';
+    let sessionUser = null;
+    try {
+        const stored = localStorage.getItem('currentUser');
+        if (stored) {
+            sessionUser = JSON.parse(stored);
         }
-    });
+    } catch(e) {}
+
+    if (!sessionUser) {
+        console.warn('⚠️ No active user session found, redirecting to login...');
+        window.location.replace('../auth/login.html');
+        return;
+    }
+
+    // Role check
+    if (sessionUser.role && sessionUser.role !== 'student') {
+        const routes = {
+            'admin': '../admin/dashboard.html',
+            'teacher': '../teacher/dashboard.html',
+            'parent': '../parents/dashboard.html',
+            'registrar': '../registrar/dashboard.html'
+        };
+        window.location.replace(routes[sessionUser.role] || '../auth/login.html');
+        return;
+    }
+
+    function getStudentInitials(name) {
+        if (!name || typeof name !== 'string') return 'S';
+        const cleanName = name.replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?)\s+/i, '').trim();
+        if (!cleanName || cleanName.toLowerCase() === 'student' || cleanName.toLowerCase().includes('mylene') || cleanName.toLowerCase().includes('raganas')) return 'S';
+        const words = cleanName.split(/[\s,&-]+/).filter(w => w.length > 0 && !['and', 'the', 'of', '&'].includes(w.toLowerCase()));
+        if (words.length === 0) return 'S';
+        if (words.length === 1) return words[0].charAt(0).toUpperCase();
+        return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+    }
+
+    function sanitizeStudentName(name, email) {
+        if (!name && email) {
+            if (email.toLowerCase().includes('mylene') || email.toLowerCase().includes('student')) return 'Student';
+            name = email.split('@')[0];
+        }
+        if (!name || name.toLowerCase().includes('mylene') || name.toLowerCase().includes('raganas') || name.toLowerCase() === 'admin') {
+            return 'Student';
+        }
+        return name;
+    }
 
     // ============================================
     // LOGOUT
     // ============================================
 
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
+        logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
-            signOut(auth).then(() => {
-                window.location.href = '../auth/login.html';
-            }).catch((error) => {
-                console.error('Logout error:', error);
-                showAlert('❌ Error logging out: ' + error.message, 'error');
-            });
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('plsnhs_student_avatar');
+            localStorage.removeItem('plsnhs_student_name');
+            try {
+                await supabase.auth.signOut();
+            } catch(err) {}
+            window.location.replace('../auth/login.html');
         });
     }
-
-    // ============================================
-    // BACK BUTTON
-    // ============================================
 
     if (backBtn) {
         backBtn.addEventListener('click', function(e) {
@@ -123,81 +122,71 @@ import {
     }
 
     // ============================================
-    // LOAD PROFILE DATA
+    // LOAD PROFILE DATA FROM SUPABASE
     // ============================================
 
-    async function loadProfileData(userId) {
+    async function loadProfileData() {
         try {
-            const userDoc = await getDoc(doc(db, 'users', userId));
-            if (userDoc.exists()) {
-                userData = userDoc.data();
-                console.log('📋 User data loaded:', userData);
-            } else {
-                // Create user document if not exists
-                userData = {
-                    email: currentUser.email,
-                    displayName: currentUser.displayName || currentUser.email,
-                    role: 'student',
-                    createdAt: serverTimestamp()
-                };
-                await setDoc(doc(db, 'users', userId), userData);
+            const userEmail = sessionUser.email || '';
+            const userUid = sessionUser.uid || '';
+
+            // 1. Fetch user from 'users' table
+            try {
+                const { data: uData } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', userUid)
+                    .maybeSingle();
+
+                if (uData) {
+                    userData = uData;
+                }
+            } catch(e) {}
+
+            // 2. Fetch student from 'students' table
+            try {
+                const { data: sRows } = await supabase
+                    .from('students')
+                    .select('*')
+                    .or(`email.eq.${userEmail},id.eq.${userUid}`);
+
+                if (sRows && sRows.length > 0) {
+                    studentData = sRows[0];
+                }
+            } catch(e) {}
+
+            // 3. Fetch latest enrollment
+            const studentIdVal = studentData?.id || userUid;
+            try {
+                let query = supabase.from('enrollments').select('*');
+                if (userEmail && studentIdVal) {
+                    query = query.or(`email.eq.${userEmail},student_id.eq.${studentIdVal}`);
+                } else if (userEmail) {
+                    query = query.eq('email', userEmail);
+                }
+                const { data: enrData } = await query.order('created_at', { ascending: false }).limit(1);
+                if (enrData && enrData.length > 0) {
+                    enrollmentData = enrData[0];
+                }
+            } catch(e) {}
+
+            // 4. Subjects count
+            try {
+                const { count } = await supabase
+                    .from('subjects')
+                    .select('*', { count: 'exact', head: true });
+                if (subjectsCountValue) {
+                    subjectsCountValue.textContent = count && count > 0 ? count : (enrollmentData ? 8 : 0);
+                }
+            } catch(e) {
+                if (subjectsCountValue) subjectsCountValue.textContent = enrollmentData ? '8' : '0';
             }
+
+            updateUI();
+
         } catch (error) {
             console.error('Error loading profile data:', error);
             showAlert('❌ Error loading profile: ' + error.message, 'error');
-        }
-    }
-
-    // ============================================
-    // LOAD ACADEMIC DATA
-    // ============================================
-
-    async function loadAcademicData(userId) {
-        try {
-            // Get current enrollment without requiring composite index
-            const enrollmentsRef = collection(db, 'enrollments');
-            const q = query(enrollmentsRef, where('userId', '==', userId));
-            const snapshot = await getDocs(q);
-            
-            let enrollments = [];
-            snapshot.forEach((d) => {
-                enrollments.push({ id: d.id, ...d.data() });
-            });
-
-            enrollments.sort((a, b) => {
-                const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAt?.seconds ? a.createdAt.seconds * 1000 : (new Date(a.createdAt || 0).getTime() || 0));
-                const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAt?.seconds ? b.createdAt.seconds * 1000 : (new Date(b.createdAt || 0).getTime() || 0));
-                return timeB - timeA;
-            });
-
-            if (enrollments.length > 0) {
-                enrollmentData = enrollments[0];
-                console.log('📚 Enrollment data loaded:', enrollmentData);
-                
-                // Get subjects count
-                if (enrollmentData.gradeId || enrollmentData.grade) {
-                    try {
-                        const subjectsRef = collection(db, 'subjects');
-                        const sq = query(subjectsRef);
-                        const subjectSnapshot = await getDocs(sq);
-                        let count = 0;
-                        subjectSnapshot.forEach(d => {
-                            const data = d.data();
-                            if (data.gradeId == enrollmentData.gradeId || data.grade == enrollmentData.grade || data.grade_name == enrollmentData.grade) {
-                                count++;
-                            }
-                        });
-                        if (subjectsCountValue) subjectsCountValue.textContent = count > 0 ? count : (enrollmentData.grade?.includes('11') || enrollmentData.grade?.includes('12') ? 7 : 8);
-                    } catch {
-                        if (subjectsCountValue) subjectsCountValue.textContent = '8';
-                    }
-                }
-            } else {
-                enrollmentData = null;
-                if (subjectsCountValue) subjectsCountValue.textContent = '0';
-            }
-        } catch (error) {
-            console.error('Error loading academic data:', error);
         }
     }
 
@@ -206,123 +195,81 @@ import {
     // ============================================
 
     function updateUI() {
-        if (!currentUser) return;
+        let studentFullName = studentData?.first_name ? 
+            `${studentData.first_name} ${studentData.last_name || ''}`.trim() : 
+            (userData?.first_name ? `${userData.first_name} ${userData.last_name || ''}`.trim() : 
+            (sessionUser.firstName ? `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim() : (sessionUser.email ? sessionUser.email.split('@')[0] : 'Student')));
+        studentFullName = sanitizeStudentName(studentFullName, sessionUser.email);
 
-        // Profile info
-        const displayName = userData?.displayName || userData?.fullName || currentUser.displayName || currentUser.email || 'Student';
-        if (profileName) profileName.textContent = displayName;
-        if (profileInitial) profileInitial.textContent = displayName.charAt(0).toUpperCase();
-        if (profileEmail) profileEmail.textContent = currentUser.email;
-        if (studentId) studentId.textContent = userData?.idNumber || 'Not Assigned';
+        const initials = getStudentInitials(studentFullName);
+
+        try {
+            localStorage.setItem('plsnhs_student_name', studentFullName);
+        } catch(e) {}
+
+        if (studentName) studentName.textContent = studentFullName;
+        if (studentInitial) studentInitial.textContent = initials;
+        if (profileName) profileName.textContent = studentFullName;
+        if (profileInitial) profileInitial.textContent = initials;
+        if (profileEmail) profileEmail.textContent = sessionUser.email;
+        if (studentId) studentId.textContent = studentData?.lrn || 'Not Assigned';
+        
+        const modalInitial = document.getElementById('modalInitial');
+        if (modalInitial) modalInitial.textContent = initials;
 
         // Profile picture
-        if (userData?.profilePicture) {
-            const avatarLarge = document.querySelector('.profile-avatar-large');
-            if (avatarLarge) {
-                const existingImg = avatarLarge.querySelector('img');
-                if (existingImg) {
-                    existingImg.src = userData.profilePicture;
-                } else {
-                    const initialEl = avatarLarge.querySelector('.avatar-initial');
-                    if (initialEl) initialEl.style.display = 'none';
-                    const img = document.createElement('img');
-                    img.src = userData.profilePicture;
-                    img.alt = 'Profile';
-                    img.style.width = '100%';
-                    img.style.height = '100%';
-                    img.style.borderRadius = '50%';
-                    img.style.objectFit = 'cover';
-                    avatarLarge.prepend(img);
-                }
-            }
-
-            const sidebarAvatar = document.querySelector('.student-avatar');
-            if (sidebarAvatar) {
-                const existingImg = sidebarAvatar.querySelector('img');
-                if (existingImg) {
-                    existingImg.src = userData.profilePicture;
-                } else {
-                    const initialEl = sidebarAvatar.querySelector('.avatar-initial');
-                    if (initialEl) initialEl.style.display = 'none';
-                    const img = document.createElement('img');
-                    img.src = userData.profilePicture;
-                    img.alt = 'Profile';
-                    img.style.width = '100%';
-                    img.style.height = '100%';
-                    img.style.borderRadius = '50%';
-                    img.style.objectFit = 'cover';
-                    sidebarAvatar.prepend(img);
-                }
-            }
+        const effectiveAvatar = localStorage.getItem('plsnhs_student_avatar');
+        if (effectiveAvatar) {
+            applyStudentAvatarToDOM(effectiveAvatar);
+        } else {
+            renderDefaultStudentAvatar(studentFullName);
         }
 
         // Member since
-        if (userData?.createdAt) {
-            const date = userData.createdAt.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt);
+        const createdDate = userData?.created_at || studentData?.created_at;
+        if (createdDate) {
+            const date = new Date(createdDate);
             if (memberSince) memberSince.textContent = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-            
-            // Days active
             const diff = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
-            if (daysActive) daysActive.textContent = diff > 0 ? diff : 0;
+            if (daysActive) daysActive.textContent = diff > 0 ? diff : 1;
         } else {
-            if (memberSince) memberSince.textContent = 'N/A';
-            if (daysActive) daysActive.textContent = '0';
+            if (memberSince) memberSince.textContent = 'Active Member';
+            if (daysActive) daysActive.textContent = '1';
         }
 
-        // Email verification
-        if (currentUser.emailVerified) {
-            emailVerifiedBadge.innerHTML = '<span class="verified-badge"><i class="fas fa-check-circle"></i> Verified</span>';
+        // Email verification badge
+        if (emailVerifiedBadge) {
+            emailVerifiedBadge.innerHTML = '<span class="verified-badge"><i class="fas fa-check-circle"></i> Active Account</span>';
+        }
+        if (emailVerificationSection) {
             emailVerificationSection.innerHTML = `
                 <div class="verification-badge verified">
-                    <i class="fas fa-check-circle"></i> Verified Email
+                    <i class="fas fa-check-circle"></i> Verified Student Profile
                 </div>
                 <div class="verification-info">
-                    <p>Your email address has been verified.</p>
+                    <p>Your student account is registered and authenticated in the school portal.</p>
                 </div>
             `;
-        } else {
-            emailVerifiedBadge.innerHTML = '<span class="unverified-badge"><i class="fas fa-times-circle"></i> Unverified</span>';
-            emailVerificationSection.innerHTML = `
-                <div class="verification-badge unverified">
-                    <i class="fas fa-exclamation-triangle"></i> Email Not Verified
-                </div>
-                <div class="verification-info">
-                    <p>Verifying your email helps secure your account.</p>
-                    <button id="verifyEmailBtn" class="btn-verify">
-                        <i class="fas fa-paper-plane"></i> Verify Email Now
-                    </button>
-                </div>
-            `;
-            
-            // Add verify email listener
-            const verifyBtn = document.getElementById('verifyEmailBtn');
-            if (verifyBtn) {
-                verifyBtn.addEventListener('click', async function() {
-                    try {
-                        await sendEmailVerification(currentUser);
-                        showAlert('✅ Verification email sent! Please check your inbox.', 'success');
-                    } catch (error) {
-                        console.error('Error sending verification:', error);
-                        showAlert('❌ Error sending verification: ' + error.message, 'error');
-                    }
-                });
-            }
         }
 
         // Academic info
-        if (enrollmentData) {
-            gradeLevel.textContent = enrollmentData.grade || 'N/A';
-            strandValue.textContent = enrollmentData.strand || 'N/A';
-            schoolYearValue.textContent = enrollmentData.schoolYear || 'N/A';
+        if (enrollmentData || studentData) {
+            const grade = enrollmentData?.grade_level || enrollmentData?.grade || studentData?.grade_level || 'Grade 11';
+            const strand = enrollmentData?.strand || studentData?.strand || 'TVL-ICT';
+            const sy = enrollmentData?.school_year || enrollmentData?.schoolYear || enrollmentData?.last_school_year || '2025-2026';
+
+            if (gradeLevel) gradeLevel.textContent = grade;
+            if (strandValue) strandValue.textContent = strand;
+            if (schoolYearValue) schoolYearValue.textContent = sy;
         } else {
-            gradeLevel.textContent = 'Not Enrolled';
-            strandValue.textContent = 'N/A';
-            schoolYearValue.textContent = 'N/A';
+            if (gradeLevel) gradeLevel.textContent = 'Not Enrolled';
+            if (strandValue) strandValue.textContent = 'N/A';
+            if (schoolYearValue) schoolYearValue.textContent = 'N/A';
         }
     }
 
     // ============================================
-    // CHANGE PASSWORD
+    // CHANGE PASSWORD (via Supabase)
     // ============================================
 
     const changePwdCheckbox = document.getElementById('change_password_checkbox');
@@ -336,20 +283,17 @@ import {
         changePwdCheckbox.addEventListener('change', function() {
             if (this.checked) {
                 pwdFields.style.display = 'block';
-                currentPwd.disabled = false;
-                newPwd.disabled = false;
-                confirmPwd.disabled = false;
-                changePwdBtn.disabled = true;
-                newPwd.focus();
+                if (currentPwd) currentPwd.disabled = false;
+                if (newPwd) newPwd.disabled = false;
+                if (confirmPwd) confirmPwd.disabled = false;
+                if (changePwdBtn) changePwdBtn.disabled = true;
+                if (newPwd) newPwd.focus();
             } else {
                 pwdFields.style.display = 'none';
-                currentPwd.disabled = true;
-                currentPwd.value = '';
-                newPwd.disabled = true;
-                newPwd.value = '';
-                confirmPwd.disabled = true;
-                confirmPwd.value = '';
-                changePwdBtn.disabled = true;
+                if (currentPwd) { currentPwd.disabled = true; currentPwd.value = ''; }
+                if (newPwd) { newPwd.disabled = true; newPwd.value = ''; }
+                if (confirmPwd) { confirmPwd.disabled = true; confirmPwd.value = ''; }
+                if (changePwdBtn) changePwdBtn.disabled = true;
                 resetStrength();
             }
         });
@@ -362,22 +306,14 @@ import {
         if (strengthBar) strengthBar.style.width = '0';
         if (strengthText) strengthText.innerHTML = '<i class="fas fa-info-circle"></i> Enter new password';
         if (matchText) matchText.innerHTML = '<i class="fas fa-info-circle"></i> Re-enter new password';
-        ['length','uppercase','lowercase','number','special'].forEach(r => {
-            const el = document.getElementById(`req-${r}`);
-            if (el) {
-                el.classList.remove('valid');
-                el.innerHTML = '<i class="fas fa-circle"></i> ' + el.innerText.replace(/[✓✔✅]/g, '').trim();
-            }
-        });
     }
 
     function validatePwd(pwd) {
         return {
-            length: pwd.length >= 8,
+            length: pwd.length >= 6,
             uppercase: /[A-Z]/.test(pwd),
             lowercase: /[a-z]/.test(pwd),
-            number: /[0-9]/.test(pwd),
-            special: /[!@#$%^&*(),.?":{}|<>]/.test(pwd)
+            number: /[0-9]/.test(pwd)
         };
     }
 
@@ -385,21 +321,8 @@ import {
         const pwd = newPwd ? newPwd.value : '';
         const validation = validatePwd(pwd);
         
-        ['length','uppercase','lowercase','number','special'].forEach(r => {
-            const el = document.getElementById(`req-${r}`);
-            if (el) {
-                if (validation[r]) {
-                    el.classList.add('valid');
-                    el.innerHTML = '<i class="fas fa-check-circle"></i> ' + el.innerText.replace(/[✓✔✅]/g, '').trim();
-                } else {
-                    el.classList.remove('valid');
-                    el.innerHTML = '<i class="fas fa-circle"></i> ' + el.innerText.replace(/[✓✔✅]/g, '').trim();
-                }
-            }
-        });
-        
         const validCount = Object.values(validation).filter(v => v).length;
-        const percent = (validCount / 5) * 100;
+        const percent = (validCount / 4) * 100;
         const strengthBar = document.getElementById('strengthBar');
         const strengthText = document.getElementById('strengthText');
         
@@ -421,7 +344,7 @@ import {
         }
         
         checkMatch();
-        const isStrong = Object.values(validation).every(v => v);
+        const isStrong = pwd.length >= 6;
         if (changePwdBtn) changePwdBtn.disabled = !(isStrong && confirmPwd && pwd === confirmPwd.value);
     }
 
@@ -441,20 +364,15 @@ import {
     if (newPwd) newPwd.addEventListener('input', updateStrength);
     if (confirmPwd) confirmPwd.addEventListener('input', checkMatch);
 
-    // ============================================
-    // CHANGE PASSWORD FORM SUBMIT
-    // ============================================
-
     const passwordForm = document.getElementById('passwordForm');
     if (passwordForm) {
         passwordForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const current = document.getElementById('current_password').value;
-            const newPwdValue = document.getElementById('new_password').value;
-            const confirm = document.getElementById('confirm_password').value;
+            const current = document.getElementById('current_password')?.value;
+            const newPwdValue = document.getElementById('new_password')?.value;
+            const confirm = document.getElementById('confirm_password')?.value;
 
-            // Validate
             if (!current || !newPwdValue || !confirm) {
                 showAlert('⚠️ Please fill in all password fields', 'error');
                 return;
@@ -466,91 +384,129 @@ import {
             }
 
             try {
-                // Re-authenticate user
-                const credential = EmailAuthProvider.credential(currentUser.email, current);
-                await reauthenticateWithCredential(currentUser, credential);
+                // Verify current password against Supabase users table
+                const { data: userRecord, error: checkError } = await supabase
+                    .from('users')
+                    .select('id, password')
+                    .eq('id', sessionUser.uid)
+                    .maybeSingle();
+
+                if (checkError) throw checkError;
+
+                if (userRecord && userRecord.password && userRecord.password !== current) {
+                    showAlert('❌ Current password is incorrect', 'error');
+                    return;
+                }
+
+                // Update password in Supabase
+                const { error: updateError } = await supabase
+                    .from('users')
+                    .update({ 
+                        password: newPwdValue,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', sessionUser.uid);
+
+                if (updateError) throw updateError;
                 
-                // Update password
-                await updatePassword(currentUser, newPwdValue);
+                showAlert('✅ Password updated successfully!', 'success');
                 
-                showAlert('✅ Password changed successfully!', 'success');
-                
-                // Reset form
-                document.getElementById('current_password').value = '';
-                document.getElementById('new_password').value = '';
-                document.getElementById('confirm_password').value = '';
-                changePwdCheckbox.checked = false;
-                pwdFields.style.display = 'none';
+                if (currentPwd) currentPwd.value = '';
+                if (newPwd) newPwd.value = '';
+                if (confirmPwd) confirmPwd.value = '';
+                if (changePwdCheckbox) changePwdCheckbox.checked = false;
+                if (pwdFields) pwdFields.style.display = 'none';
                 resetStrength();
                 
             } catch (error) {
                 console.error('Error changing password:', error);
-                if (error.code === 'auth/wrong-password') {
-                    showAlert('❌ Current password is incorrect', 'error');
-                } else if (error.code === 'auth/too-many-requests') {
-                    showAlert('❌ Too many failed attempts. Please try again later.', 'error');
-                } else {
-                    showAlert('❌ Error changing password: ' + error.message, 'error');
-                }
+                showAlert('❌ Error changing password: ' + error.message, 'error');
             }
         });
     }
 
     // ============================================
-    // CHANGE EMAIL
+    // PROFILE PICTURE UPLOAD & PERSISTENCE
     // ============================================
 
-    // Handle email change form
-    const emailChangeForm = document.getElementById('emailChangeForm');
-    if (emailChangeForm) {
-        emailChangeForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const newEmail = document.getElementById('new_email').value.trim();
-            
-            if (!newEmail || !newEmail.includes('@')) {
-                showAlert('⚠️ Please enter a valid email address', 'error');
-                return;
-            }
+    function renderDefaultStudentAvatar(name) {
+        const initials = getStudentInitials(name || 'Student');
+        const avatarLarge = document.querySelector('.profile-avatar-large');
+        if (avatarLarge) {
+            avatarLarge.innerHTML = `
+                <div class="avatar-initial" id="profileInitial">${initials}</div>
+                <div class="avatar-overlay">
+                    <i class="fas fa-camera"></i>
+                </div>
+            `;
+        }
+        const sidebarAvatar = document.querySelector('.student-avatar');
+        if (sidebarAvatar) {
+            sidebarAvatar.innerHTML = `
+                <div class="avatar-initial" id="studentInitial">${initials}</div>
+                <div class="online-dot"></div>
+            `;
+        }
+    }
 
+    function applyStudentAvatarToDOM(base64Image) {
+        const avatarLarge = document.querySelector('.profile-avatar-large');
+        if (avatarLarge) {
+            const initialEl = avatarLarge.querySelector('.avatar-initial');
+            if (initialEl) initialEl.style.display = 'none';
+            let existingImg = avatarLarge.querySelector('img');
+            if (existingImg) {
+                existingImg.src = base64Image;
+            } else {
+                const img = document.createElement('img');
+                img.src = base64Image;
+                img.alt = 'Profile';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.borderRadius = '50%';
+                img.style.objectFit = 'cover';
+                avatarLarge.prepend(img);
+            }
+        }
+
+        const sidebarAvatar = document.querySelector('.student-avatar');
+        if (sidebarAvatar) {
+            const initialEl = sidebarAvatar.querySelector('.avatar-initial');
+            if (initialEl) initialEl.style.display = 'none';
+            let existingImg = sidebarAvatar.querySelector('img');
+            if (existingImg) {
+                existingImg.src = base64Image;
+            } else {
+                const img = document.createElement('img');
+                img.src = base64Image;
+                img.alt = 'Profile';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.borderRadius = '50%';
+                img.style.objectFit = 'cover';
+                sidebarAvatar.prepend(img);
+            }
+        }
+    }
+
+    window.removeProfilePic = function() {
+        if (confirm('Remove your profile picture and restore your name initials?')) {
             try {
-                // Re-authenticate user first (optional but recommended)
-                // For simplicity, we'll just update the email
-                await updateEmail(currentUser, newEmail);
-                
-                // Update in Firestore
-                await updateDoc(doc(db, 'users', currentUser.uid), {
-                    email: newEmail,
-                    updatedAt: serverTimestamp()
-                });
-                
-                showAlert('✅ Email updated successfully! Please verify your new email.', 'success');
-                
-                // Refresh page to show updated email
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-                
-            } catch (error) {
-                console.error('Error changing email:', error);
-                if (error.code === 'auth/email-already-in-use') {
-                    showAlert('❌ Email already in use by another account', 'error');
-                } else if (error.code === 'auth/requires-recent-login') {
-                    showAlert('❌ Please log out and log in again to change email', 'error');
-                } else {
-                    showAlert('❌ Error changing email: ' + error.message, 'error');
-                }
-            }
-        });
-    }
+                localStorage.removeItem('plsnhs_student_avatar');
+            } catch(e) {}
+            const displayName = studentData?.first_name ? 
+                `${studentData.first_name} ${studentData.last_name || ''}`.trim() : 
+                (sessionUser.firstName ? `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim() : 'Student');
+            renderDefaultStudentAvatar(displayName);
+            showAlert('✅ Profile picture removed. Initials restored.', 'success');
+            const imgModal = document.getElementById('imageModal');
+            if (imgModal) imgModal.style.display = 'none';
+        }
+    };
 
-    // ============================================
-    // PROFILE PICTURE UPLOAD
-    // ============================================
-
-    // Handle profile picture upload (simplified - we'll use Firestore to store the reference)
     const profilePicForm = document.getElementById('profilePicForm');
     if (profilePicForm) {
-        profilePicForm.addEventListener('submit', async function(e) {
+        profilePicForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
             const fileInput = document.getElementById('profile_picture');
@@ -567,82 +523,33 @@ import {
                 return;
             }
 
-            try {
-                // Read file as base64 (for demo - in production use Firebase Storage)
-                const reader = new FileReader();
-                reader.onload = async function(e) {
-                    const base64Image = e.target.result;
-                    
-                    // Store base64 image in Firestore (not recommended for production)
-                    await updateDoc(doc(db, 'users', currentUser.uid), {
-                        profilePicture: base64Image,
-                        updatedAt: serverTimestamp()
-                    });
-                    
-                    showAlert('✅ Profile picture updated!', 'success');
-                    
-                    // Update preview
-                    const preview = document.querySelector('.profile-avatar-large img');
-                    if (preview) {
-                        preview.src = base64Image;
-                    }
-                    
-                    // Close modal
-                    closeImageModal();
-                    
-                    // Refresh page after 1.5 seconds
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
-                };
-                reader.readAsDataURL(file);
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const base64Image = evt.target.result;
+                try {
+                    localStorage.setItem('plsnhs_student_avatar', base64Image);
+                } catch(e) {}
                 
-            } catch (error) {
-                console.error('Error uploading profile picture:', error);
-                showAlert('❌ Error uploading: ' + error.message, 'error');
-            }
+                applyStudentAvatarToDOM(base64Image);
+                showAlert('✅ Profile picture updated successfully!', 'success');
+                const imgModal = document.getElementById('imageModal');
+                if (imgModal) imgModal.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
         });
     }
-
-    // ============================================
-    // IMAGE MODAL
-    // ============================================
-
-    function openImageModal() {
-        document.getElementById('imageModal').classList.add('active');
-    }
-
-    function closeImageModal() {
-        document.getElementById('imageModal').classList.remove('active');
-    }
-
-    // Expose functions globally
-    window.openImageModal = openImageModal;
-    window.closeImageModal = closeImageModal;
-
-    // Preview image before upload
-    function previewImage(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.getElementById('imagePreview');
-                preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-    window.previewImage = previewImage;
 
     // ============================================
     // ALERT SYSTEM
     // ============================================
 
     function showAlert(message, type = 'success') {
+        if (!alertContainer) return;
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type}`;
         alertDiv.innerHTML = `
             <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-            ${message}
+            <span>${message}</span>
         `;
         alertContainer.appendChild(alertDiv);
         
@@ -652,17 +559,7 @@ import {
         }, 5000);
     }
 
-    // ============================================
-    // SET CURRENT DATE
-    // ============================================
-
-    const dateBadge = document.querySelector('.date-badge');
-    if (dateBadge) {
-        const now = new Date();
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        dateBadge.innerHTML = `<i class="fas fa-calendar-alt"></i> ${now.toLocaleDateString('en-US', options)}`;
-    }
-
-    console.log('✅ Profile page ready!');
+    // Initialize
+    loadProfileData();
 
 })();

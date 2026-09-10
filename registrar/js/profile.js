@@ -93,12 +93,22 @@
     };
 
     // ============================================
-    // SET ADMIN NAME (from data)
+    // SET REGISTRAR NAME (from session/localStorage)
     // ============================================
 
-    const firstName = data.fullname ? data.fullname.split(' ')[0] : 'Registrar';
-    if (adminName) adminName.textContent = firstName;
-    if (adminInitial) adminInitial.textContent = firstName.charAt(0).toUpperCase();
+    try {
+        const currentUserStr = localStorage.getItem('currentUser');
+        if (currentUserStr) {
+            const user = JSON.parse(currentUserStr);
+            const name = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : (user.displayName || (user.email ? user.email.split('@')[0] : 'Registrar'));
+            if (adminName) adminName.textContent = name;
+            if (adminInitial) adminInitial.textContent = name.charAt(0).toUpperCase();
+        } else {
+            const firstName = data.fullname ? data.fullname.split(' ')[0] : (localStorage.getItem('registrarName') || 'Registrar');
+            if (adminName) adminName.textContent = firstName;
+            if (adminInitial) adminInitial.textContent = firstName.charAt(0).toUpperCase();
+        }
+    } catch(e) {}
 
     // ============================================
     // LOGOUT
@@ -107,7 +117,12 @@
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            window.location.href = '../auth/login.html';
+            console.log('🚪 Registrar logging out...');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('registrarName');
+            localStorage.removeItem('plsnhs_registrar_avatar');
+            localStorage.removeItem('plsnhs_registrar_name');
+            window.location.replace('../auth/login.html');
         });
     }
 
@@ -539,21 +554,449 @@
     });
 
     // ============================================
-    // IMAGE PREVIEW
+    // PROFILE PICTURE UPLOAD & PERSISTENCE
     // ============================================
 
-    if (profilePicture) {
-        profilePicture.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    if (imagePreview) {
-                        imagePreview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview">`;
-                    }
-                };
-                reader.readAsDataURL(this.files[0]);
+    function getRegistrarInitials(name) {
+        if (!name || typeof name !== 'string') return 'R';
+        const cleanName = name.replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?|prof\.?|engr\.?|atty\.?)\s+/i, '').trim();
+        const words = cleanName.split(/[\s,&-]+/).filter(w => w.length > 0 && !['and', 'the', 'of', '&'].includes(w.toLowerCase()));
+        if (words.length === 0) return name.charAt(0).toUpperCase();
+        if (words.length === 1) return words[0].substring(0, Math.min(2, words[0].length)).toUpperCase();
+        return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+    }
+
+    function renderDefaultRegistrarAvatar(name) {
+        const initials = getRegistrarInitials(name || 'Registrar');
+        if (profileAvatar) {
+            profileAvatar.innerHTML = `
+                <div class="avatar-initial" id="avatarInitial">${initials}</div>
+                <div class="avatar-overlay">
+                    <i class="fas fa-camera"></i>
+                </div>
+            `;
+        }
+
+        const sidebarAvatar = document.querySelector('.admin-avatar');
+        if (sidebarAvatar) {
+            sidebarAvatar.innerHTML = `
+                <div class="avatar-initial" id="adminInitial">${initials}</div>
+                <div class="online-dot"></div>
+            `;
+        }
+
+        if (imagePreview) {
+            imagePreview.innerHTML = `<div class="preview-placeholder" id="previewPlaceholder">${initials}</div>`;
+        }
+    }
+
+    function applyRegistrarAvatarToDOM(base64Image) {
+        if (profileAvatar) {
+            profileAvatar.innerHTML = `
+                <img src="${base64Image}" alt="Profile Picture" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                <div class="avatar-overlay">
+                    <i class="fas fa-camera"></i>
+                </div>
+            `;
+        }
+
+        const sidebarAvatar = document.querySelector('.admin-avatar');
+        if (sidebarAvatar) {
+            sidebarAvatar.innerHTML = `
+                <img src="${base64Image}" alt="Registrar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                <div class="online-dot"></div>
+            `;
+        }
+
+        if (imagePreview) {
+            imagePreview.innerHTML = `<img src="${base64Image}" alt="Profile Preview">`;
+        }
+    }
+
+    function loadSavedRegistrarProfile() {
+        try {
+            const savedName = localStorage.getItem('plsnhs_registrar_name');
+            if (savedName) {
+                if (editFullname) editFullname.value = savedName;
+                if (profileName) profileName.textContent = savedName;
+                if (adminName) adminName.textContent = savedName.split(' ')[0];
+            } else if (editFullname && data.fullname) {
+                editFullname.value = data.fullname;
+            }
+
+            const currentName = savedName || data.fullname || 'Registrar';
+            const savedAvatar = localStorage.getItem('plsnhs_registrar_avatar');
+            if (savedAvatar) {
+                applyRegistrarAvatarToDOM(savedAvatar);
+            } else {
+                renderDefaultRegistrarAvatar(currentName);
+            }
+        } catch(e) {}
+    }
+
+    if (editProfileForm) {
+        editProfileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const fullnameInput = document.getElementById('editFullname');
+            const fullname = fullnameInput ? fullnameInput.value.trim() : '';
+
+            if (!fullname) {
+                showAlert('Full name is required.', 'error');
+                return;
+            }
+
+            try {
+                localStorage.setItem('plsnhs_registrar_name', fullname);
+            } catch(err) {}
+
+            if (profileName) profileName.textContent = fullname;
+            if (adminName) adminName.textContent = fullname.split(' ')[0];
+
+            const savedAvatar = localStorage.getItem('plsnhs_registrar_avatar');
+            if (!savedAvatar) {
+                renderDefaultRegistrarAvatar(fullname);
+            }
+
+            showAlert('✅ Profile information updated successfully!', 'success');
+        });
+    }
+
+    if (editFullname) {
+        editFullname.addEventListener('input', function() {
+            const savedAvatar = localStorage.getItem('plsnhs_registrar_avatar');
+            if (!savedAvatar) {
+                renderDefaultRegistrarAvatar(this.value.trim() || 'Registrar');
             }
         });
+    }
+
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (!profilePicture || !profilePicture.files || profilePicture.files.length === 0) {
+                showAlert('Please select an image file to upload.', 'error');
+                return;
+            }
+
+            const file = profilePicture.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+                showAlert('File size exceeds 5MB limit.', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const base64Image = evt.target.result;
+                try {
+                    localStorage.setItem('plsnhs_registrar_avatar', base64Image);
+                } catch(e) {}
+                applyRegistrarAvatarToDOM(base64Image);
+                showAlert('✅ Profile picture updated successfully!', 'success');
+                closeImageModal();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    if (removePicBtn) {
+        removePicBtn.addEventListener('click', function() {
+            if (confirm('Remove your profile picture and restore your name initials?')) {
+                try {
+                    localStorage.removeItem('plsnhs_registrar_avatar');
+                } catch(e) {}
+                const currentName = localStorage.getItem('plsnhs_registrar_name') || (editFullname ? editFullname.value : 'Registrar');
+                renderDefaultRegistrarAvatar(currentName);
+                showAlert('✅ Profile picture removed. Initials restored.', 'success');
+                closeImageModal();
+            }
+        });
+    }
+
+    // ============================================
+    // REGISTRAR DOCUMENTS MANAGEMENT
+    // ============================================
+
+    const defaultRegistrarDocs = [
+        {
+            id: 'rdoc_1',
+            title: 'DepEd Official Registrar Appointment Papers',
+            type: 'Appointment',
+            filename: 'DepEd_Registrar_Appointment_2026.pdf',
+            size: '1.3 MB',
+            date: '2026-06-01',
+            format: 'pdf',
+            status: 'Verified',
+            dataUrl: null
+        },
+        {
+            id: 'rdoc_2',
+            title: 'Official Registrar E-Signature Specimen',
+            type: 'E-Signature Specimen',
+            filename: 'Registrar_Signature_Specimen.png',
+            size: '420 KB',
+            date: '2026-06-05',
+            format: 'img',
+            status: 'Verified',
+            dataUrl: null
+        }
+    ];
+
+    let registrarDocs = [];
+    try {
+        const savedRDocs = localStorage.getItem('plsnhs_registrar_documents');
+        if (savedRDocs) {
+            registrarDocs = JSON.parse(savedRDocs);
+        } else {
+            registrarDocs = [...defaultRegistrarDocs];
+            localStorage.setItem('plsnhs_registrar_documents', JSON.stringify(registrarDocs));
+        }
+    } catch(e) {
+        registrarDocs = [...defaultRegistrarDocs];
+    }
+
+    function persistRegistrarDocs() {
+        try {
+            localStorage.setItem('plsnhs_registrar_documents', JSON.stringify(registrarDocs));
+        } catch(e) {}
+    }
+
+    const registrarDocDropZone = document.getElementById('registrarDocDropZone');
+    const registrarDocFileInput = document.getElementById('registrarDocFileInput');
+    const registrarDocUploadForm = document.getElementById('registrarDocUploadForm');
+    const registrarDocSelectedName = document.getElementById('registrarDocSelectedName');
+    const registrarDocTypeSelect = document.getElementById('registrarDocTypeSelect');
+    const registrarDocCustomTitle = document.getElementById('registrarDocCustomTitle');
+    const registrarDocCancelBtn = document.getElementById('registrarDocCancelBtn');
+    const registrarDocSaveBtn = document.getElementById('registrarDocSaveBtn');
+    const registrarDocList = document.getElementById('registrarDocList');
+    const registrarDocCount = document.getElementById('registrarDocCount');
+
+    // Modal
+    const docPreviewModal = document.getElementById('docPreviewModal');
+    const docPreviewTitle = document.getElementById('docPreviewTitle');
+    const docPreviewContainer = document.getElementById('docPreviewContainer');
+    const closeDocPreviewBtn = document.getElementById('closeDocPreviewBtn');
+    const dismissDocPreviewBtn = document.getElementById('dismissDocPreviewBtn');
+    const docDownloadBtn = document.getElementById('docDownloadBtn');
+
+    let currentPendingRegistrarFile = null;
+
+    if (registrarDocDropZone && registrarDocFileInput) {
+        registrarDocDropZone.addEventListener('click', () => registrarDocFileInput.click());
+
+        registrarDocDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            registrarDocDropZone.classList.add('dragover');
+        });
+
+        registrarDocDropZone.addEventListener('dragleave', () => {
+            registrarDocDropZone.classList.remove('dragover');
+        });
+
+        registrarDocDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            registrarDocDropZone.classList.remove('dragover');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleRegistrarFileSelected(e.dataTransfer.files[0]);
+            }
+        });
+
+        registrarDocFileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                handleRegistrarFileSelected(this.files[0]);
+            }
+        });
+    }
+
+    function handleRegistrarFileSelected(file) {
+        currentPendingRegistrarFile = file;
+        if (registrarDocSelectedName) registrarDocSelectedName.textContent = `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+        if (registrarDocCustomTitle) registrarDocCustomTitle.value = file.name.replace(/\.[^/.]+$/, '');
+        if (registrarDocUploadForm) registrarDocUploadForm.style.display = 'block';
+    }
+
+    if (registrarDocCancelBtn) {
+        registrarDocCancelBtn.addEventListener('click', () => {
+            currentPendingRegistrarFile = null;
+            if (registrarDocFileInput) registrarDocFileInput.value = '';
+            if (registrarDocUploadForm) registrarDocUploadForm.style.display = 'none';
+        });
+    }
+
+    if (registrarDocSaveBtn) {
+        registrarDocSaveBtn.addEventListener('click', () => {
+            if (!currentPendingRegistrarFile) {
+                showAlert('No document selected.', 'error');
+                return;
+            }
+
+            const title = (registrarDocCustomTitle && registrarDocCustomTitle.value.trim()) || currentPendingRegistrarFile.name;
+            const type = (registrarDocTypeSelect && registrarDocTypeSelect.value) || 'Other Document';
+            const sizeInMb = (currentPendingRegistrarFile.size / (1024 * 1024)).toFixed(2);
+            const sizeStr = currentPendingRegistrarFile.size > 1024 * 1024 ? `${sizeInMb} MB` : `${Math.round(currentPendingRegistrarFile.size / 1024)} KB`;
+            const isPdf = currentPendingRegistrarFile.name.toLowerCase().endsWith('.pdf') || currentPendingRegistrarFile.type === 'application/pdf';
+            const format = isPdf ? 'pdf' : (currentPendingRegistrarFile.type.startsWith('image/') ? 'img' : 'doc');
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const dataUrl = evt.target.result;
+                const newDoc = {
+                    id: 'rdoc_' + Date.now(),
+                    title: title,
+                    type: type,
+                    filename: currentPendingRegistrarFile.name,
+                    size: sizeStr,
+                    date: new Date().toISOString().split('T')[0],
+                    format: format,
+                    status: 'Verified',
+                    dataUrl: dataUrl
+                };
+
+                registrarDocs.unshift(newDoc);
+                persistRegistrarDocs();
+                renderRegistrarDocs();
+
+                currentPendingRegistrarFile = null;
+                if (registrarDocFileInput) registrarDocFileInput.value = '';
+                if (registrarDocUploadForm) registrarDocUploadForm.style.display = 'none';
+
+                showAlert(`✅ Official File "${title}" uploaded to your profile!`, 'success');
+            };
+            reader.readAsDataURL(currentPendingRegistrarFile);
+        });
+    }
+
+    function renderRegistrarDocs() {
+        if (!registrarDocList) return;
+
+        if (registrarDocCount) {
+            registrarDocCount.textContent = `${registrarDocs.length} ${registrarDocs.length === 1 ? 'File' : 'Files'}`;
+        }
+
+        if (registrarDocs.length === 0) {
+            registrarDocList.innerHTML = `
+                <div class="empty-docs-state">
+                    <i class="fas fa-folder-open"></i>
+                    <p>No official files uploaded yet. Upload your credentials above.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        registrarDocs.forEach(doc => {
+            const iconClass = doc.format === 'pdf' ? 'doc-icon-pdf fa-file-pdf' : (doc.format === 'img' ? 'doc-icon-img fa-file-image' : 'doc-icon-doc fa-file-alt');
+            html += `
+                <div class="doc-item" data-id="${doc.id}">
+                    <div class="doc-item-left">
+                        <div class="doc-item-icon ${doc.format === 'pdf' ? 'doc-icon-pdf' : (doc.format === 'img' ? 'doc-icon-img' : 'doc-icon-doc')}">
+                            <i class="fas ${iconClass.split(' ')[1]}"></i>
+                        </div>
+                        <div class="doc-item-info">
+                            <div class="doc-item-title" title="${doc.title}">${doc.title}</div>
+                            <div class="doc-item-meta">
+                                <span class="doc-category-pill">${doc.type}</span>
+                                <span>${doc.size}</span>
+                                <span>&bull;</span>
+                                <span>${doc.date}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="doc-item-actions">
+                        <button type="button" class="doc-btn btn-view-rdoc" data-id="${doc.id}" title="Preview Document">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button type="button" class="doc-btn doc-btn-danger btn-delete-rdoc" data-id="${doc.id}" title="Delete Document">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        registrarDocList.innerHTML = html;
+
+        registrarDocList.querySelectorAll('.btn-view-rdoc').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                openRegistrarDocPreview(id);
+            });
+        });
+
+        registrarDocList.querySelectorAll('.btn-delete-rdoc').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                deleteRegistrarDoc(id);
+            });
+        });
+    }
+
+    function openRegistrarDocPreview(id) {
+        const doc = registrarDocs.find(d => d.id === id);
+        if (!doc || !docPreviewModal) return;
+
+        if (docPreviewTitle) {
+            docPreviewTitle.innerHTML = `<i class="fas fa-file-alt"></i> ${doc.title}`;
+        }
+
+        if (docDownloadBtn) {
+            if (doc.dataUrl) {
+                docDownloadBtn.href = doc.dataUrl;
+                docDownloadBtn.download = doc.filename;
+                docDownloadBtn.style.display = 'inline-flex';
+            } else {
+                docDownloadBtn.style.display = 'none';
+            }
+        }
+
+        if (docPreviewContainer) {
+            if (doc.format === 'img' && doc.dataUrl) {
+                docPreviewContainer.innerHTML = `<img src="${doc.dataUrl}" alt="${doc.title}">`;
+            } else if (doc.format === 'pdf' && doc.dataUrl) {
+                docPreviewContainer.innerHTML = `
+                    <iframe src="${doc.dataUrl}" style="width:100%;height:450px;border:none;border-radius:8px;"></iframe>
+                `;
+            } else {
+                docPreviewContainer.innerHTML = `
+                    <div style="padding:40px;text-align:center;">
+                        <i class="fas fa-stamp" style="font-size:48px;color:var(--primary);margin-bottom:12px;"></i>
+                        <h4 style="font-size:16px;color:#0f172a;margin-bottom:6px;">${doc.title}</h4>
+                        <p style="color:#64748b;font-size:13px;">${doc.filename} &bull; ${doc.type} &bull; ${doc.size}</p>
+                        <span style="display:inline-block;margin-top:10px;background:#e0e7ff;color:var(--primary);padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">Status: ${doc.status}</span>
+                    </div>
+                `;
+            }
+        }
+
+        docPreviewModal.classList.add('active');
+        docPreviewModal.style.display = 'flex';
+    }
+
+    function closeRegistrarDocPreview() {
+        if (docPreviewModal) {
+            docPreviewModal.classList.remove('active');
+            docPreviewModal.style.display = 'none';
+        }
+    }
+
+    if (closeDocPreviewBtn) closeDocPreviewBtn.addEventListener('click', closeRegistrarDocPreview);
+    if (dismissDocPreviewBtn) dismissDocPreviewBtn.addEventListener('click', closeRegistrarDocPreview);
+
+    window.addEventListener('click', function(e) {
+        if (e.target === docPreviewModal) {
+            closeRegistrarDocPreview();
+        }
+    });
+
+    function deleteRegistrarDoc(id) {
+        const doc = registrarDocs.find(d => d.id === id);
+        if (!doc) return;
+        if (confirm(`Are you sure you want to delete "${doc.title}"?`)) {
+            registrarDocs = registrarDocs.filter(d => d.id !== id);
+            persistRegistrarDocs();
+            renderRegistrarDocs();
+            showAlert('Document removed from profile.', 'success');
+        }
     }
 
     // ============================================
@@ -580,24 +1023,11 @@
     }
 
     // ============================================
-    // AUTO-HIDE ALERTS
-    // ============================================
-
-    setTimeout(function() {
-        const alerts = document.querySelectorAll('.alert');
-        alerts.forEach(alert => {
-            alert.style.opacity = '0';
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 300);
-        });
-    }, 5000);
-
-    // ============================================
     // INITIALIZE
     // ============================================
 
-    loadProfileData();
+    loadSavedRegistrarProfile();
+    renderRegistrarDocs();
 
     console.log('✅ Profile ready!');
     console.log('👤 User:', data.fullname);

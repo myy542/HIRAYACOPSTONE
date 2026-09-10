@@ -1,182 +1,395 @@
-/* ===== ADD ACCOUNT SPECIFIC STYLES - NAVY BLUE ===== */
+/* ============================================
+   ADD ACCOUNT SPECIFIC STYLES - PLSNHS
+   Matches base.css and other admin forms
+   ============================================ */
 
-/* Extends base.css with page-specific overrides */
-
+/* ===== INFO BOX ===== */
 .info-box {
     background: #e8edf5;
     border-left: 4px solid #1B2A4A;
-    padding: 15px 20px;
+    padding: 16px 20px;
     border-radius: 12px;
-    margin-bottom: 25px;
+    margin-bottom: 24px;
     display: flex;
-    align-items: center;
-    gap: 15px;
-    font-size: 14px;
+    align-items: flex-start;
+    gap: 14px;
+    font-size: 13.5px;
     color: #1B2A4A;
+    line-height: 1.5;
 }
 
 .info-box i {
-    font-size: 24px;
+    font-size: 20px;
+    color: #1B2A4A;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+/* ===== FORM CONTAINER & CARD ===== */
+.form-container {
+    max-width: 900px;
+}
+
+.form-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 28px 32px;
+    border: 1px solid #e9edf4;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.form-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.form-header i {
+    font-size: 22px;
     color: #1B2A4A;
 }
 
-/* Preview card - refined */
+.form-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1B2A4A;
+    margin: 0;
+}
+
+/* ===== FORM ELEMENTS ===== */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px 24px;
+    margin-bottom: 8px;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 6px;
+}
+
+.form-group label span,
+.required {
+    color: #ef4444;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    background: #ffffff;
+    color: #0f172a;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #1B2A4A;
+    box-shadow: 0 0 0 3px rgba(27, 42, 74, 0.1);
+}
+
+.form-group input::placeholder {
+    color: #94a3b8;
+}
+
+.form-group input.id-preview {
+    background: #f8fafc;
+    color: #1B2A4A;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: default;
+    border-style: dashed;
+}
+
+.form-hint {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.form-hint i {
+    color: #1B2A4A;
+    font-size: 13px;
+}
+
+/* ===== PASSWORD FIELD & TOGGLE ===== */
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-wrapper input {
+    padding-right: 44px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 15px;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s;
+}
+
+.toggle-password:hover {
+    color: #1B2A4A;
+}
+
+/* Password strength */
+.password-strength {
+    height: 4px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.strength-bar {
+    height: 100%;
+    width: 0;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.strength-text {
+    font-size: 12px;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.strength-text i {
+    font-size: 13px;
+}
+
+.strength-text .weak { color: #ef4444; }
+.strength-text .medium { color: #f59e0b; }
+.strength-text .strong { color: #10b981; }
+.strength-text .match { color: #10b981; }
+.strength-text .no-match { color: #ef4444; }
+
+/* ===== LIVE PREVIEW CARD ===== */
 .preview-card {
     background: #f8fafc;
-    border-radius: 16px;
+    border-radius: 14px;
     padding: 20px 24px;
-    margin-top: 28px;
-    border: 1px solid #e9edf4;
-    transition: all 0.2s;
+    margin-top: 24px;
+    margin-bottom: 24px;
+    border: 1.5px solid #e9edf4;
+    transition: all 0.2s ease;
 }
 
 .preview-card:hover {
     border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
 .preview-card h4 {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #1e293b;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1B2A4A;
     margin-bottom: 16px;
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
+.preview-card h4 i {
+    color: #1B2A4A;
+}
+
 .preview-content {
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 20px;
     flex-wrap: wrap;
 }
 
 .preview-avatar {
-    width: 58px;
-    height: 58px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     background: #1B2A4A;
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
-    font-weight: 600;
+    font-size: 24px;
+    font-weight: 700;
     flex-shrink: 0;
-    transition: all 0.3s ease;
-}
-
-.preview-avatar.changed {
-    animation: pulse 0.4s ease;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.08); }
-    100% { transform: scale(1); }
+    box-shadow: 0 4px 12px rgba(27, 42, 74, 0.2);
 }
 
 .preview-info {
     flex: 1;
-    min-width: 180px;
+    min-width: 200px;
 }
 
 .preview-info h5 {
-    font-size: 1.1rem;
+    font-size: 16px;
     font-weight: 700;
     color: #0f172a;
-    margin-bottom: 4px;
+    margin: 0 0 6px 0;
 }
 
 .preview-role-badge {
-    display: inline-block;
-    padding: 2px 14px;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 12px;
     border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
     background: #e2e8f0;
     color: #475569;
-    margin-bottom: 6px;
-    transition: all 0.3s ease;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+}
+
+.preview-role-badge.teacher {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.preview-role-badge.registrar {
+    background: #fef3c7;
+    color: #92400e;
 }
 
 .preview-role-badge.admin {
     background: #1B2A4A;
-    color: #fff;
-}
-
-.preview-role-badge.registrar {
-    background: #2563eb;
-    color: #fff;
+    color: #ffffff;
 }
 
 .preview-email,
 .preview-id {
     font-size: 13px;
-    color: #475569;
+    color: #64748b;
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-top: 2px;
+    gap: 8px;
+    margin-top: 3px;
 }
 
 .preview-email i,
 .preview-id i {
     color: #94a3b8;
-    font-size: 13px;
+    font-size: 14px;
     width: 16px;
 }
 
-/* Password strength text colors */
-.strength-text .weak {
-    color: #ef4444;
+/* ===== FORM ACTIONS ===== */
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid #f1f5f9;
 }
 
-.strength-text .medium {
-    color: #f59e0b;
+.btn-submit {
+    padding: 10px 24px;
+    background: #1B2A4A;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: inherit;
+    transition: all 0.2s ease;
 }
 
-.strength-text .strong {
-    color: #10b981;
+.btn-submit:hover {
+    background: #14223a;
+    box-shadow: 0 4px 14px rgba(27, 42, 74, 0.25);
+    transform: translateY(-1px);
 }
 
-/* Match indicator */
-.strength-text .match {
-    color: #10b981;
+.btn-cancel {
+    padding: 10px 24px;
+    background: #ffffff;
+    color: #475569;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    font-family: inherit;
+    transition: all 0.2s ease;
 }
 
-.strength-text .no-match {
-    color: #ef4444;
+.btn-cancel:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0f172a;
 }
 
-/* Form group enhancements */
-.form-group .input-wrapper input.error {
-    border-color: #ef4444;
-}
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .form-card {
+        padding: 20px;
+    }
 
-.form-group .input-wrapper input.success {
-    border-color: #10b981;
-}
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
 
-/* Responsive adjustments */
-@media (max-width: 480px) {
     .preview-content {
         flex-direction: column;
         align-items: flex-start;
+        gap: 14px;
     }
-    
-    .preview-avatar {
-        width: 48px;
-        height: 48px;
-        font-size: 20px;
-    }
-    
+}
+
+@media (max-width: 480px) {
     .form-actions {
         flex-direction: column;
+        align-items: stretch;
     }
-    
+
     .btn-submit,
     .btn-cancel {
         justify-content: center;
+        width: 100%;
     }
 }

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subjects Management - PLSNHS</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/subjects.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <div class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                    </div>
+                    <div class="logo-text">PLS<span>NHS</span></div>
+                </div>
+                <div class="school-badge">Placido L. Señor NHS</div>
+            </div>
+
+            <div class="admin-profile">
+                <div class="admin-avatar">
+                    <div class="avatar-initial" id="adminAvatar">J</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="admin-name" id="adminName">Justine</div>
+                <div class="admin-role"><i class="fas fa-shield-alt"></i> Administrator</div>
+            </div>
+
+            <div class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="student.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+                        <li><a href="teachers.html"><i class="fas fa-chalkboard-user"></i> Teachers</a></li>
+                        <li><a href="sections.html"><i class="fas fa-layer-group"></i> Sections</a></li>
+                        <li><a href="subjects.html" class="active"><i class="fas fa-book"></i> Subjects</a></li>
+                        <li><a href="enrollments.html"><i class="fas fa-file-signature"></i> Enrollments</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">MANAGEMENT</div>
+                    <ul class="nav-items">
+                        <li><a href="manage_accounts.html"><i class="fas fa-users-cog"></i> Accounts</a></li>
+                        <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Attendance</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/logout.html"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1>Subjects Management</h1>
+                    <p class="subtitle">Manage curriculum subjects for Junior High School and Senior High School</p>
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Total Subjects</h3>
+                        <div class="stat-icon"><i class="fas fa-book"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalSubjects">0</div>
+                    <div class="stat-label">Whole curriculum</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Junior High</h3>
+                        <div class="stat-icon"><i class="fas fa-graduation-cap"></i></div>
+                    </div>
+                    <div class="stat-number" id="jhsSubjects">0</div>
+                    <div class="stat-label">Grades 7 - 10</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Senior High</h3>
+                        <div class="stat-icon"><i class="fas fa-university"></i></div>
+                    </div>
+                    <div class="stat-number" id="shsSubjects">0</div>
+                    <div class="stat-label">Grades 11 - 12</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Strands Covered</h3>
+                        <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalStrands">5</div>
+                    <div class="stat-label">STEM, ABM, HUMSS, TVL, GAS</div>
+                </div>
+            </div>
+
+            <!-- Grade Cards (Year Level Switcher) -->
+            <div class="grade-cards" id="gradeCards">
+                <a href="#" class="grade-card active" data-grade="all">
+                    <span class="grade-number">All</span>
+                    <span class="grade-name">Grades</span>
+                </a>
+                <a href="#" class="grade-card" data-grade="7">
+                    <span class="grade-number">7</span>
+                    <span class="grade-name">Grade 7</span>
+                </a>
+                <a href="#" class="grade-card" data-grade="8">
+                    <span class="grade-number">8</span>
+                    <span class="grade-name">Grade 8</span>
+                </a>
+                <a href="#" class="grade-card" data-grade="9">
+                    <span class="grade-number">9</span>
+                    <span class="grade-name">Grade 9</span>
+                </a>
+                <a href="#" class="grade-card" data-grade="10">
+                    <span class="grade-number">10</span>
+                    <span class="grade-name">Grade 10</span>
+                </a>
+                <a href="#" class="grade-card" data-grade="11">
+                    <span class="grade-number">11</span>
+                    <span class="grade-name">Grade 11</span>
+                </a>
+                <a href="#" class="grade-card" data-grade="12">
+                    <span class="grade-number">12</span>
+                    <span class="grade-name">Grade 12</span>
+                </a>
+            </div>
+
+            <!-- Actions Bar -->
+            <div class="actions-bar">
+                <div id="filterForm">
+                    <div class="filter-group">
+                        <select class="filter-select" id="gradeFilter">
+                            <option value="">All Grade Levels</option>
+                            <option value="7">Grade 7</option>
+                            <option value="8">Grade 8</option>
+                            <option value="9">Grade 9</option>
+                            <option value="10">Grade 10</option>
+                            <option value="11">Grade 11</option>
+                            <option value="12">Grade 12</option>
+                        </select>
+                        <div class="strand-filter-group" id="strandFilterWrapper">
+                            <select class="filter-select" id="strandFilter">
+                                <option value="">All Strands</option>
+                                <option value="STEM">STEM</option>
+                                <option value="ABM">ABM</option>
+                                <option value="HUMSS">HUMSS</option>
+                                <option value="TVL">TVL</option>
+                                <option value="GAS">GAS</option>
+                            </select>
+                        </div>
+                        <button type="button" class="btn-reset" id="resetBtn">
+                            <i class="fas fa-undo"></i> Reset
+                        </button>
+                    </div>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Search subject by title or description...">
+                    </div>
+                    <a href="add_subject.html" class="btn-add">
+                        <i class="fas fa-plus-circle"></i> Add Subject
+                    </a>
+                </div>
+            </div>
+
+            <!-- Subjects Accordion / Container -->
+            <div id="subjectsContainer">
+                <!-- Dynamically rendered by JavaScript -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Subject Modal -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Edit Subject</h3>
+                <button class="close-modal" id="closeEditModal">&times;</button>
+            </div>
+            <form id="editSubjectForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editSubjectId">
+                    <div class="form-group">
+                        <label>Subject Name <span class="required">*</span></label>
+                        <input type="text" id="editSubjectName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Grade Level <span class="required">*</span></label>
+                        <select id="editGradeId" required>
+                            <option value="7">Grade 7</option>
+                            <option value="8">Grade 8</option>
+                            <option value="9">Grade 9</option>
+                            <option value="10">Grade 10</option>
+                            <option value="11">Grade 11</option>
+                            <option value="12">Grade 12</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="editStrandGroup" style="display: none;">
+                        <label>Strand / Track</label>
+                        <select id="editStrand">
+                            <option value="">Core (All Strands)</option>
+                            <option value="STEM">STEM</option>
+                            <option value="ABM">ABM</option>
+                            <option value="HUMSS">HUMSS</option>
+                            <option value="TVL">TVL</option>
+                            <option value="GAS">GAS</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Description / Notes</label>
+                        <textarea id="editDescription" placeholder="Enter subject description or prerequisites..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" id="cancelEditBtn">Cancel</button>
+                    <button type="submit" class="btn-save"><i class="fas fa-save"></i> Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="js/subjects.js"></script>
+</body>
+</html>

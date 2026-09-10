@@ -289,14 +289,138 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // ===== PROFILE INITIALS & AVATAR SYNC =====
+
+    function getParentInitials(name) {
+        if (!name || typeof name !== 'string') return 'P';
+        const cleanName = name.replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?|prof\.?)\s+/i, '').trim();
+        const words = cleanName.split(/[\s,&-]+/).filter(w => w.length > 0 && !['and', 'the', 'of', '&'].includes(w.toLowerCase()));
+        if (words.length === 0) return name.charAt(0).toUpperCase();
+        if (words.length === 1) return words[0].substring(0, Math.min(2, words[0].length)).toUpperCase();
+        return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+    }
+
+    function renderDefaultParentAvatar(name) {
+        const currentName = name || (document.getElementById('fullname') ? document.getElementById('fullname').value : profileData.name);
+        const initials = getParentInitials(currentName);
+
+        const largeAvatar = document.querySelector('.profile-avatar-large');
+        if (largeAvatar) {
+            largeAvatar.innerHTML = `
+                <div class="avatar-initial">${initials}</div>
+                <div class="avatar-overlay">
+                    <i class="fas fa-camera"></i>
+                </div>
+            `;
+        }
+
+        const sidebarAvatar = document.querySelector('.parent-avatar');
+        if (sidebarAvatar) {
+            sidebarAvatar.innerHTML = `
+                <div class="avatar-initial">${initials}</div>
+                <div class="online-dot"></div>
+            `;
+        }
+
+        const modalPreview = document.getElementById('imagePreview');
+        if (modalPreview) {
+            modalPreview.innerHTML = `
+                <div style="width: 150px; height: 150px; background: #1B2A4A; display: flex; align-items: center; justify-content: center; color: white; font-size: 52px; font-weight: bold; border-radius: 50%;">
+                    ${initials}
+                </div>
+            `;
+        }
+    }
+
+    function loadSavedParentProfile() {
+        try {
+            const savedName = localStorage.getItem('plsnhs_parent_name');
+            if (savedName) {
+                profileData.name = savedName;
+                const fullnameInput = document.getElementById('fullname');
+                if (fullnameInput) fullnameInput.value = savedName;
+                const profileNameEl = document.getElementById('profileName');
+                if (profileNameEl) profileNameEl.textContent = savedName;
+                document.querySelectorAll('.parent-name').forEach(el => el.textContent = savedName);
+            }
+            const savedEmail = localStorage.getItem('plsnhs_parent_email');
+            if (savedEmail) {
+                profileData.email = savedEmail;
+                const emailInput = document.getElementById('email');
+                if (emailInput) emailInput.value = savedEmail;
+            }
+            const savedPhone = localStorage.getItem('plsnhs_parent_phone');
+            if (savedPhone) {
+                profileData.phone = savedPhone;
+                const phoneInput = document.getElementById('phone');
+                if (phoneInput) phoneInput.value = savedPhone;
+            }
+            const savedAddress = localStorage.getItem('plsnhs_parent_address');
+            if (savedAddress) {
+                profileData.address = savedAddress;
+                const addressInput = document.getElementById('address');
+                if (addressInput) addressInput.value = savedAddress;
+            }
+
+            const currentName = savedName || profileData.name;
+            const savedAvatar = localStorage.getItem('plsnhs_parent_avatar');
+            if (savedAvatar) {
+                applyAvatarToDOM(savedAvatar);
+            } else {
+                renderDefaultParentAvatar(currentName);
+            }
+        } catch(e) {}
+    }
+
+    function applyAvatarToDOM(base64Image) {
+        // Update large profile avatar
+        const largeAvatar = document.querySelector('.profile-avatar-large');
+        if (largeAvatar) {
+            largeAvatar.innerHTML = `
+                <img src="${base64Image}" alt="Profile Picture" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                <div class="avatar-overlay">
+                    <i class="fas fa-camera"></i>
+                </div>
+            `;
+        }
+
+        // Update sidebar avatar
+        const sidebarAvatar = document.querySelector('.parent-avatar');
+        if (sidebarAvatar) {
+            sidebarAvatar.innerHTML = `
+                <img src="${base64Image}" alt="Parent" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                <div class="online-dot"></div>
+            `;
+        }
+
+        // Update modal preview
+        const modalPreview = document.getElementById('imagePreview');
+        if (modalPreview) {
+            modalPreview.innerHTML = `<img src="${base64Image}" alt="Preview" style="width:150px;height:150px;border-radius:50%;object-fit:cover;">`;
+        }
+    }
+
+    function removeAvatarFromDOM() {
+        const currentName = (document.getElementById('fullname') ? document.getElementById('fullname').value : profileData.name);
+        renderDefaultParentAvatar(currentName);
+    }
+
     // ===== IMAGE MODAL =====
 
     window.openImageModal = function() {
-        document.getElementById('imageModal').classList.add('show');
+        const modal = document.getElementById('imageModal');
+        if (modal) {
+            modal.classList.add('show');
+            modal.style.display = 'flex';
+        }
     };
 
     window.closeImageModal = function() {
-        document.getElementById('imageModal').classList.remove('show');
+        const modal = document.getElementById('imageModal');
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+        }
     };
 
     window.previewImage = function(input) {
@@ -304,18 +428,341 @@ document.addEventListener('DOMContentLoaded', function() {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const preview = document.getElementById('imagePreview');
-                preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="width:150px;height:150px;border-radius:50%;object-fit:cover;">`;
+                if (preview) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="width:150px;height:150px;border-radius:50%;object-fit:cover;">`;
+                }
             };
             reader.readAsDataURL(input.files[0]);
         }
     };
 
     window.removeProfilePic = function() {
-        if (confirm('Remove your profile picture?')) {
-            showAlert('✅ Profile picture removed successfully!', 'success');
+        if (confirm('Remove your profile picture and restore default initials?')) {
+            try {
+                localStorage.removeItem('plsnhs_parent_avatar');
+            } catch(e) {}
+            removeAvatarFromDOM();
+            showAlert('✅ Profile picture removed and dynamic initials restored.', 'success');
             closeImageModal();
         }
     };
+
+    // Image upload form submit
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('profilePicture');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showAlert('Please select an image file to upload.', 'error');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+                showAlert('File size exceeds 5MB limit. Please choose a smaller image.', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const base64Image = evt.target.result;
+                try {
+                    localStorage.setItem('plsnhs_parent_avatar', base64Image);
+                } catch(err) {
+                    console.warn('Avatar could not be saved to localStorage:', err);
+                }
+                applyAvatarToDOM(base64Image);
+                showAlert('✅ Profile picture uploaded and updated successfully!', 'success');
+                closeImageModal();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // ===== PARENT DOCUMENTS MANAGEMENT =====
+
+    const defaultParentDocs = [
+        {
+            id: 'pdoc_1',
+            title: 'Unified Multi-Purpose ID (UMID)',
+            type: 'Valid ID',
+            filename: 'UMID_Guardian_ID.pdf',
+            size: '1.1 MB',
+            date: '2026-01-20',
+            format: 'pdf',
+            status: 'Verified',
+            dataUrl: null
+        },
+        {
+            id: 'pdoc_2',
+            title: 'Barangay Certificate of Residency',
+            type: 'Proof of Residency',
+            filename: 'Barangay_Residency_Cert.jpg',
+            size: '870 KB',
+            date: '2026-02-10',
+            format: 'img',
+            status: 'Verified',
+            dataUrl: null
+        }
+    ];
+
+    let parentDocs = [];
+    try {
+        const savedPDocs = localStorage.getItem('plsnhs_parent_documents');
+        if (savedPDocs) {
+            parentDocs = JSON.parse(savedPDocs);
+        } else {
+            parentDocs = [...defaultParentDocs];
+            localStorage.setItem('plsnhs_parent_documents', JSON.stringify(parentDocs));
+        }
+    } catch(e) {
+        parentDocs = [...defaultParentDocs];
+    }
+
+    function persistParentDocs() {
+        try {
+            localStorage.setItem('plsnhs_parent_documents', JSON.stringify(parentDocs));
+        } catch(e) {}
+    }
+
+    const parentDocDropZone = document.getElementById('parentDocDropZone');
+    const parentDocFileInput = document.getElementById('parentDocFileInput');
+    const parentDocUploadForm = document.getElementById('parentDocUploadForm');
+    const parentDocSelectedName = document.getElementById('parentDocSelectedName');
+    const parentDocTypeSelect = document.getElementById('parentDocTypeSelect');
+    const parentDocCustomTitle = document.getElementById('parentDocCustomTitle');
+    const parentDocCancelBtn = document.getElementById('parentDocCancelBtn');
+    const parentDocSaveBtn = document.getElementById('parentDocSaveBtn');
+    const parentDocList = document.getElementById('parentDocList');
+    const parentDocCount = document.getElementById('parentDocCount');
+
+    // Modal elements for doc preview
+    const docPreviewModal = document.getElementById('docPreviewModal');
+    const docPreviewTitle = document.getElementById('docPreviewTitle');
+    const docPreviewContainer = document.getElementById('docPreviewContainer');
+    const closeDocPreviewBtn = document.getElementById('closeDocPreviewBtn');
+    const dismissDocPreviewBtn = document.getElementById('dismissDocPreviewBtn');
+    const docDownloadBtn = document.getElementById('docDownloadBtn');
+
+    let currentPendingParentFile = null;
+
+    if (parentDocDropZone && parentDocFileInput) {
+        parentDocDropZone.addEventListener('click', () => parentDocFileInput.click());
+
+        parentDocDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            parentDocDropZone.classList.add('dragover');
+        });
+
+        parentDocDropZone.addEventListener('dragleave', () => {
+            parentDocDropZone.classList.remove('dragover');
+        });
+
+        parentDocDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            parentDocDropZone.classList.remove('dragover');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleParentFileSelected(e.dataTransfer.files[0]);
+            }
+        });
+
+        parentDocFileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                handleParentFileSelected(this.files[0]);
+            }
+        });
+    }
+
+    function handleParentFileSelected(file) {
+        currentPendingParentFile = file;
+        if (parentDocSelectedName) parentDocSelectedName.textContent = `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+        if (parentDocCustomTitle) parentDocCustomTitle.value = file.name.replace(/\.[^/.]+$/, '');
+        if (parentDocUploadForm) parentDocUploadForm.style.display = 'block';
+    }
+
+    if (parentDocCancelBtn) {
+        parentDocCancelBtn.addEventListener('click', () => {
+            currentPendingParentFile = null;
+            if (parentDocFileInput) parentDocFileInput.value = '';
+            if (parentDocUploadForm) parentDocUploadForm.style.display = 'none';
+        });
+    }
+
+    if (parentDocSaveBtn) {
+        parentDocSaveBtn.addEventListener('click', () => {
+            if (!currentPendingParentFile) {
+                showAlert('No document selected.', 'error');
+                return;
+            }
+
+            const title = (parentDocCustomTitle && parentDocCustomTitle.value.trim()) || currentPendingParentFile.name;
+            const type = (parentDocTypeSelect && parentDocTypeSelect.value) || 'Other';
+            const sizeInMb = (currentPendingParentFile.size / (1024 * 1024)).toFixed(2);
+            const sizeStr = currentPendingParentFile.size > 1024 * 1024 ? `${sizeInMb} MB` : `${Math.round(currentPendingParentFile.size / 1024)} KB`;
+            const isPdf = currentPendingParentFile.name.toLowerCase().endsWith('.pdf') || currentPendingParentFile.type === 'application/pdf';
+            const format = isPdf ? 'pdf' : (currentPendingParentFile.type.startsWith('image/') ? 'img' : 'doc');
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const dataUrl = evt.target.result;
+                const newDoc = {
+                    id: 'pdoc_' + Date.now(),
+                    title: title,
+                    type: type,
+                    filename: currentPendingParentFile.name,
+                    size: sizeStr,
+                    date: new Date().toISOString().split('T')[0],
+                    format: format,
+                    status: 'Uploaded',
+                    dataUrl: dataUrl
+                };
+
+                parentDocs.unshift(newDoc);
+                persistParentDocs();
+                renderParentDocs();
+
+                currentPendingParentFile = null;
+                if (parentDocFileInput) parentDocFileInput.value = '';
+                if (parentDocUploadForm) parentDocUploadForm.style.display = 'none';
+
+                showAlert(`✅ Verification document "${title}" uploaded to your profile!`, 'success');
+            };
+            reader.readAsDataURL(currentPendingParentFile);
+        });
+    }
+
+    function renderParentDocs() {
+        if (!parentDocList) return;
+
+        if (parentDocCount) {
+            parentDocCount.textContent = `${parentDocs.length} ${parentDocs.length === 1 ? 'File' : 'Files'}`;
+        }
+
+        if (parentDocs.length === 0) {
+            parentDocList.innerHTML = `
+                <div class="empty-docs-state">
+                    <i class="fas fa-folder-open"></i>
+                    <p>No documents uploaded yet. Upload your guardian verification documents above.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        parentDocs.forEach(doc => {
+            const iconClass = doc.format === 'pdf' ? 'doc-icon-pdf fa-file-pdf' : (doc.format === 'img' ? 'doc-icon-img fa-file-image' : 'doc-icon-doc fa-file-alt');
+            html += `
+                <div class="doc-item" data-id="${doc.id}">
+                    <div class="doc-item-left">
+                        <div class="doc-item-icon ${doc.format === 'pdf' ? 'doc-icon-pdf' : (doc.format === 'img' ? 'doc-icon-img' : 'doc-icon-doc')}">
+                            <i class="fas ${iconClass.split(' ')[1]}"></i>
+                        </div>
+                        <div class="doc-item-info">
+                            <div class="doc-item-title" title="${doc.title}">${doc.title}</div>
+                            <div class="doc-item-meta">
+                                <span class="doc-category-pill">${doc.type}</span>
+                                <span>${doc.size}</span>
+                                <span>&bull;</span>
+                                <span>${doc.date}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="doc-item-actions">
+                        <button type="button" class="doc-btn btn-view-pdoc" data-id="${doc.id}" title="Preview Document">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button type="button" class="doc-btn doc-btn-danger btn-delete-pdoc" data-id="${doc.id}" title="Delete Document">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        parentDocList.innerHTML = html;
+
+        parentDocList.querySelectorAll('.btn-view-pdoc').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                openParentDocPreview(id);
+            });
+        });
+
+        parentDocList.querySelectorAll('.btn-delete-pdoc').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                deleteParentDoc(id);
+            });
+        });
+    }
+
+    function openParentDocPreview(id) {
+        const doc = parentDocs.find(d => d.id === id);
+        if (!doc || !docPreviewModal) return;
+
+        if (docPreviewTitle) {
+            docPreviewTitle.innerHTML = `<i class="fas fa-file-alt"></i> ${doc.title}`;
+        }
+
+        if (docDownloadBtn) {
+            if (doc.dataUrl) {
+                docDownloadBtn.href = doc.dataUrl;
+                docDownloadBtn.download = doc.filename;
+                docDownloadBtn.style.display = 'inline-flex';
+            } else {
+                docDownloadBtn.style.display = 'none';
+            }
+        }
+
+        if (docPreviewContainer) {
+            if (doc.format === 'img' && doc.dataUrl) {
+                docPreviewContainer.innerHTML = `<img src="${doc.dataUrl}" alt="${doc.title}">`;
+            } else if (doc.format === 'pdf' && doc.dataUrl) {
+                docPreviewContainer.innerHTML = `
+                    <iframe src="${doc.dataUrl}" style="width:100%;height:450px;border:none;border-radius:8px;"></iframe>
+                `;
+            } else {
+                docPreviewContainer.innerHTML = `
+                    <div style="padding:40px;text-align:center;">
+                        <i class="fas fa-id-card-clip" style="font-size:48px;color:#1B2A4A;margin-bottom:12px;"></i>
+                        <h4 style="font-size:16px;color:#0f172a;margin-bottom:6px;">${doc.title}</h4>
+                        <p style="color:#64748b;font-size:13px;">${doc.filename} &bull; ${doc.type} &bull; ${doc.size}</p>
+                        <span style="display:inline-block;margin-top:10px;background:#d1fae5;color:#065f46;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">Status: ${doc.status}</span>
+                    </div>
+                `;
+            }
+        }
+
+        docPreviewModal.classList.add('show');
+        docPreviewModal.style.display = 'flex';
+    }
+
+    function closeParentDocPreview() {
+        if (docPreviewModal) {
+            docPreviewModal.classList.remove('show');
+            docPreviewModal.style.display = 'none';
+        }
+    }
+
+    if (closeDocPreviewBtn) closeDocPreviewBtn.addEventListener('click', closeParentDocPreview);
+    if (dismissDocPreviewBtn) dismissDocPreviewBtn.addEventListener('click', closeParentDocPreview);
+
+    window.addEventListener('click', function(e) {
+        if (e.target === docPreviewModal) {
+            closeParentDocPreview();
+        }
+    });
+
+    function deleteParentDoc(id) {
+        const doc = parentDocs.find(d => d.id === id);
+        if (!doc) return;
+        if (confirm(`Are you sure you want to delete "${doc.title}"?`)) {
+            parentDocs = parentDocs.filter(d => d.id !== id);
+            persistParentDocs();
+            renderParentDocs();
+            showAlert('Document deleted from profile.', 'success');
+        }
+    }
 
     // ===== EVENT LISTENERS =====
 
@@ -388,7 +835,38 @@ document.addEventListener('DOMContentLoaded', function() {
             if (errors.length > 0) {
                 showAlert(errors.join('<br>'), 'error');
             } else {
+                profileData.name = fullname;
+                profileData.email = email;
+                profileData.phone = phone;
+                profileData.address = address;
+
+                try {
+                    localStorage.setItem('plsnhs_parent_name', fullname);
+                    localStorage.setItem('plsnhs_parent_email', email);
+                    localStorage.setItem('plsnhs_parent_phone', phone);
+                    localStorage.setItem('plsnhs_parent_address', address);
+                } catch(e) {}
+
+                document.getElementById('profileName').textContent = fullname;
+                document.querySelectorAll('.parent-name').forEach(el => el.textContent = fullname);
+
+                const savedAvatar = localStorage.getItem('plsnhs_parent_avatar');
+                if (!savedAvatar) {
+                    renderDefaultParentAvatar(fullname);
+                }
+
                 showAlert('✅ Profile updated successfully!', 'success');
+            }
+        });
+    }
+
+    // Live update initials as parent types name if no custom image is uploaded
+    const fullnameInput = document.getElementById('fullname');
+    if (fullnameInput) {
+        fullnameInput.addEventListener('input', function() {
+            const savedAvatar = localStorage.getItem('plsnhs_parent_avatar');
+            if (!savedAvatar) {
+                renderDefaultParentAvatar(this.value.trim() || 'Parent');
             }
         });
     }
@@ -437,20 +915,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Image upload form
-    if (uploadForm) {
-        uploadForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const fileInput = document.getElementById('profilePicture');
-            if (fileInput.files.length === 0) {
-                showAlert('Please select an image file.', 'error');
-                return;
-            }
-            showAlert('✅ Profile picture updated successfully!', 'success');
-            closeImageModal();
-        });
-    }
-
     // Close modal on outside click
     document.addEventListener('click', function(e) {
         const modal = document.getElementById('imageModal');
@@ -483,6 +947,8 @@ document.addEventListener('DOMContentLoaded', function() {
     renderProfile();
     renderChildrenSummary();
     renderLinkedChildren();
+    loadSavedParentProfile();
+    renderParentDocs();
 
     // Auto-dismiss alerts
     setTimeout(() => {

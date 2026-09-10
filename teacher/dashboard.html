@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/dashboard.css">
 </head>
+
 <body>
     <div class="app-container">
         <!-- ===== SIDEBAR ===== -->
@@ -33,13 +35,14 @@
                 <div class="nav-section">
                     <div class="nav-section-title">MAIN MENU</div>
                     <ul class="nav-items">
-                        <li><a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                        </li>
                         <li><a href="attendance-qr.html"><i class="fas fa-qrcode"></i> QR Attendance</a></li>
                         <li><a href="classes.html"><i class="fas fa-users"></i> My Classes</a></li>
                         <li><a href="schedule.html"><i class="fas fa-clock"></i> Schedule</a></li>
                         <li><a href="grades.html"><i class="fas fa-star"></i> Grades</a></li>
                         <!-- LOGOUT - gibalhin sa MAIN MENU para mohaum sa image -->
-                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+
                     </ul>
                 </div>
 
@@ -47,7 +50,10 @@
                     <div class="nav-section-title">ACCOUNT</div>
                     <ul class="nav-items">
                         <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        </li>
                     </ul>
+
                 </div>
             </nav>
         </aside>
@@ -175,6 +181,8 @@
     </div>
 
     <!-- JavaScript -->
+    <script src="js/teacher_avatar_sync.js"></script>
     <script type="module" src="js/dashboard.js"></script>
 </body>
+
 </html>

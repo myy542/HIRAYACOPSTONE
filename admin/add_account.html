@@ -8,18 +8,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Separate CSS Files -->
+    <!-- CSS Files -->
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/add_account.css">
 </head>
 <body>
+    <!-- Mobile Menu Toggle -->
+    <div class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+
     <div class="app-container">
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
                     <div class="logo-icon">
-                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%230B4F2E%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
                     </div>
                     <div class="logo-text">PLS<span>NHS</span></div>
                 </div>
@@ -28,10 +33,10 @@
 
             <div class="admin-profile">
                 <div class="admin-avatar">
-                    <div class="avatar-initial">A</div>
+                    <div class="avatar-initial" id="adminAvatar">J</div>
                     <div class="online-dot"></div>
                 </div>
-                <div class="admin-name">Admin</div>
+                <div class="admin-name" id="adminName">Justine</div>
                 <div class="admin-role"><i class="fas fa-shield-alt"></i> Administrator</div>
             </div>
 
@@ -40,7 +45,7 @@
                     <div class="nav-section-title">MAIN MENU</div>
                     <ul class="nav-items">
                         <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                        <li><a href="students.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+                        <li><a href="student.html"><i class="fas fa-user-graduate"></i> Students</a></li>
                         <li><a href="teachers.html"><i class="fas fa-chalkboard-user"></i> Teachers</a></li>
                         <li><a href="sections.html"><i class="fas fa-layer-group"></i> Sections</a></li>
                         <li><a href="subjects.html"><i class="fas fa-book"></i> Subjects</a></li>
@@ -71,7 +76,7 @@
             <div class="page-header">
                 <div>
                     <h1>Add New Account</h1>
-                    <p>Create a new administrator or registrar account</p>
+                    <p class="subtitle">Create a new teacher, registrar, or administrator account</p>
                 </div>
                 <a href="manage_accounts.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Accounts</a>
             </div>
@@ -84,46 +89,49 @@
                 <i class="fas fa-info-circle"></i>
                 <div>
                     <strong>Auto-generated ID Numbers:</strong><br>
-                    • Admin accounts: <strong>PLSNHS-ADM-XXXXX</strong> (e.g., PLSNHS-ADM-00001)<br>
-                    • Registrar accounts: <strong>PLSNHS-RGR-XXXXX</strong> (e.g., PLSNHS-RGR-00001)
+                    • Teacher accounts: <strong>PLSNHS-TCH-XXXXX</strong> (e.g., PLSNHS-TCH-00001)<br>
+                    • Registrar accounts: <strong>PLSNHS-RGR-XXXXX</strong> (e.g., PLSNHS-RGR-00001)<br>
+                    • Admin accounts: <strong>PLSNHS-ADM-XXXXX</strong> (e.g., PLSNHS-ADM-00001)
                 </div>
             </div>
 
             <!-- Form Card -->
             <div class="form-container">
                 <div class="form-card">
-                    <h3><i class="fas fa-id-card"></i> Account Information</h3>
+                    <div class="form-header">
+                        <i class="fas fa-id-card"></i>
+                        <h3>Account Information</h3>
+                    </div>
 
                     <form method="POST" action="" id="accountForm">
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Full Name <span>*</span></label>
+                                <label for="fullname">Full Name <span>*</span></label>
                                 <input type="text" 
                                        id="fullname" 
                                        name="fullname" 
                                        placeholder="e.g., Juan Dela Cruz" 
-                                       value="" 
                                        required>
                             </div>
 
                             <div class="form-group">
-                                <label>Email Address <span>*</span></label>
+                                <label for="email">Email Address <span>*</span></label>
                                 <input type="email" 
                                        id="email" 
                                        name="email" 
                                        placeholder="user@plshs.edu.ph" 
-                                       value="" 
                                        required>
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Role <span>*</span></label>
+                                <label for="role">Role <span>*</span></label>
                                 <select id="role" name="role" required>
                                     <option value="">Select Role</option>
-                                    <option value="Admin">Administrator</option>
+                                    <option value="Teacher">Teacher (Faculty)</option>
                                     <option value="Registrar">Registrar</option>
+                                    <option value="Admin">Administrator</option>
                                 </select>
                                 <div class="form-hint">
                                     <i class="fas fa-info-circle"></i>
@@ -132,25 +140,25 @@
                             </div>
 
                             <div class="form-group">
-                                <label>ID Number (Auto-generated)</label>
+                                <label for="id_number_preview">ID Number (Auto-generated)</label>
                                 <input type="text" 
                                        id="id_number_preview" 
-                                       class="id-preview"
-                                       readonly
+                                       class="id-preview" 
+                                       readonly 
                                        placeholder="Will be auto-generated">
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Password <span>*</span></label>
+                                <label for="password">Password <span>*</span></label>
                                 <div class="input-wrapper">
                                     <input type="password" 
                                            id="password" 
                                            name="password" 
-                                           placeholder="Create a strong password"
+                                           placeholder="Create a strong password" 
                                            required>
-                                    <button type="button" class="toggle-password" onclick="togglePassword()">
+                                    <button type="button" class="toggle-password" id="togglePasswordBtn" title="Toggle password visibility">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                 </div>
@@ -164,12 +172,12 @@
                             </div>
 
                             <div class="form-group">
-                                <label>Confirm Password <span>*</span></label>
+                                <label for="confirm_password">Confirm Password <span>*</span></label>
                                 <div class="input-wrapper">
                                     <input type="password" 
                                            id="confirm_password" 
                                            name="confirm_password" 
-                                           placeholder="Re-enter your password"
+                                           placeholder="Re-enter your password" 
                                            required>
                                 </div>
                                 <div class="strength-text" id="passwordMatch">
@@ -203,7 +211,7 @@
                             <button type="submit" class="btn-submit">
                                 <i class="fas fa-save"></i> Create Account
                             </button>
-                            <a href="manage_accounts.php" class="btn-cancel">
+                            <a href="manage_accounts.html" class="btn-cancel">
                                 <i class="fas fa-times"></i> Cancel
                             </a>
                         </div>
@@ -213,7 +221,7 @@
         </main>
     </div>
 
-    <!-- Separate JavaScript File -->
+    <!-- JavaScript Files -->
     <script src="js/add_account.js"></script>
 </body>
 </html>

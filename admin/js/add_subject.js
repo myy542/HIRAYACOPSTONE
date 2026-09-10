@@ -367,17 +367,29 @@ document.addEventListener('DOMContentLoaded', function() {
             if (errors.length > 0) {
                 showAlert(errors.join('<br>'), 'error');
             } else {
-                showAlert('✅ Subject added successfully!', 'success');
+                // Save into localStorage list
+                try {
+                    const saved = localStorage.getItem('plsnhs_admin_subjects');
+                    let currentList = saved ? JSON.parse(saved) : [];
+                    const gradeNum = parseInt(gradeId);
+                    const newSub = {
+                        id: 'sub-' + Date.now(),
+                        name: subjectName,
+                        grade: gradeNum,
+                        strand: (gradeNum === 11 || gradeNum === 12) ? 'STEM' : null,
+                        category: subjectName.toLowerCase().includes('elective') ? 'Elective' : (subjectName.startsWith('Major:') ? 'Major' : 'Core'),
+                        description: `Grade ${gradeNum} Curriculum Subject`
+                    };
+                    currentList.push(newSub);
+                    localStorage.setItem('plsnhs_admin_subjects', JSON.stringify(currentList));
+                } catch (err) {
+                    console.warn('Could not persist new subject:', err);
+                }
+
+                showAlert('✅ Subject added successfully! Redirecting to subjects list...', 'success');
                 setTimeout(() => {
-                    subjectNameInput.value = 'Enter Subject Name';
-                    gradeSelect.value = '';
-                    resetCategory();
-                    updateCategoryTags();
-                    updateQuickButtons();
-                    updatePreview();
-                    previewName.textContent = 'Enter Subject Name';
-                    previewGrade.textContent = 'Grade Level';
-                }, 1500);
+                    window.location.href = 'subjects.html';
+                }, 1200);
             }
         });
     }

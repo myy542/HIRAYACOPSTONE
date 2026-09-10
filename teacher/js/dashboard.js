@@ -1,21 +1,8 @@
 /**
- * Teacher Dashboard - Firebase Integration
+ * Teacher Dashboard - Supabase Integration
  */
 
-import { auth, db } from '../../firebase/config.js';
-import { 
-    onAuthStateChanged,
-    signOut 
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-import {
-    collection,
-    query,
-    where,
-    getDocs,
-    orderBy,
-    doc,
-    getDoc
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { supabase } from '../../supabase/config.js';
 
 (function() {
     'use strict';
@@ -49,90 +36,83 @@ import {
     // STATE
     // ============================================
 
-    let currentUser = null;
-    let userData = null;
+    let sessionUser = null;
     let sections = [];
     let subjectsByGrade = {};
-    let gradeLevels = [];
+    let gradeLevels = [
+        { id: '1', gradeName: 'Grade 7' },
+        { id: '2', gradeName: 'Grade 8' },
+        { id: '3', gradeName: 'Grade 9' },
+        { id: '4', gradeName: 'Grade 10' },
+        { id: '5', gradeName: 'Grade 11' },
+        { id: '6', gradeName: 'Grade 12' }
+    ];
 
     // Grade order
     const gradeOrder = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
 
     // ============================================
-    // AUTH STATE
+    // SESSION CHECK
     // ============================================
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            currentUser = user;
-            console.log('✅ User logged in:', user.email);
-            const displayName = user.displayName || user.email || 'Teacher';
-            const firstName = displayName.split('@')[0];
-            teacherName.textContent = firstName;
-            teacherInitial.textContent = firstName.charAt(0).toUpperCase();
-            
-            // Load user data and dashboard
-            await loadUserData(user.uid);
-            await loadDashboardData(user.uid);
-        } else {
-            console.log('❌ User logged out - redirecting to login');
-            window.location.href = '../auth/login.html';
+    try {
+        const stored = localStorage.getItem('currentUser');
+        if (stored) {
+            sessionUser = JSON.parse(stored);
         }
-    });
+    } catch(e) {}
+
+    if (!sessionUser) {
+        console.warn('⚠️ No active teacher session, redirecting...');
+        window.location.replace('../auth/login.html');
+        return;
+    }
+
+    if (sessionUser.role && sessionUser.role !== 'teacher') {
+        const routes = {
+            'admin': '../admin/dashboard.html',
+            'student': '../student/dashboard.html',
+            'parent': '../parents/dashboard.html',
+            'registrar': '../registrar/dashboard.html'
+        };
+        window.location.replace(routes[sessionUser.role] || '../auth/login.html');
+        return;
+    }
+
+    // Set teacher display name & initial
+    const displayName = (sessionUser.firstName ? `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim() : (sessionUser.email ? sessionUser.email.split('@')[0] : 'Teacher'));
+    if (teacherName) teacherName.textContent = displayName;
+    if (teacherInitial) teacherInitial.textContent = displayName.charAt(0).toUpperCase();
 
     // ============================================
     // LOGOUT
     // ============================================
 
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
+        logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
-            signOut(auth).then(() => {
-                // REDIRECT TO LOGIN PAGE
-                window.location.href = '../auth/login.html';
-            }).catch((error) => {
-                console.error('Logout error:', error);
-                showAlert('❌ Error logging out: ' + error.message, 'error');
-            });
+            console.log('🚪 Teacher logging out...');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('plsnhs_teacher_avatar');
+            localStorage.removeItem('plsnhs_teacher_name');
+            try {
+                await supabase.auth.signOut();
+            } catch(err) {}
+            window.location.replace('../auth/login.html');
         });
     }
 
     // ============================================
-    // LOAD USER DATA
+    // LOAD DASHBOARD DATA FROM SUPABASE
     // ============================================
 
-    async function loadUserData(userId) {
+    async function loadDashboardData() {
         try {
-            const userDoc = await getDoc(doc(db, 'users', userId));
-            if (userDoc.exists()) {
-                userData = userDoc.data();
-                console.log('📋 User data loaded:', userData);
-            }
-        } catch (error) {
-            console.error('Error loading user data:', error);
-        }
-    }
-
-    // ============================================
-    // LOAD DASHBOARD DATA
-    // ============================================
-
-    async function loadDashboardData(userId) {
-        try {
-            // Load grade levels
-            await loadGradeLevels();
-
-            // Load sections where teacher is adviser
-            await loadSections(userId);
-
-            // Load subjects by grade
+            await loadSections();
             await loadSubjects();
-
-            // Update UI
-            updateStats();
+            await updateStats();
             renderSections();
             renderSubjects();
-
         } catch (error) {
             console.error('Error loading dashboard data:', error);
             showAlert('❌ Error loading dashboard: ' + error.message, 'error');
@@ -140,50 +120,18 @@ import {
     }
 
     // ============================================
-    // LOAD GRADE LEVELS
-    // ============================================
-
-    async function loadGradeLevels() {
-        try {
-            const gradeLevelsRef = collection(db, 'gradeLevels');
-            const q = query(gradeLevelsRef, orderBy('id', 'asc'));
-            const snapshot = await getDocs(q);
-            
-            gradeLevels = [];
-            snapshot.forEach((doc) => {
-                gradeLevels.push({ id: doc.id, ...doc.data() });
-            });
-            
-            console.log('📚 Grade levels loaded:', gradeLevels.length);
-        } catch (error) {
-            console.error('Error loading grade levels:', error);
-            // Fallback default grade levels
-            gradeLevels = [
-                { id: '1', gradeName: 'Grade 7' },
-                { id: '2', gradeName: 'Grade 8' },
-                { id: '3', gradeName: 'Grade 9' },
-                { id: '4', gradeName: 'Grade 10' },
-                { id: '5', gradeName: 'Grade 11' },
-                { id: '6', gradeName: 'Grade 12' }
-            ];
-        }
-    }
-
-    // ============================================
     // LOAD SECTIONS
     // ============================================
 
-    async function loadSections(userId) {
+    async function loadSections() {
         try {
-            const sectionsRef = collection(db, 'sections');
-            const q = query(sectionsRef, where('adviserId', '==', userId));
-            const snapshot = await getDocs(q);
-            
-            sections = [];
-            snapshot.forEach((doc) => {
-                sections.push({ id: doc.id, ...doc.data() });
-            });
-            
+            const { data, error } = await supabase
+                .from('sections')
+                .select('*')
+                .order('grade_level', { ascending: true });
+
+            if (error) throw error;
+            sections = data || [];
             console.log('📋 Sections loaded:', sections.length);
         } catch (error) {
             console.error('Error loading sections:', error);
@@ -197,21 +145,23 @@ import {
 
     async function loadSubjects() {
         try {
-            const subjectsRef = collection(db, 'subjects');
-            const snapshot = await getDocs(subjectsRef);
-            
+            const { data, error } = await supabase
+                .from('subjects')
+                .select('*')
+                .order('name', { ascending: true });
+
+            if (error) throw error;
+
             subjectsByGrade = {};
-            
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                const gradeName = data.gradeName || data.grade || 'Unknown';
-                
+
+            (data || []).forEach((sub) => {
+                const gradeName = sub.grade_level || 'General';
                 if (!subjectsByGrade[gradeName]) {
                     subjectsByGrade[gradeName] = [];
                 }
-                subjectsByGrade[gradeName].push({ id: doc.id, ...data });
+                subjectsByGrade[gradeName].push(sub);
             });
-            
+
             console.log('📚 Subjects loaded:', Object.keys(subjectsByGrade).length, 'grades');
         } catch (error) {
             console.error('Error loading subjects:', error);
@@ -223,24 +173,26 @@ import {
     // UPDATE STATS
     // ============================================
 
-    function updateStats() {
-        // Total students (simplified - from sections)
-        let studentsCount = 0;
-        sections.forEach(section => {
-            // In a real app, you'd count students from enrollments
-            studentsCount += section.studentCount || Math.floor(Math.random() * 20) + 15;
+    async function updateStats() {
+        try {
+            const { count: studentCount } = await supabase
+                .from('students')
+                .select('*', { count: 'exact', head: true });
+
+            if (totalStudents) totalStudents.textContent = studentCount || 0;
+        } catch(e) {
+            if (totalStudents) totalStudents.textContent = sections.length * 25;
+        }
+
+        if (totalSections) totalSections.textContent = sections.length;
+
+        let totalSubCount = 0;
+        Object.values(subjectsByGrade).forEach(subs => {
+            totalSubCount += subs.length;
         });
-        totalStudents.textContent = studentsCount || sections.length * 20;
+        if (totalSubjects) totalSubjects.textContent = totalSubCount;
 
-        totalSections.textContent = sections.length;
-
-        let subjectsCount = 0;
-        Object.values(subjectsByGrade).forEach(subjects => {
-            subjectsCount += subjects.length;
-        });
-        totalSubjects.textContent = subjectsCount;
-
-        totalGradeLevels.textContent = gradeLevels.length;
+        if (totalGradeLevels) totalGradeLevels.textContent = gradeLevels.length;
     }
 
     // ============================================
@@ -248,6 +200,8 @@ import {
     // ============================================
 
     function renderSections() {
+        if (!sectionsList) return;
+
         if (sections.length === 0) {
             sectionsList.innerHTML = `
                 <div class="no-data">
@@ -259,14 +213,15 @@ import {
         }
 
         sectionsList.innerHTML = sections.map(section => {
-            const gradeName = section.gradeName || section.grade || 'N/A';
+            const gradeName = section.grade_level || 'N/A';
+            const strandText = section.strand ? ` (${section.strand})` : '';
             return `
                 <div class="section-item">
                     <div class="section-info">
-                        <h4>${section.sectionName || section.name || 'Unknown Section'}</h4>
-                        <p><i class="fas fa-tag"></i> ${gradeName}</p>
+                        <h4>${section.name || 'Unknown Section'}</h4>
+                        <p><i class="fas fa-tag"></i> ${gradeName}${strandText}</p>
                     </div>
-                    <span class="badge">Adviser</span>
+                    <span class="badge">Section</span>
                 </div>
             `;
         }).join('');
@@ -277,6 +232,8 @@ import {
     // ============================================
 
     function renderSubjects() {
+        if (!subjectsContainer) return;
+
         if (Object.keys(subjectsByGrade).length === 0) {
             subjectsContainer.innerHTML = `
                 <div class="no-data">
@@ -310,7 +267,8 @@ import {
                             ${subjects.map(subject => `
                                 <div class="subject-item">
                                     <div class="subject-info">
-                                        <h4>${subject.subjectName || subject.name || 'Unknown Subject'}</h4>
+                                        <h4>${subject.name || subject.code || 'Unknown Subject'}</h4>
+                                        <p style="font-size:0.8rem; color:#6b7280;">Code: ${subject.code || '—'}</p>
                                     </div>
                                     <span class="badge subject-badge">${gradeName}</span>
                                 </div>
@@ -344,6 +302,7 @@ import {
     // ============================================
 
     function showAlert(message, type = 'success') {
+        if (!alertContainer) return;
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type}`;
         alertDiv.innerHTML = `
@@ -369,6 +328,8 @@ import {
         dateBadge.innerHTML = `<i class="fas fa-calendar-alt"></i> ${now.toLocaleDateString('en-US', options)}`;
     }
 
-    console.log('✅ Teacher Dashboard ready!');
+    // Initialize
+    loadDashboardData();
 
+    console.log('✅ Teacher Dashboard initialized!');
 })();

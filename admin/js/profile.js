@@ -423,7 +423,79 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ===== FORM SUBMITS =====
+    // ===== PROFILE INITIALS & AVATAR SYNC =====
+
+    function getAdminInitials(name) {
+        if (!name || typeof name !== 'string') return 'A';
+        const cleanName = name.replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?|prof\.?|engr\.?|atty\.?)\s+/i, '').trim();
+        const words = cleanName.split(/[\s,&-]+/).filter(w => w.length > 0 && !['and', 'the', 'of', '&'].includes(w.toLowerCase()));
+        if (words.length === 0) return name.charAt(0).toUpperCase();
+        if (words.length === 1) return words[0].substring(0, Math.min(2, words[0].length)).toUpperCase();
+        return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+    }
+
+    function renderDefaultAvatar(name) {
+        const initials = getAdminInitials(name || 'Admin User');
+        
+        const largeAvatar = document.querySelector('.profile-avatar-large');
+        if (largeAvatar) {
+            largeAvatar.innerHTML = `
+                <div class="avatar-initial">${initials}</div>
+                <div class="avatar-overlay">
+                    <i class="fas fa-camera"></i>
+                </div>
+            `;
+        }
+
+        const sidebarAvatar = document.querySelector('.admin-avatar');
+        if (sidebarAvatar) {
+            sidebarAvatar.innerHTML = `
+                <div class="avatar-initial">${initials}</div>
+                <div class="online-dot"></div>
+            `;
+        }
+
+        const modalPreview = document.getElementById('imagePreview');
+        if (modalPreview) {
+            modalPreview.innerHTML = `
+                <div style="width: 150px; height: 150px; background: #1B2A4A; display: flex; align-items: center; justify-content: center; color: white; font-size: 52px; font-weight: bold; border-radius: 50%;">
+                    ${initials}
+                </div>
+            `;
+        }
+    }
+
+    function loadSavedAdminProfile() {
+        try {
+            const savedName = localStorage.getItem('plsnhs_admin_name');
+            if (savedName) {
+                const fullnameInput = document.getElementById('fullname');
+                if (fullnameInput) fullnameInput.value = savedName;
+                const profileNameEl = document.getElementById('profileName');
+                if (profileNameEl) profileNameEl.textContent = savedName;
+                const sidebarName = document.querySelector('.admin-name');
+                if (sidebarName) sidebarName.textContent = savedName;
+            }
+            const savedId = localStorage.getItem('plsnhs_admin_id');
+            if (savedId) {
+                const idInput = document.getElementById('idNumber');
+                if (idInput) idInput.value = savedId;
+            }
+            const savedPhone = localStorage.getItem('plsnhs_admin_phone');
+            if (savedPhone) {
+                const phoneInput = document.getElementById('phone');
+                if (phoneInput) phoneInput.value = savedPhone;
+            }
+
+            const currentName = savedName || (document.getElementById('fullname') ? document.getElementById('fullname').value : 'Admin User');
+            const savedAvatar = localStorage.getItem('plsnhs_admin_avatar');
+            if (savedAvatar) {
+                applyAvatarToDOM(savedAvatar);
+            } else {
+                renderDefaultAvatar(currentName);
+            }
+        } catch(e) {}
+    }
 
     // Profile form
     if (profileForm) {
@@ -443,7 +515,33 @@ document.addEventListener('DOMContentLoaded', function() {
             if (errors.length > 0) {
                 showAlert(errors.join('<br>'), 'error');
             } else {
-                showAlert('✅ Profile updated successfully!', 'success');
+                try {
+                    localStorage.setItem('plsnhs_admin_name', fullname);
+                    if (idNumber) localStorage.setItem('plsnhs_admin_id', idNumber);
+                    if (phone) localStorage.setItem('plsnhs_admin_phone', phone);
+                } catch(e) {}
+
+                document.getElementById('profileName').textContent = fullname;
+                const sidebarName = document.querySelector('.admin-name');
+                if (sidebarName) sidebarName.textContent = fullname;
+
+                const savedAvatar = localStorage.getItem('plsnhs_admin_avatar');
+                if (!savedAvatar) {
+                    renderDefaultAvatar(fullname);
+                }
+
+                showAlert('✅ Profile information updated successfully!', 'success');
+            }
+        });
+    }
+
+    // Live update initials as admin types name if no custom image is uploaded
+    const fullnameInput = document.getElementById('fullname');
+    if (fullnameInput) {
+        fullnameInput.addEventListener('input', function() {
+            const savedAvatar = localStorage.getItem('plsnhs_admin_avatar');
+            if (!savedAvatar) {
+                renderDefaultAvatar(this.value.trim() || 'Admin User');
             }
         });
     }
@@ -512,28 +610,84 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Image upload form
+    // ===== PROFILE PICTURE UPLOAD & PERSISTENCE =====
+
+    function applyAvatarToDOM(base64Image) {
+        // Update large profile avatar
+        const largeAvatar = document.querySelector('.profile-avatar-large');
+        if (largeAvatar) {
+            largeAvatar.innerHTML = `
+                <img src="${base64Image}" alt="Profile Picture" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                <div class="avatar-overlay">
+                    <i class="fas fa-camera"></i>
+                </div>
+            `;
+        }
+
+        // Update sidebar avatar
+        const sidebarAvatar = document.querySelector('.admin-avatar');
+        if (sidebarAvatar) {
+            sidebarAvatar.innerHTML = `
+                <img src="${base64Image}" alt="Admin" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                <div class="online-dot"></div>
+            `;
+        }
+
+        // Update modal preview
+        const modalPreview = document.getElementById('imagePreview');
+        if (modalPreview) {
+            modalPreview.innerHTML = `<img src="${base64Image}" alt="Preview" style="width:150px;height:150px;border-radius:50%;object-fit:cover;">`;
+        }
+    }
+
+    // Image upload form submit
     if (uploadForm) {
         uploadForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const fileInput = document.getElementById('profilePicture');
-            if (fileInput.files.length === 0) {
-                showAlert('Please select an image file.', 'error');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showAlert('Please select an image file to upload.', 'error');
                 return;
             }
-            showAlert('✅ Profile picture updated successfully!', 'success');
-            closeImageModal();
+
+            const file = fileInput.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+                showAlert('File size exceeds 5MB limit. Please choose a smaller image.', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const base64Image = evt.target.result;
+                try {
+                    localStorage.setItem('plsnhs_admin_avatar', base64Image);
+                } catch(err) {
+                    console.warn('Avatar could not be saved to localStorage:', err);
+                }
+                applyAvatarToDOM(base64Image);
+                showAlert('✅ Profile picture uploaded and updated successfully!', 'success');
+                closeImageModal();
+            };
+            reader.readAsDataURL(file);
         });
     }
 
     // ===== IMAGE MODAL =====
 
     window.openImageModal = function() {
-        document.getElementById('imageModal').classList.add('show');
+        const modal = document.getElementById('imageModal');
+        if (modal) {
+            modal.classList.add('show');
+            modal.style.display = 'flex';
+        }
     };
 
     window.closeImageModal = function() {
-        document.getElementById('imageModal').classList.remove('show');
+        const modal = document.getElementById('imageModal');
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+        }
     };
 
     window.previewImage = function(input) {
@@ -541,15 +695,22 @@ document.addEventListener('DOMContentLoaded', function() {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const preview = document.getElementById('imagePreview');
-                preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="width:150px;height:150px;border-radius:50%;object-fit:cover;">`;
+                if (preview) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="width:150px;height:150px;border-radius:50%;object-fit:cover;">`;
+                }
             };
             reader.readAsDataURL(input.files[0]);
         }
     };
 
     window.removeProfilePic = function() {
-        if (confirm('Remove your profile picture?')) {
-            showAlert('✅ Profile picture removed successfully!', 'success');
+        if (confirm('Remove your profile picture and restore your name initials?')) {
+            try {
+                localStorage.removeItem('plsnhs_admin_avatar');
+            } catch(e) {}
+            const currentName = localStorage.getItem('plsnhs_admin_name') || (document.getElementById('fullname') ? document.getElementById('fullname').value : 'Admin User');
+            renderDefaultAvatar(currentName);
+            showAlert('✅ Profile picture removed. Initials restored.', 'success');
             closeImageModal();
         }
     };
@@ -561,6 +722,292 @@ document.addEventListener('DOMContentLoaded', function() {
             closeImageModal();
         }
     });
+
+    // ===== ADMIN DOCUMENTS MANAGEMENT =====
+
+    const defaultAdminDocs = [
+        {
+            id: 'doc_1',
+            title: 'DepEd Administrator Appointment Order 2026',
+            type: 'Appointment',
+            filename: 'DepEd_Order_Admin_2026.pdf',
+            size: '1.4 MB',
+            date: '2026-01-15',
+            format: 'pdf',
+            status: 'Verified',
+            dataUrl: null
+        },
+        {
+            id: 'doc_2',
+            title: 'School Head Professional PRC ID',
+            type: 'Valid ID',
+            filename: 'PRC_License_Admin.jpg',
+            size: '840 KB',
+            date: '2026-02-02',
+            format: 'img',
+            status: 'Verified',
+            dataUrl: null
+        }
+    ];
+
+    let adminDocs = [];
+    try {
+        const savedDocs = localStorage.getItem('plsnhs_admin_documents');
+        if (savedDocs) {
+            adminDocs = JSON.parse(savedDocs);
+        } else {
+            adminDocs = [...defaultAdminDocs];
+            localStorage.setItem('plsnhs_admin_documents', JSON.stringify(adminDocs));
+        }
+    } catch(e) {
+        adminDocs = [...defaultAdminDocs];
+    }
+
+    function persistAdminDocs() {
+        try {
+            localStorage.setItem('plsnhs_admin_documents', JSON.stringify(adminDocs));
+        } catch(e) {}
+    }
+
+    const adminDocDropZone = document.getElementById('adminDocDropZone');
+    const adminDocFileInput = document.getElementById('adminDocFileInput');
+    const adminDocUploadForm = document.getElementById('adminDocUploadForm');
+    const adminDocSelectedName = document.getElementById('adminDocSelectedName');
+    const adminDocTypeSelect = document.getElementById('adminDocTypeSelect');
+    const adminDocCustomTitle = document.getElementById('adminDocCustomTitle');
+    const adminDocCancelBtn = document.getElementById('adminDocCancelBtn');
+    const adminDocSaveBtn = document.getElementById('adminDocSaveBtn');
+    const adminDocList = document.getElementById('adminDocList');
+    const adminDocCount = document.getElementById('adminDocCount');
+
+    // Modal elements for doc preview
+    const docPreviewModal = document.getElementById('docPreviewModal');
+    const docPreviewTitle = document.getElementById('docPreviewTitle');
+    const docPreviewContainer = document.getElementById('docPreviewContainer');
+    const closeDocPreviewBtn = document.getElementById('closeDocPreviewBtn');
+    const dismissDocPreviewBtn = document.getElementById('dismissDocPreviewBtn');
+    const docDownloadBtn = document.getElementById('docDownloadBtn');
+
+    let currentPendingFile = null;
+
+    if (adminDocDropZone && adminDocFileInput) {
+        adminDocDropZone.addEventListener('click', () => adminDocFileInput.click());
+
+        adminDocDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            adminDocDropZone.classList.add('dragover');
+        });
+
+        adminDocDropZone.addEventListener('dragleave', () => {
+            adminDocDropZone.classList.remove('dragover');
+        });
+
+        adminDocDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            adminDocDropZone.classList.remove('dragover');
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleAdminFileSelected(e.dataTransfer.files[0]);
+            }
+        });
+
+        adminDocFileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                handleAdminFileSelected(this.files[0]);
+            }
+        });
+    }
+
+    function handleAdminFileSelected(file) {
+        currentPendingFile = file;
+        if (adminDocSelectedName) adminDocSelectedName.textContent = `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+        if (adminDocCustomTitle) adminDocCustomTitle.value = file.name.replace(/\.[^/.]+$/, '');
+        if (adminDocUploadForm) adminDocUploadForm.style.display = 'block';
+    }
+
+    if (adminDocCancelBtn) {
+        adminDocCancelBtn.addEventListener('click', () => {
+            currentPendingFile = null;
+            if (adminDocFileInput) adminDocFileInput.value = '';
+            if (adminDocUploadForm) adminDocUploadForm.style.display = 'none';
+        });
+    }
+
+    if (adminDocSaveBtn) {
+        adminDocSaveBtn.addEventListener('click', () => {
+            if (!currentPendingFile) {
+                showAlert('No file selected.', 'error');
+                return;
+            }
+
+            const title = (adminDocCustomTitle && adminDocCustomTitle.value.trim()) || currentPendingFile.name;
+            const type = (adminDocTypeSelect && adminDocTypeSelect.value) || 'Other';
+            const sizeInMb = (currentPendingFile.size / (1024 * 1024)).toFixed(2);
+            const sizeStr = currentPendingFile.size > 1024 * 1024 ? `${sizeInMb} MB` : `${Math.round(currentPendingFile.size / 1024)} KB`;
+            const isPdf = currentPendingFile.name.toLowerCase().endsWith('.pdf') || currentPendingFile.type === 'application/pdf';
+            const format = isPdf ? 'pdf' : (currentPendingFile.type.startsWith('image/') ? 'img' : 'doc');
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const dataUrl = evt.target.result;
+                const newDoc = {
+                    id: 'doc_' + Date.now(),
+                    title: title,
+                    type: type,
+                    filename: currentPendingFile.name,
+                    size: sizeStr,
+                    date: new Date().toISOString().split('T')[0],
+                    format: format,
+                    status: 'Uploaded',
+                    dataUrl: dataUrl
+                };
+
+                adminDocs.unshift(newDoc);
+                persistAdminDocs();
+                renderAdminDocs();
+
+                currentPendingFile = null;
+                if (adminDocFileInput) adminDocFileInput.value = '';
+                if (adminDocUploadForm) adminDocUploadForm.style.display = 'none';
+
+                showAlert(`✅ Document "${title}" uploaded to your profile!`, 'success');
+            };
+            reader.readAsDataURL(currentPendingFile);
+        });
+    }
+
+    function renderAdminDocs() {
+        if (!adminDocList) return;
+
+        if (adminDocCount) {
+            adminDocCount.textContent = `${adminDocs.length} ${adminDocs.length === 1 ? 'File' : 'Files'}`;
+        }
+
+        if (adminDocs.length === 0) {
+            adminDocList.innerHTML = `
+                <div class="empty-docs-state">
+                    <i class="fas fa-folder-open"></i>
+                    <p>No documents uploaded yet. Upload your credentials above.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        adminDocs.forEach(doc => {
+            const iconClass = doc.format === 'pdf' ? 'doc-icon-pdf fa-file-pdf' : (doc.format === 'img' ? 'doc-icon-img fa-file-image' : 'doc-icon-doc fa-file-alt');
+            html += `
+                <div class="doc-item" data-id="${doc.id}">
+                    <div class="doc-item-left">
+                        <div class="doc-item-icon ${doc.format === 'pdf' ? 'doc-icon-pdf' : (doc.format === 'img' ? 'doc-icon-img' : 'doc-icon-doc')}">
+                            <i class="fas ${iconClass.split(' ')[1]}"></i>
+                        </div>
+                        <div class="doc-item-info">
+                            <div class="doc-item-title" title="${doc.title}">${doc.title}</div>
+                            <div class="doc-item-meta">
+                                <span class="doc-category-pill">${doc.type}</span>
+                                <span>${doc.size}</span>
+                                <span>&bull;</span>
+                                <span>${doc.date}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="doc-item-actions">
+                        <button type="button" class="doc-btn btn-view-doc" data-id="${doc.id}" title="Preview Document">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button type="button" class="doc-btn doc-btn-danger btn-delete-doc" data-id="${doc.id}" title="Delete Document">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        adminDocList.innerHTML = html;
+
+        // Attach listeners
+        adminDocList.querySelectorAll('.btn-view-doc').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                openDocPreview(id);
+            });
+        });
+
+        adminDocList.querySelectorAll('.btn-delete-doc').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                deleteAdminDoc(id);
+            });
+        });
+    }
+
+    function openDocPreview(id) {
+        const doc = adminDocs.find(d => d.id === id);
+        if (!doc || !docPreviewModal) return;
+
+        if (docPreviewTitle) {
+            docPreviewTitle.innerHTML = `<i class="fas fa-file-alt"></i> ${doc.title}`;
+        }
+
+        if (docDownloadBtn) {
+            if (doc.dataUrl) {
+                docDownloadBtn.href = doc.dataUrl;
+                docDownloadBtn.download = doc.filename;
+                docDownloadBtn.style.display = 'inline-flex';
+            } else {
+                docDownloadBtn.style.display = 'none';
+            }
+        }
+
+        if (docPreviewContainer) {
+            if (doc.format === 'img' && doc.dataUrl) {
+                docPreviewContainer.innerHTML = `<img src="${doc.dataUrl}" alt="${doc.title}">`;
+            } else if (doc.format === 'pdf' && doc.dataUrl) {
+                docPreviewContainer.innerHTML = `
+                    <iframe src="${doc.dataUrl}" style="width:100%;height:450px;border:none;border-radius:8px;"></iframe>
+                `;
+            } else {
+                docPreviewContainer.innerHTML = `
+                    <div style="padding:40px;text-align:center;">
+                        <i class="fas fa-file-check" style="font-size:48px;color:#1B2A4A;margin-bottom:12px;"></i>
+                        <h4 style="font-size:16px;color:#0f172a;margin-bottom:6px;">${doc.title}</h4>
+                        <p style="color:#64748b;font-size:13px;">${doc.filename} &bull; ${doc.type} &bull; ${doc.size}</p>
+                        <span style="display:inline-block;margin-top:10px;background:#d1fae5;color:#065f46;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">Status: ${doc.status}</span>
+                    </div>
+                `;
+            }
+        }
+
+        docPreviewModal.classList.add('show');
+        docPreviewModal.style.display = 'flex';
+    }
+
+    function closeDocPreview() {
+        if (docPreviewModal) {
+            docPreviewModal.classList.remove('show');
+            docPreviewModal.style.display = 'none';
+        }
+    }
+
+    if (closeDocPreviewBtn) closeDocPreviewBtn.addEventListener('click', closeDocPreview);
+    if (dismissDocPreviewBtn) dismissDocPreviewBtn.addEventListener('click', closeDocPreview);
+
+    window.addEventListener('click', function(e) {
+        if (e.target === docPreviewModal) {
+            closeDocPreview();
+        }
+    });
+
+    function deleteAdminDoc(id) {
+        const doc = adminDocs.find(d => d.id === id);
+        if (!doc) return;
+        if (confirm(`Are you sure you want to delete "${doc.title}"?`)) {
+            adminDocs = adminDocs.filter(d => d.id !== id);
+            persistAdminDocs();
+            renderAdminDocs();
+            showAlert('Document deleted from profile.', 'success');
+        }
+    }
 
     // ===== MOBILE MENU =====
 
@@ -584,7 +1031,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===== INIT =====
 
     calculateDaysActive();
-
-    // Initialize email verification status
     updateVerifyStatus(isEmailVerified);
+    loadSavedAdminProfile();
+    renderAdminDocs();
 });

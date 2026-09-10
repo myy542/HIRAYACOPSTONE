@@ -33,10 +33,10 @@
 
             <div class="admin-profile">
                 <div class="admin-avatar">
-                    <div class="avatar-initial">A</div>
+                    <div class="avatar-initial" id="adminAvatar">J</div>
                     <div class="online-dot"></div>
                 </div>
-                <div class="admin-name">Admin</div>
+                <div class="admin-name" id="adminName">Justine</div>
                 <div class="admin-role"><i class="fas fa-shield-alt"></i> Administrator</div>
             </div>
 
@@ -45,7 +45,7 @@
                     <div class="nav-section-title">MAIN MENU</div>
                     <ul class="nav-items">
                         <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                        <li><a href="students.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+                        <li><a href="student.html"><i class="fas fa-user-graduate"></i> Students</a></li>
                         <li><a href="teachers.html"><i class="fas fa-chalkboard-user"></i> Teachers</a></li>
                         <li><a href="sections.html"><i class="fas fa-layer-group"></i> Sections</a></li>
                         <li><a href="subjects.html"><i class="fas fa-book"></i> Subjects</a></li>
@@ -89,12 +89,12 @@
                 <div>
                     <div class="profile-card">
                         <div class="profile-avatar-large" onclick="openImageModal()">
-                            <div class="avatar-initial">A</div>
+                            <div class="avatar-initial" id="profileInitial">J</div>
                             <div class="avatar-overlay">
                                 <i class="fas fa-camera"></i>
                             </div>
                         </div>
-                        <h2 class="profile-name">Admin User</h2>
+                        <h2 class="profile-name">Justine</h2>
                         <div style="text-align: center;">
                             <span class="profile-role">Administrator</span>
                         </div>
@@ -143,6 +143,54 @@
                                 <div class="info-label">Member Since</div>
                                 <div class="info-value">January 1, 2026</div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Uploaded Documents & Credentials Card -->
+                    <div class="doc-upload-card">
+                        <div class="doc-upload-header">
+                            <div class="doc-upload-header-left">
+                                <i class="fas fa-file-shield"></i>
+                                <h3>Official Credentials</h3>
+                            </div>
+                            <span class="doc-upload-count" id="adminDocCount">0 Files</span>
+                        </div>
+
+                        <!-- Dropzone / Picker -->
+                        <div class="doc-drop-zone" id="adminDocDropZone">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h4>Upload Profile Documents</h4>
+                            <p>Click or drag DepEd ID, Appointment, Certificates (PDF, PNG, JPG up to 10MB)</p>
+                            <input type="file" id="adminDocFileInput" accept=".pdf,image/png,image/jpeg,image/webp" style="display: none;">
+                        </div>
+
+                        <div id="adminDocUploadForm" style="display: none; margin-bottom: 16px; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 8px;">Selected: <span id="adminDocSelectedName" style="color: #1B2A4A;"></span></div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                                <div>
+                                    <label style="font-size: 11px; font-weight: 600; color: #64748b; display: block; margin-bottom: 4px;">Document Type</label>
+                                    <select id="adminDocTypeSelect" style="width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12.5px;">
+                                        <option value="Appointment">Appointment Order</option>
+                                        <option value="Valid ID">Government / DepEd ID</option>
+                                        <option value="E-Signature">Digital Signature Specimen</option>
+                                        <option value="Certification">Training & Eligibility</option>
+                                        <option value="Other">Other Document</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size: 11px; font-weight: 600; color: #64748b; display: block; margin-bottom: 4px;">Document Label</label>
+                                    <input type="text" id="adminDocCustomTitle" placeholder="e.g. DepEd ID 2026" style="width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12.5px;">
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                                <button type="button" class="btn-secondary" id="adminDocCancelBtn" style="padding: 6px 14px; font-size: 12px; border-radius: 6px; cursor: pointer; background: #fff; border: 1px solid #cbd5e1;">Cancel</button>
+                                <button type="button" class="btn-primary" id="adminDocSaveBtn" style="padding: 6px 16px; font-size: 12px; border-radius: 6px; background: #1B2A4A; color: #fff; border: none; cursor: pointer;"><i class="fas fa-upload"></i> Upload</button>
+                            </div>
+                        </div>
+
+                        <!-- Document List -->
+                        <div class="doc-list" id="adminDocList">
+                            <!-- Populated by JS -->
                         </div>
                     </div>
                 </div>
@@ -374,6 +422,26 @@
         </div>
     </div>
 
+    <!-- Document Preview Modal -->
+    <div class="modal" id="docPreviewModal">
+        <div class="modal-content doc-preview-modal-content">
+            <div class="modal-header">
+                <h3 id="docPreviewTitle"><i class="fas fa-file-alt"></i> Document Preview</h3>
+                <button type="button" class="close-modal" id="closeDocPreviewBtn">&times;</button>
+            </div>
+            <div class="modal-body doc-preview-body" id="docPreviewContainer">
+                <!-- Preview loaded by JS -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="dismissDocPreviewBtn">Close</button>
+                <a href="#" id="docDownloadBtn" class="btn-primary" download style="background: #1B2A4A; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-download"></i> Download
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/admin_avatar_sync.js"></script>
     <script src="js/profile.js"></script>
 </body>
 </html>

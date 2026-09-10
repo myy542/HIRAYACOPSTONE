@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const roleSelect = document.getElementById('role');
     const passwordInput = document.getElementById('password');
     const confirmInput = document.getElementById('confirm_password');
+    const togglePasswordBtn = document.getElementById('togglePasswordBtn');
     const strengthBar = document.getElementById('strengthBar');
     const strengthText = document.getElementById('strengthText');
     const passwordMatch = document.getElementById('passwordMatch');
@@ -18,22 +19,46 @@ document.addEventListener('DOMContentLoaded', function() {
     const previewIDNumber = document.getElementById('previewIDNumber');
     const accountForm = document.getElementById('accountForm');
     const alertContainer = document.getElementById('alertContainer');
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+
+    // Mobile menu toggle
+    if (menuToggle && sidebar) {
+        menuToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+        });
+    }
 
     // ===== FUNCTIONS =====
 
     // Generate preview ID number based on role
     function getPreviewIDNumber(role) {
-        if (role === 'Admin') {
-            return 'PLSNHS-ADM-XXXXX';
+        if (role === 'Teacher') {
+            return 'PLSNHS-TCH-XXXXX';
         } else if (role === 'Registrar') {
             return 'PLSNHS-RGR-XXXXX';
+        } else if (role === 'Admin') {
+            return 'PLSNHS-ADM-XXXXX';
         }
         return 'Will be auto-generated';
     }
 
+    // Generate actual ID number
+    function generateActualIDNumber(role) {
+        const rand = Math.floor(10000 + Math.random() * 90000);
+        if (role === 'Teacher') {
+            return `PLSNHS-TCH-${rand}`;
+        } else if (role === 'Registrar') {
+            return `PLSNHS-RGR-${rand}`;
+        } else if (role === 'Admin') {
+            return `PLSNHS-ADM-${rand}`;
+        }
+        return `PLSNHS-ACC-${rand}`;
+    }
+
     // Update ID preview
     function updateIDPreview() {
-        const role = roleSelect.value;
+        const role = roleSelect ? roleSelect.value : '';
         const idValue = getPreviewIDNumber(role);
         if (idPreview) {
             idPreview.value = idValue;
@@ -45,27 +70,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update live preview
     function updatePreview() {
-        const fullname = fullnameInput.value.trim() || 'New User';
-        previewName.textContent = fullname;
+        const fullname = (fullnameInput ? fullnameInput.value.trim() : '') || 'New User';
+        if (previewName) previewName.textContent = fullname;
 
         const initial = fullname.charAt(0).toUpperCase() || 'U';
-        previewInitial.textContent = initial;
-        // Add animation
-        previewInitial.classList.remove('changed');
-        void previewInitial.offsetWidth;
-        previewInitial.classList.add('changed');
+        if (previewInitial) {
+            previewInitial.textContent = initial;
+            previewInitial.classList.remove('changed');
+            void previewInitial.offsetWidth;
+            previewInitial.classList.add('changed');
+        }
 
-        const email = emailInput.value.trim() || 'user@plshs.edu.ph';
-        previewEmail.innerHTML = `<i class="fas fa-envelope"></i> ${email}`;
+        const email = (emailInput ? emailInput.value.trim() : '') || 'user@plshs.edu.ph';
+        if (previewEmail) previewEmail.innerHTML = `<i class="fas fa-envelope"></i> ${email}`;
 
-        const role = roleSelect.value;
-        if (role) {
-            const roleDisplay = role === 'Admin' ? 'Administrator' : 'Registrar';
-            previewRole.textContent = roleDisplay;
-            previewRole.className = 'preview-role-badge ' + role.toLowerCase();
-        } else {
-            previewRole.textContent = 'Select Role';
-            previewRole.className = 'preview-role-badge';
+        const role = roleSelect ? roleSelect.value : '';
+        if (previewRole) {
+            if (role) {
+                let roleDisplay = role;
+                if (role === 'Admin') roleDisplay = 'Administrator';
+                else if (role === 'Teacher') roleDisplay = 'Teacher (Faculty)';
+                else if (role === 'Registrar') roleDisplay = 'Registrar';
+
+                previewRole.textContent = roleDisplay;
+                previewRole.className = 'preview-role-badge ' + role.toLowerCase();
+            } else {
+                previewRole.textContent = 'Select Role';
+                previewRole.className = 'preview-role-badge';
+            }
         }
 
         updateIDPreview();
@@ -73,6 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Check password strength
     function checkPasswordStrength() {
+        if (!passwordInput || !strengthBar || !strengthText) return;
         const password = passwordInput.value;
         let strength = 0;
         let strengthLabel = '';
@@ -112,12 +145,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Check password match
     function checkPasswordMatch() {
+        if (!passwordInput || !confirmInput || !passwordMatch) return;
         const password = passwordInput.value;
         const confirm = confirmInput.value;
 
         if (confirm.length === 0) {
             passwordMatch.innerHTML = '<i class="fas fa-info-circle"></i> <span>Re-enter your password</span>';
-            passwordMatch.querySelector('span').className = '';
         } else if (password === confirm) {
             passwordMatch.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i> <span style="color: #10b981;">Passwords match</span>';
         } else {
@@ -125,29 +158,34 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Toggle password visibility (global function)
-    window.togglePassword = function() {
-        const passwordInput = document.getElementById('password');
-        const toggleBtn = document.querySelector('.toggle-password i');
-        
+    // Toggle password visibility
+    function togglePassword() {
+        if (!passwordInput) return;
+        const toggleIcon = togglePasswordBtn ? togglePasswordBtn.querySelector('i') : null;
         if (passwordInput.type === 'password') {
             passwordInput.type = 'text';
-            toggleBtn.className = 'fas fa-eye-slash';
+            if (toggleIcon) toggleIcon.className = 'fas fa-eye-slash';
         } else {
             passwordInput.type = 'password';
-            toggleBtn.className = 'fas fa-eye';
+            if (toggleIcon) toggleIcon.className = 'fas fa-eye';
         }
-    };
+    }
+
+    if (togglePasswordBtn) {
+        togglePasswordBtn.addEventListener('click', togglePassword);
+    }
+    window.togglePassword = togglePassword;
 
     // Show alert messages
     function showAlert(message, type = 'error') {
+        if (!alertContainer) return;
+        alertContainer.innerHTML = '';
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type}`;
         const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
-        alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> <div>${message}</div>`;
         alertContainer.appendChild(alertDiv);
 
-        // Auto-hide after 5 seconds
         setTimeout(function() {
             alertDiv.style.opacity = '0';
             setTimeout(() => {
@@ -158,24 +196,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ===== EVENT LISTENERS =====
 
-    // Role change
     if (roleSelect) {
-        roleSelect.addEventListener('change', function() {
-            updatePreview();
-        });
+        roleSelect.addEventListener('change', updatePreview);
     }
 
-    // Fullname input
     if (fullnameInput) {
         fullnameInput.addEventListener('input', updatePreview);
     }
 
-    // Email input
     if (emailInput) {
         emailInput.addEventListener('input', updatePreview);
     }
 
-    // Password strength
     if (passwordInput) {
         passwordInput.addEventListener('input', function() {
             checkPasswordStrength();
@@ -183,18 +215,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Confirm password
     if (confirmInput) {
         confirmInput.addEventListener('input', checkPasswordMatch);
     }
 
-    // ===== FORM VALIDATION =====
+    // ===== FORM SUBMISSION =====
 
     if (accountForm) {
         accountForm.addEventListener('submit', function(e) {
             e.preventDefault();
 
-            // Collect values
             const fullname = fullnameInput.value.trim();
             const email = emailInput.value.trim();
             const role = roleSelect.value;
@@ -209,55 +239,50 @@ document.addEventListener('DOMContentLoaded', function() {
             if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Invalid email format');
             if (!role) errors.push('Role is required');
 
-            // Password validation
             if (!password) {
                 errors.push('Password is required');
-            } else {
-                let passwordErrors = [];
-                if (password.length < 8) passwordErrors.push('at least 8 characters');
-                if (!/[A-Z]/.test(password)) passwordErrors.push('at least one uppercase letter');
-                if (!/[a-z]/.test(password)) passwordErrors.push('at least one lowercase letter');
-                if (!/[0-9]/.test(password)) passwordErrors.push('at least one number');
-                if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) passwordErrors.push('at least one special character');
-
-                if (passwordErrors.length > 0) {
-                    errors.push('Password must contain: ' + passwordErrors.join(', '));
-                }
+            } else if (password.length < 8) {
+                errors.push('Password must be at least 8 characters long');
             }
 
             if (password !== confirm) {
                 errors.push('Passwords do not match');
             }
 
-            // Show errors or success
             if (errors.length > 0) {
                 showAlert(errors.join('<br>'), 'error');
-            } else {
-                // Simulate successful submission
-                const idNumber = role === 'Admin' ? 'PLSNHS-ADM-00001' : 'PLSNHS-RGR-00001';
-                showAlert('✅ Account created successfully! ID Number: ' + idNumber, 'success');
-                // Reset form (optional)
-                // accountForm.reset();
-                // updatePreview();
+                return;
             }
+
+            const generatedID = generateActualIDNumber(role);
+
+            // Save to localStorage
+            try {
+                let savedAccounts = JSON.parse(localStorage.getItem('plsnhs_accounts') || '[]');
+                const newAccount = {
+                    id: Date.now(),
+                    id_number: generatedID,
+                    fullname: fullname,
+                    email: email,
+                    role: role,
+                    status: 'approved',
+                    created_at: new Date().toISOString().replace('T', ' ').substring(0, 19),
+                    rejection_reason: null
+                };
+                savedAccounts.unshift(newAccount);
+                localStorage.setItem('plsnhs_accounts', JSON.stringify(savedAccounts));
+            } catch (err) {
+                console.error('Error saving account to localStorage:', err);
+            }
+
+            showAlert(`✅ Account created successfully!<br><strong>Assigned ID:</strong> ${generatedID}<br>Redirecting to Accounts list...`, 'success');
+
+            setTimeout(() => {
+                window.location.href = 'manage_accounts.html';
+            }, 1800);
         });
     }
 
-    // ===== INITIAL PREVIEW =====
-
-    // Set initial ID preview
-    updateIDPreview();
-
-    // ===== AUTO-HIDE ALERTS ON LOAD (if any) =====
-
-    // Check for any existing alerts and auto-hide
-    setTimeout(function() {
-        const alerts = document.querySelectorAll('.alert');
-        alerts.forEach(alert => {
-            alert.style.opacity = '0';
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 300);
-        });
-    }, 5000);
+    // Initial preview setup
+    updatePreview();
 });

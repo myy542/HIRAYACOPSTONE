@@ -1,28 +1,9 @@
 /**
- * Registrar Dashboard - Firebase Integration
- * Real-time data from Firestore
+ * Registrar Dashboard - Supabase Integration
+ * Real-time data from Supabase
  */
 
-import { auth, db } from '../../firebase/config.js';
-import {
-    onAuthStateChanged,
-    signOut
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-import {
-    collection,
-    query,
-    where,
-    getDocs,
-    onSnapshot,
-    orderBy,
-    limit,
-    doc,
-    updateDoc,
-    serverTimestamp,
-    getCountFromServer,
-    addDoc,
-    getDoc
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { supabase } from '../../supabase/config.js';
 
 (function() {
     'use strict';
@@ -42,16 +23,18 @@ import {
     const markAllReadBtn = document.getElementById('markAllReadBtn');
     const notifCount = document.getElementById('notifCount');
     const alertContainer = document.getElementById('alertContainer');
+    const dateBadge = document.getElementById('dateBadge');
 
     let currentUser = null;
     let notifications = [];
     let unreadCount = 0;
+    let trendsChartInstance = null;
+    let gradeChartInstance = null;
 
     // ============================================
     // SET DATE
     // ============================================
 
-    const dateBadge = document.getElementById('dateBadge');
     if (dateBadge) {
         const now = new Date();
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -63,6 +46,7 @@ import {
     // ============================================
 
     function showAlert(message, type = 'success') {
+        if (!alertContainer) return;
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type}`;
         alertDiv.innerHTML = `
@@ -78,111 +62,124 @@ import {
     }
 
     // ============================================
-    // AUTH STATE
+    // SESSION CHECK
     // ============================================
 
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            currentUser = user;
-            console.log('✅ Registrar logged in:', user.email);
-
-            // Check if user is registrar (role check)
-            try {
-                const userDoc = await getDoc(doc(db, 'users', user.uid));
-                if (userDoc.exists()) {
-                    const userData = userDoc.data();
-                    if (userData.role !== 'registrar' && userData.role !== 'admin') {
-                        showAlert('⚠️ You are not authorized to access this page. Redirecting...', 'error');
-                        setTimeout(() => {
-                            window.location.href = '../auth/login.html';
-                        }, 3000);
-                        return;
-                    }
-                    
-                    // Set admin name
-                    const displayName = userData.displayName || user.email || 'Registrar';
-                    adminName.textContent = displayName;
-                    adminInitial.textContent = displayName.charAt(0).toUpperCase();
-                    localStorage.setItem('registrarName', displayName);
-                }
-            } catch (error) {
-                console.error('Error checking user role:', error);
-            }
-
-            // Load all data
-            await loadDashboardStats();
-            await loadRecentEnrollments();
-            await loadNotifications();
-            await loadEnrollmentTrends();
-            await loadGradeDistribution();
-
-        } else {
-            console.log('❌ User logged out - redirecting to login');
-            window.location.href = '../auth/login.html';
+    try {
+        const stored = localStorage.getItem('currentUser');
+        if (stored) {
+            currentUser = JSON.parse(stored);
         }
-    });
+    } catch(e) {
+        console.error('Error reading currentUser:', e);
+    }
+
+    if (!currentUser) {
+        console.warn('⚠️ No active registrar session, redirecting to login...');
+        window.location.replace('../auth/login.html');
+        return;
+    }
+
+    if (currentUser.role && currentUser.role !== 'registrar' && currentUser.role !== 'admin') {
+        showAlert('⚠️ You are not authorized to access this page. Redirecting...', 'error');
+        const routes = {
+            'teacher': '../teacher/dashboard.html',
+            'student': '../student/dashboard.html',
+            'parent': '../parents/dashboard.html',
+            'admin': '../admin/dashboard.html'
+        };
+        setTimeout(() => {
+            window.location.replace(routes[currentUser.role] || '../auth/login.html');
+        }, 1500);
+        return;
+    }
+
+    // Set display name & initials
+    const displayName = currentUser.firstName ? `${currentUser.firstName} ${currentUser.lastName || ''}`.trim() : (currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Registrar'));
+    if (adminName) adminName.textContent = displayName;
+    if (adminInitial) adminInitial.textContent = displayName.charAt(0).toUpperCase();
+    localStorage.setItem('registrarName', displayName);
 
     // ============================================
     // LOGOUT
     // ============================================
 
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
+        logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
-            signOut(auth).then(() => {
-                localStorage.removeItem('registrarName');
-                window.location.href = '../auth/login.html';
-            }).catch((error) => {
-                console.error('Logout error:', error);
-            });
+            console.log('🚪 Registrar logging out...');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('registrarName');
+            localStorage.removeItem('plsnhs_registrar_avatar');
+            localStorage.removeItem('plsnhs_registrar_name');
+            try {
+                await supabase.auth.signOut();
+            } catch(err) {
+                console.warn('Supabase signOut error:', err);
+            }
+            window.location.replace('../auth/login.html');
         });
     }
 
     // ============================================
-    // LOAD DASHBOARD STATS (Real-time)
+    // LOAD DASHBOARD STATS
     // ============================================
 
     async function loadDashboardStats() {
         try {
-            const enrollmentsRef = collection(db, 'enrollments');
-            
             // Total count
-            const totalSnapshot = await getCountFromServer(enrollmentsRef);
-            document.getElementById('totalEnrollments').textContent = totalSnapshot.data().count || 0;
+            const { count: total, error: totalErr } = await supabase
+                .from('enrollments')
+                .select('*', { count: 'exact', head: true });
 
             // Pending count
-            const pendingQuery = query(enrollmentsRef, where('status', '==', 'Pending'));
-            const pendingSnapshot = await getCountFromServer(pendingQuery);
-            document.getElementById('pendingCount').textContent = pendingSnapshot.data().count || 0;
+            const { count: pending, error: pendErr } = await supabase
+                .from('enrollments')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'Pending');
 
             // Enrolled count
-            const enrolledQuery = query(enrollmentsRef, where('status', '==', 'Enrolled'));
-            const enrolledSnapshot = await getCountFromServer(enrolledQuery);
-            document.getElementById('enrolledCount').textContent = enrolledSnapshot.data().count || 0;
+            const { count: enrolled, error: enrolErr } = await supabase
+                .from('enrollments')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'Enrolled');
 
             // Rejected count
-            const rejectedQuery = query(enrollmentsRef, where('status', '==', 'Rejected'));
-            const rejectedSnapshot = await getCountFromServer(rejectedQuery);
-            document.getElementById('rejectedCount').textContent = rejectedSnapshot.data().count || 0;
+            const { count: rejected, error: rejErr } = await supabase
+                .from('enrollments')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'Rejected');
 
+            const totalEl = document.getElementById('totalEnrollments');
+            const pendingEl = document.getElementById('pendingCount');
+            const enrolledEl = document.getElementById('enrolledCount');
+            const rejectedEl = document.getElementById('rejectedCount');
+
+            if (totalEl) totalEl.textContent = total !== null && total !== undefined ? total : 0;
+            if (pendingEl) pendingEl.textContent = pending !== null && pending !== undefined ? pending : 0;
+            if (enrolledEl) enrolledEl.textContent = enrolled !== null && enrolled !== undefined ? enrolled : 0;
+            if (rejectedEl) rejectedEl.textContent = rejected !== null && rejected !== undefined ? rejected : 0;
         } catch (error) {
             console.error('Error loading stats:', error);
         }
     }
 
     // ============================================
-    // LOAD RECENT ENROLLMENTS (Real-time)
+    // LOAD RECENT ENROLLMENTS
     // ============================================
 
-    function loadRecentEnrollments() {
+    async function loadRecentEnrollments() {
         const container = document.getElementById('recentEnrollments');
         if (!container) return;
 
-        const enrollmentsRef = collection(db, 'enrollments');
-        const q = query(enrollmentsRef, orderBy('createdAt', 'desc'), limit(5));
+        try {
+            const { data: enrollments, error } = await supabase
+                .from('enrollments')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(5);
 
-        onSnapshot(q, (snapshot) => {
-            if (snapshot.empty) {
+            if (error || !enrollments || enrollments.length === 0) {
                 container.innerHTML = `
                     <div class="no-data">
                         <i class="fas fa-file-signature"></i>
@@ -192,27 +189,24 @@ import {
                 return;
             }
 
-            const enrollments = [];
-            snapshot.forEach(doc => {
-                enrollments.push({ id: doc.id, ...doc.data() });
-            });
-
             container.innerHTML = `
                 <div class="enrollment-list">
                     ${enrollments.map(e => {
-                        const studentName = e.studentName || e.userEmail || 'Unknown Student';
+                        const studentName = (e.first_name || e.firstName) ? `${e.first_name || e.firstName} ${e.last_name || e.lastName || ''}`.trim() : (e.student_name || e.studentName || e.email || 'Unknown Student');
                         const initials = studentName.charAt(0).toUpperCase();
                         const status = e.status || 'Pending';
-                        const date = e.createdAt?.toDate ? e.createdAt.toDate() : new Date();
+                        const date = e.created_at ? new Date(e.created_at) : new Date();
+                        const grade = e.grade_level || e.grade || 'N/A';
+                        const strand = e.strand || '';
                         
                         return `
-                            <div class="enrollment-item">
+                            <div class="enrollment-item" data-id="${e.id}">
                                 <div class="enrollment-avatar">${initials}</div>
                                 <div class="enrollment-info">
                                     <h4>${studentName}</h4>
                                     <p>
-                                        <span>${e.grade || 'N/A'}</span>
-                                        ${e.strand ? `<span> - ${e.strand}</span>` : ''}
+                                        <span>${grade}</span>
+                                        ${strand ? `<span> - ${strand}</span>` : ''}
                                         <span class="status-badge status-${status.toLowerCase()}">${status}</span>
                                     </p>
                                     <div class="activity-time">
@@ -226,17 +220,17 @@ import {
                 </div>
             `;
 
-            // Add click to view enrollment details
-            document.querySelectorAll('.enrollment-item').forEach((item, index) => {
+            container.querySelectorAll('.enrollment-item').forEach(item => {
                 item.style.cursor = 'pointer';
                 item.addEventListener('click', () => {
-                    if (enrollments[index]) {
-                        window.location.href = `enrollment-detail.html?id=${enrollments[index].id}`;
+                    const id = item.dataset.id;
+                    if (id) {
+                        window.location.href = `view_enrollment.html?id=${id}`;
                     }
                 });
             });
 
-        }, (error) => {
+        } catch (error) {
             console.error('Error loading recent enrollments:', error);
             container.innerHTML = `
                 <div class="no-data">
@@ -244,36 +238,40 @@ import {
                     <p>Error loading enrollments</p>
                 </div>
             `;
-        });
+        }
     }
 
     // ============================================
-    // LOAD NOTIFICATIONS (Real-time)
+    // LOAD NOTIFICATIONS
     // ============================================
 
-    function loadNotifications() {
+    async function loadNotifications() {
         if (!notificationList) return;
 
-        const notificationsRef = collection(db, 'notifications');
-        const q = query(notificationsRef, orderBy('createdAt', 'desc'), limit(20));
+        try {
+            const { data, error } = await supabase
+                .from('notifications')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(20);
 
-        onSnapshot(q, (snapshot) => {
+            if (!error && data && data.length > 0) {
+                notifications = data;
+            } else {
+                notifications = [];
+            }
+        } catch (error) {
+            console.warn('Error loading notifications:', error);
             notifications = [];
-            snapshot.forEach(doc => {
-                notifications.push({ id: doc.id, ...doc.data() });
-            });
+        }
 
-            updateUnreadCount();
-            renderNotifications();
-            updateBadge();
-
-        }, (error) => {
-            console.error('Error loading notifications:', error);
-        });
+        updateUnreadCount();
+        renderNotifications();
+        updateBadge();
     }
 
     function updateUnreadCount() {
-        unreadCount = notifications.filter(n => !n.isRead).length;
+        unreadCount = notifications.filter(n => !n.is_read && !n.isRead).length;
     }
 
     function updateBadge() {
@@ -312,12 +310,13 @@ import {
         notificationList.innerHTML = notifications.map(notif => {
             const notifType = notif.type || 'message';
             const icon = typeIcons[notifType] || 'fa-bell';
-            const isRead = notif.isRead || false;
+            const isRead = notif.is_read || notif.isRead || false;
             const title = notif.title || 'New Notification';
             const message = notif.message || '';
+            const notifId = notif.id;
             
             return `
-                <div class="notif-item ${isRead ? 'read' : 'unread'}" data-id="${notif.id}">
+                <div class="notif-item ${isRead ? 'read' : 'unread'}" data-id="${notifId}">
                     <div class="notif-icon notif-${notifType}">
                         <i class="fas ${icon}"></i>
                     </div>
@@ -325,11 +324,11 @@ import {
                         <div class="notif-title">${title}</div>
                         <div class="notif-message">${message}</div>
                         <div class="notif-time">
-                            ${formatTime(notif.createdAt)}
+                            ${formatTime(notif.created_at || notif.createdAt)}
                         </div>
                     </div>
                     ${!isRead ? `
-                        <button class="mark-read-btn" data-id="${notif.id}">
+                        <button class="mark-read-btn" data-id="${notifId}">
                             <i class="fas fa-check"></i>
                         </button>
                     ` : ''}
@@ -338,7 +337,7 @@ import {
         }).join('');
 
         // Add event listeners to mark read buttons
-        document.querySelectorAll('.mark-read-btn').forEach(btn => {
+        notificationList.querySelectorAll('.mark-read-btn').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 const id = this.dataset.id;
@@ -347,16 +346,15 @@ import {
         });
 
         // Add click event to notification items
-        document.querySelectorAll('.notif-item').forEach(item => {
+        notificationList.querySelectorAll('.notif-item').forEach(item => {
             item.addEventListener('click', function() {
                 const id = this.dataset.id;
-                const notif = notifications.find(n => n.id === id);
-                if (notif && !notif.isRead) {
+                const notif = notifications.find(n => String(n.id) === String(id));
+                if (notif && !(notif.is_read || notif.isRead)) {
                     markAsRead(id);
                 }
-                // If it has enrollmentId, navigate to enrollment detail
-                if (notif && notif.enrollmentId) {
-                    window.location.href = `enrollment-detail.html?id=${notif.enrollmentId}`;
+                if (notif && (notif.enrollment_id || notif.enrollmentId)) {
+                    window.location.href = `view_enrollment.html?id=${notif.enrollment_id || notif.enrollmentId}`;
                 }
             });
         });
@@ -364,10 +362,19 @@ import {
 
     async function markAsRead(id) {
         try {
-            await updateDoc(doc(db, 'notifications', id), {
-                isRead: true
-            });
-            console.log('✅ Notification marked as read');
+            await supabase
+                .from('notifications')
+                .update({ is_read: true })
+                .eq('id', id);
+
+            const notif = notifications.find(n => String(n.id) === String(id));
+            if (notif) {
+                notif.is_read = true;
+                notif.isRead = true;
+            }
+            updateUnreadCount();
+            renderNotifications();
+            updateBadge();
         } catch (error) {
             console.error('Error marking as read:', error);
         }
@@ -375,11 +382,18 @@ import {
 
     async function markAllAsRead() {
         try {
-            const promises = notifications
-                .filter(n => !n.isRead)
-                .map(n => updateDoc(doc(db, 'notifications', n.id), { isRead: true }));
-            
-            await Promise.all(promises);
+            await supabase
+                .from('notifications')
+                .update({ is_read: true })
+                .eq('is_read', false);
+
+            notifications.forEach(n => {
+                n.is_read = true;
+                n.isRead = true;
+            });
+            updateUnreadCount();
+            renderNotifications();
+            updateBadge();
             showAlert('✅ All notifications marked as read', 'success');
         } catch (error) {
             console.error('Error marking all as read:', error);
@@ -391,13 +405,15 @@ import {
         if (!timestamp) return 'Just now';
         
         let date;
-        if (timestamp.toDate) {
+        if (typeof timestamp === 'object' && timestamp.toDate) {
             date = timestamp.toDate();
-        } else if (timestamp.seconds) {
+        } else if (typeof timestamp === 'object' && timestamp.seconds) {
             date = new Date(timestamp.seconds * 1000);
         } else {
             date = new Date(timestamp);
         }
+
+        if (isNaN(date.getTime())) return 'Just now';
 
         const now = new Date();
         const diff = now - date;
@@ -410,7 +426,7 @@ import {
     }
 
     // Toggle notification dropdown
-    if (notificationBtn) {
+    if (notificationBtn && notificationDropdown) {
         notificationBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -438,38 +454,36 @@ import {
     // CHARTS - ENROLLMENT TRENDS
     // ============================================
 
-    let trendsChartInstance = null;
-    let gradeChartInstance = null;
-
     async function loadEnrollmentTrends() {
         try {
-            const enrollmentsRef = collection(db, 'enrollments');
-            const snapshot = await getDocs(enrollmentsRef);
+            const { data: snapshot, error } = await supabase
+                .from('enrollments')
+                .select('created_at, status');
             
             const months = {};
             const now = new Date();
             
             // Initialize last 6 months
             for (let i = 5; i >= 0; i--) {
-                const d = new Date(now);
-                d.setMonth(d.getMonth() - i);
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
                 const key = d.toLocaleString('en-US', { month: 'short' });
                 months[key] = { pending: 0, enrolled: 0, rejected: 0 };
             }
 
             // Count enrollments by month
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const date = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
-                const monthKey = date.toLocaleString('en-US', { month: 'short' });
-                const status = data.status || 'Pending';
-                
-                if (months[monthKey]) {
-                    if (status === 'Pending') months[monthKey].pending++;
-                    else if (status === 'Enrolled') months[monthKey].enrolled++;
-                    else if (status === 'Rejected') months[monthKey].rejected++;
-                }
-            });
+            if (snapshot && Array.isArray(snapshot)) {
+                snapshot.forEach(item => {
+                    const date = item.created_at ? new Date(item.created_at) : new Date();
+                    const monthKey = date.toLocaleString('en-US', { month: 'short' });
+                    const status = item.status || 'Pending';
+                    
+                    if (months[monthKey]) {
+                        if (status === 'Pending') months[monthKey].pending++;
+                        else if (status === 'Enrolled') months[monthKey].enrolled++;
+                        else if (status === 'Rejected') months[monthKey].rejected++;
+                    }
+                });
+            }
 
             const labels = Object.keys(months);
             const pendingData = labels.map(k => months[k].pending);
@@ -478,7 +492,7 @@ import {
 
             // Render chart
             const trendsCtx = document.getElementById('trendsChart');
-            if (trendsCtx) {
+            if (trendsCtx && typeof Chart !== 'undefined') {
                 if (trendsChartInstance) {
                     trendsChartInstance.destroy();
                 }
@@ -550,9 +564,10 @@ import {
 
     async function loadGradeDistribution() {
         try {
-            const enrollmentsRef = collection(db, 'enrollments');
-            const q = query(enrollmentsRef, where('status', '==', 'Enrolled'));
-            const snapshot = await getDocs(q);
+            const { data: snapshot, error } = await supabase
+                .from('enrollments')
+                .select('grade, grade_level, status')
+                .eq('status', 'Enrolled');
             
             const grades = {
                 'Grade 7': 0,
@@ -563,13 +578,14 @@ import {
                 'Grade 12': 0
             };
 
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const grade = data.grade || 'Grade 7';
-                if (grades[grade] !== undefined) {
-                    grades[grade]++;
-                }
-            });
+            if (snapshot && Array.isArray(snapshot)) {
+                snapshot.forEach(item => {
+                    const grade = item.grade_level || item.grade || 'Grade 7';
+                    if (grades[grade] !== undefined) {
+                        grades[grade]++;
+                    }
+                });
+            }
 
             const labels = Object.keys(grades);
             const data = Object.values(grades);
@@ -577,7 +593,7 @@ import {
 
             // Render chart
             const gradeCtx = document.getElementById('gradeChart');
-            if (gradeCtx) {
+            if (gradeCtx && typeof Chart !== 'undefined') {
                 if (gradeChartInstance) {
                     gradeChartInstance.destroy();
                 }
@@ -616,18 +632,21 @@ import {
     }
 
     // ============================================
-    // RECENT ACTIVITIES (Real-time from notifications)
+    // RECENT ACTIVITIES
     // ============================================
 
-    function loadRecentActivities() {
+    async function loadRecentActivities() {
         const container = document.getElementById('recentActivities');
         if (!container) return;
 
-        const notificationsRef = collection(db, 'notifications');
-        const q = query(notificationsRef, orderBy('createdAt', 'desc'), limit(5));
+        try {
+            const { data: notifs, error } = await supabase
+                .from('notifications')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(5);
 
-        onSnapshot(q, (snapshot) => {
-            if (snapshot.empty) {
+            if (error || !notifs || notifs.length === 0) {
                 container.innerHTML = `
                     <div class="no-data">
                         <i class="fas fa-bell-slash"></i>
@@ -637,30 +656,19 @@ import {
                 return;
             }
 
-            const activities = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                activities.push({
-                    id: doc.id,
-                    description: data.title || 'New notification',
-                    time: data.createdAt
-                });
-            });
-
             container.innerHTML = `
                 <div class="activity-list">
-                    ${activities.map(a => {
-                        const date = a.time?.toDate ? a.time.toDate() : new Date();
+                    ${notifs.map(a => {
                         return `
                             <div class="activity-item">
                                 <div class="activity-icon">
                                     <i class="fas fa-bell"></i>
                                 </div>
                                 <div class="activity-content">
-                                    <div class="activity-text">${a.description}</div>
+                                    <div class="activity-text">${a.title || a.message || 'Notification'}</div>
                                     <div class="activity-time">
                                         <i class="far fa-clock"></i>
-                                        ${formatTime(a.time)}
+                                        ${formatTime(a.created_at)}
                                     </div>
                                 </div>
                             </div>
@@ -669,28 +677,28 @@ import {
                 </div>
             `;
 
-        }, (error) => {
+        } catch (error) {
             console.error('Error loading activities:', error);
-        });
+            container.innerHTML = `
+                <div class="no-data">
+                    <i class="fas fa-bell-slash"></i>
+                    <p>No recent activities</p>
+                </div>
+            `;
+        }
     }
 
     // ============================================
     // INITIALIZE
     // ============================================
 
-    // Load recent activities (real-time)
+    loadDashboardStats();
+    loadRecentEnrollments();
+    loadNotifications();
+    loadEnrollmentTrends();
+    loadGradeDistribution();
     loadRecentActivities();
 
-    // Auto-hide alerts after 5 seconds
-    setTimeout(() => {
-        document.querySelectorAll('.alert').forEach(alert => {
-            alert.style.opacity = '0';
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 300);
-        });
-    }, 5000);
-
-    console.log('✅ Registrar Dashboard ready with Firebase!');
+    console.log('✅ Registrar Dashboard initialized with Supabase');
 
 })();
