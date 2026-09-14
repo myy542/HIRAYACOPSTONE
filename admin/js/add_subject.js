@@ -1,4 +1,5 @@
-// ===== ADD SUBJECT JAVASCRIPT =====
+// ===== ADD SUBJECT JAVASCRIPT (SUPABASE POWERED) =====
+import { supabase } from '../../supabase/config.js';
 
 document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
@@ -38,7 +39,22 @@ document.addEventListener('DOMContentLoaded', function() {
         12: 'Grade 12'
     };
 
-    // ===== FUNCTIONS =====
+    // Show alert
+    function showAlert(message, type = 'error') {
+        if (!alertContainer) return;
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+        alertContainer.appendChild(alertDiv);
+
+        setTimeout(function() {
+            alertDiv.style.opacity = '0';
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 300);
+        }, 5000);
+    }
 
     // Select category
     window.selectCategory = function(category) {
@@ -51,8 +67,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const isSeniorHigh = gradeId === 11 || gradeId === 12;
         if (isSeniorHigh) {
-            showAlert('For Senior High, only "Major" category is available.', 'error');
-            return;
+            showAlert('For Senior High, you can choose Major or Core.', 'info');
         }
         
         currentCategory = category;
@@ -68,7 +83,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Set new value
         if (currentValue === 'Enter Subject Name' || currentValue === '' || currentValue === 'Enter subject name') {
             subjectNameInput.value = prefix + ' Enter Subject Name';
         } else {
@@ -78,7 +92,6 @@ document.addEventListener('DOMContentLoaded', function() {
         isPrefixProtected = true;
         currentPrefix = prefix;
         
-        // Update active state
         document.querySelectorAll('.category-tag').forEach(tag => {
             tag.classList.remove('active-category');
         });
@@ -88,13 +101,12 @@ document.addEventListener('DOMContentLoaded', function() {
         updatePreview();
     };
 
-    // Select Major category for Senior High
     window.selectMajorCategory = function() {
         const gradeId = parseInt(gradeSelect.value);
         const isSeniorHigh = gradeId === 11 || gradeId === 12;
         
         if (!isSeniorHigh) {
-            showAlert('Major category is only available for Senior High (Grades 11-12)', 'error');
+            showAlert('Major category is typically for Senior High (Grades 11-12)', 'error');
             return;
         }
         
@@ -128,7 +140,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updatePreview();
     };
 
-    // Set subject from quick add
     window.setSubjectName = function(name) {
         let currentValue = subjectNameInput.value;
         
@@ -155,7 +166,6 @@ document.addEventListener('DOMContentLoaded', function() {
         subjectNameInput.focus();
     };
 
-    // Protect prefix from being deleted
     function protectPrefix(e) {
         if (!isPrefixProtected || !currentPrefix) return true;
         
@@ -171,7 +181,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     }
 
-    // Handle input with prefix protection
     function handleInput() {
         if (!isPrefixProtected || !currentPrefix) return;
         
@@ -192,20 +201,20 @@ document.addEventListener('DOMContentLoaded', function() {
         updatePreview();
     }
 
-    // Update category tags based on grade level
     function updateCategoryTags() {
         const gradeId = parseInt(gradeSelect.value);
         const isSeniorHigh = gradeId === 11 || gradeId === 12;
         
         if (isSeniorHigh) {
             categoryTags.innerHTML = `
-                <button type="button" class="category-tag major" onclick="selectMajorCategory()">
-                    <i class="fas fa-star"></i> Major Subject (Required)
+                <button type="button" class="category-tag major active-category" onclick="selectMajorCategory()">
+                    <i class="fas fa-star"></i> Major Subject
+                </button>
+                <button type="button" class="category-tag core" data-category="Core" onclick="selectCategory('Core')">
+                    <i class="fas fa-book-open"></i> Core Subject
                 </button>
             `;
-            if (gradeId) {
-                selectMajorCategory();
-            }
+            selectMajorCategory();
         } else if (gradeId) {
             categoryTags.innerHTML = `
                 <button type="button" class="category-tag core" data-category="Core" onclick="selectCategory('Core')">
@@ -215,22 +224,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <i class="fas fa-star"></i> Elective
                 </button>
             `;
-            if (currentCategory === 'Major') {
-                isPrefixProtected = false;
-                currentPrefix = '';
-                const prefixes = ['Core:', 'Major:', 'Elective:'];
-                let value = subjectNameInput.value;
-                for (let p of prefixes) {
-                    if (value.startsWith(p)) {
-                        value = value.substring(p.length).trim();
-                        subjectNameInput.value = value;
-                        break;
-                    }
-                }
-                document.querySelectorAll('.category-tag').forEach(tag => {
-                    tag.classList.remove('active-category');
-                });
-            }
         } else {
             categoryTags.innerHTML = `
                 <button type="button" class="category-tag core" data-category="Core" onclick="selectCategory('Core')">
@@ -243,7 +236,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Update quick buttons
     function updateQuickButtons() {
         const gradeId = parseInt(gradeSelect.value);
         const isSeniorHigh = gradeId === 11 || gradeId === 12;
@@ -260,7 +252,6 @@ document.addEventListener('DOMContentLoaded', function() {
         ).join('');
     }
 
-    // Update preview
     function updatePreview() {
         let subjectName = subjectNameInput.value.trim();
         if (!subjectName || subjectName === '') {
@@ -276,7 +267,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Reset category on grade change
     function resetCategory() {
         const gradeId = parseInt(gradeSelect.value);
         const isSeniorHigh = gradeId === 11 || gradeId === 12;
@@ -305,24 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updatePreview();
     }
 
-    // Show alert
-    function showAlert(message, type = 'error') {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
-        alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
-        alertContainer.appendChild(alertDiv);
-
-        setTimeout(function() {
-            alertDiv.style.opacity = '0';
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 300);
-        }, 5000);
-    }
-
     // ===== EVENT LISTENERS =====
-
     if (subjectNameInput) {
         subjectNameInput.addEventListener('keydown', protectPrefix);
         subjectNameInput.addEventListener('input', handleInput);
@@ -338,12 +311,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===== FORM SUBMIT =====
-
     if (subjectForm) {
-        subjectForm.addEventListener('submit', function(e) {
+        subjectForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const subjectName = subjectNameInput.value.trim();
+            let subjectName = subjectNameInput.value.trim();
             const gradeId = gradeSelect.value;
             let errors = [];
 
@@ -355,59 +327,62 @@ document.addEventListener('DOMContentLoaded', function() {
                 errors.push('Please enter a valid subject name');
             }
 
-            const isSeniorHigh = parseInt(gradeId) === 11 || parseInt(gradeId) === 12;
-            if (isSeniorHigh && gradeId) {
-                if (!subjectName.startsWith('Major:') || 
-                    subjectName === 'Major:' || 
-                    subjectName === 'Major: Enter Subject Name') {
-                    errors.push('For Senior High subjects, you must enter a subject name with the "Major:" prefix.');
-                }
-            }
-
             if (errors.length > 0) {
                 showAlert(errors.join('<br>'), 'error');
-            } else {
-                // Save into localStorage list
-                try {
-                    const saved = localStorage.getItem('plsnhs_admin_subjects');
-                    let currentList = saved ? JSON.parse(saved) : [];
-                    const gradeNum = parseInt(gradeId);
-                    const newSub = {
-                        id: 'sub-' + Date.now(),
+                return;
+            }
+
+            const gradeNum = parseInt(gradeId);
+            const isSHS = gradeNum === 11 || gradeNum === 12;
+            
+            // Determine strand and subject_type
+            let strand = null;
+            let subjectType = 'Core';
+
+            if (subjectName.startsWith('Major:')) {
+                subjectType = 'Applied';
+                subjectName = subjectName.replace('Major:', '').trim();
+                strand = isSHS ? 'STEM' : null;
+            } else if (subjectName.startsWith('Core:')) {
+                subjectType = 'Core';
+                subjectName = subjectName.replace('Core:', '').trim();
+            } else if (subjectName.startsWith('Elective:')) {
+                subjectType = 'Elective';
+                subjectName = subjectName.replace('Elective:', '').trim();
+            }
+
+            const submitBtn = subjectForm.querySelector('button[type="submit"]');
+            try {
+                if (submitBtn) submitBtn.disabled = true;
+
+                const { data, error } = await supabase
+                    .from('subjects')
+                    .insert([{
                         name: subjectName,
-                        grade: gradeNum,
-                        strand: (gradeNum === 11 || gradeNum === 12) ? 'STEM' : null,
-                        category: subjectName.toLowerCase().includes('elective') ? 'Elective' : (subjectName.startsWith('Major:') ? 'Major' : 'Core'),
-                        description: `Grade ${gradeNum} Curriculum Subject`
-                    };
-                    currentList.push(newSub);
-                    localStorage.setItem('plsnhs_admin_subjects', JSON.stringify(currentList));
-                } catch (err) {
-                    console.warn('Could not persist new subject:', err);
-                }
+                        grade_level: String(gradeNum),
+                        strand: strand,
+                        subject_type: subjectType,
+                        description: `Grade ${gradeNum} ${subjectType} subject`
+                    }])
+                    .select();
+
+                if (error) throw error;
 
                 showAlert('✅ Subject added successfully! Redirecting to subjects list...', 'success');
                 setTimeout(() => {
                     window.location.href = 'subjects.html';
                 }, 1200);
+            } catch (err) {
+                console.error('Error adding subject:', err);
+                showAlert('Failed to save subject to database: ' + err.message, 'error');
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
             }
         });
     }
 
     // ===== INIT =====
-
     updateCategoryTags();
     updateQuickButtons();
     updatePreview();
-
-    // Auto-hide alerts
-    setTimeout(function() {
-        const alerts = document.querySelectorAll('.alert');
-        alerts.forEach(alert => {
-            alert.style.opacity = '0';
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 300);
-        });
-    }, 5000);
 });

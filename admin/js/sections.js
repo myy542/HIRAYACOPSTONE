@@ -1,6 +1,7 @@
-// ===== SECTIONS JAVASCRIPT =====
+// ===== SECTIONS JAVASCRIPT (SUPABASE POWERED) =====
+import { supabase } from '../../supabase/config.js';
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // DOM Elements
     const alertContainer = document.getElementById('alertContainer');
     const tableBody = document.getElementById('tableBody');
@@ -16,50 +17,146 @@ document.addEventListener('DOMContentLoaded', function() {
     const scheduleModal = document.getElementById('scheduleModal');
     const addForm = document.getElementById('addSectionForm');
     const editForm = document.getElementById('editSectionForm');
+    const addAdviserSelect = document.getElementById('addAdviserId');
+    const editAdviserSelect = document.getElementById('editAdviserId');
 
-    // ===== DATA =====
-
-    // Sample sections data
-    let sections = [
-        { id: 1, section_name: 'Section A - STEM', grade_name: 'Grade 11', adviser: 'Maria Santos', adviser_id: 1 },
-        { id: 2, section_name: 'Section B - ABM', grade_name: 'Grade 11', adviser: 'Juan Dela Cruz', adviser_id: 2 },
-        { id: 3, section_name: 'Section C - HUMSS', grade_name: 'Grade 11', adviser: null, adviser_id: null },
-        { id: 4, section_name: 'Section A', grade_name: 'Grade 10', adviser: 'Ana Reyes', adviser_id: 3 },
-        { id: 5, section_name: 'Section B', grade_name: 'Grade 10', adviser: null, adviser_id: null },
-        { id: 6, section_name: 'Section A', grade_name: 'Grade 7', adviser: 'Carlos Mendoza', adviser_id: 4 },
-        { id: 7, section_name: 'Section B', grade_name: 'Grade 7', adviser: null, adviser_id: null },
-        { id: 8, section_name: 'STEM A', grade_name: 'Grade 12', adviser: 'Maria Santos', adviser_id: 1 }
-    ];
-
-    // Teachers data
-    const teachers = [
-        { id: 1, fullname: 'Maria Santos' },
-        { id: 2, fullname: 'Juan Dela Cruz' },
-        { id: 3, fullname: 'Ana Reyes' },
-        { id: 4, fullname: 'Carlos Mendoza' }
-    ];
-
-    // Grade levels
+    // State
+    let sections = [];
+    let teachers = [];
     const gradeLevels = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
 
-    // ===== FUNCTIONS =====
+    // ===== ALERT HELPER =====
+    function showAlert(message, type = 'error') {
+        if (!alertContainer) return;
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+        alertContainer.appendChild(alertDiv);
 
-    // Update statistics
-    function updateStats() {
-        const total = sections.length;
-        const withAdviser = sections.filter(s => s.adviser !== null).length;
-        const withoutAdviser = total - withAdviser;
-
-        document.getElementById('totalSections').textContent = total;
-        document.getElementById('withAdviser').textContent = withAdviser;
-        document.getElementById('withoutAdviser').textContent = withoutAdviser;
+        setTimeout(() => {
+            alertDiv.style.opacity = '0';
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 300);
+        }, 5000);
     }
 
-    // Render grade summary
+    // ===== DATA FETCHING =====
+    async function loadTeachers() {
+        try {
+            const { data, error } = await supabase
+                .from('teachers')
+                .select(`
+                    id,
+                    user_id,
+                    employee_id,
+                    users:user_id (
+                        id,
+                        first_name,
+                        last_name,
+                        email
+                    )
+                `);
+
+            if (error) throw error;
+
+            teachers = (data || []).map(t => {
+                const u = t.users || {};
+                const name = (u.first_name || u.last_name) 
+                    ? `${u.first_name || ''} ${u.last_name || ''}`.trim()
+                    : (u.email || t.employee_id || 'Teacher');
+                return {
+                    id: t.id,
+                    user_id: t.user_id,
+                    name: name,
+                    employee_id: t.employee_id
+                };
+            });
+
+        } catch (err) {
+            console.error('Error loading teachers:', err);
+        }
+    }
+
+    function getAdviserName(sectionOrId) {
+        if (!sectionOrId) return null;
+        if (typeof sectionOrId === 'object' && sectionOrId !== null) {
+            if (sectionOrId.adviser_name) return sectionOrId.adviser_name;
+            if (sectionOrId.adviser_id) {
+                const teacher = teachers.find(t => t.id === sectionOrId.adviser_id || t.user_id === sectionOrId.adviser_id);
+                if (teacher) return teacher.name;
+            }
+            return null;
+        }
+        const teacher = teachers.find(t => t.id === sectionOrId || t.user_id === sectionOrId);
+        return teacher ? teacher.name : null;
+    }
+
+    async function loadSections() {
+        try {
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 28px; color: #1B2A4A;"></i>
+                            <p style="margin-top: 10px; color: #64748b;">Loading sections from database...</p>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            const { data, error } = await supabase
+                .from('sections')
+                .select('*')
+                .order('name', { ascending: true });
+
+            if (error) throw error;
+
+            sections = data || [];
+            updateStats();
+            renderGradeSummary();
+            renderTable();
+        } catch (err) {
+            console.error('Error loading sections:', err);
+            showAlert('Failed to load sections from database: ' + err.message, 'error');
+            if (tableBody) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 30px; color: #ef4444;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
+                            <p style="margin-top: 8px;">Failed to load sections.</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    }
+
+    // ===== UI RENDERING =====
+    function updateStats() {
+        const total = sections.length;
+        const withAdviser = sections.filter(s => !!s.adviser_id).length;
+        const withoutAdviser = total - withAdviser;
+
+        const totalElem = document.getElementById('totalSections');
+        const withAdviserElem = document.getElementById('withAdviser');
+        const withoutAdviserElem = document.getElementById('withoutAdviser');
+
+        if (totalElem) totalElem.textContent = total;
+        if (withAdviserElem) withAdviserElem.textContent = withAdviser;
+        if (withoutAdviserElem) withoutAdviserElem.textContent = withoutAdviser;
+    }
+
     function renderGradeSummary() {
+        if (!gradeSummary) return;
+
         const counts = {};
         gradeLevels.forEach(grade => {
-            counts[grade] = sections.filter(s => s.grade_name === grade).length;
+            counts[grade] = sections.filter(s => {
+                const g = String(s.grade_level || '');
+                return g === grade || g === grade.replace('Grade ', '') || `Grade ${g}` === grade;
+            }).length;
         });
 
         let html = '';
@@ -75,31 +172,42 @@ document.addEventListener('DOMContentLoaded', function() {
         gradeSummary.innerHTML = html;
     }
 
-    // Render table
     function renderTable() {
-        const grade = gradeFilter.value;
-        const adviser = adviserFilter.value;
-        const search = searchInput.value.toLowerCase().trim();
+        if (!tableBody) return;
+
+        const grade = gradeFilter ? gradeFilter.value : '';
+        const adviser = adviserFilter ? adviserFilter.value : '';
+        const search = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
         let filtered = [...sections];
 
         if (grade) {
-            filtered = filtered.filter(s => s.grade_name === grade);
-        }
-        if (adviser === 'assigned') {
-            filtered = filtered.filter(s => s.adviser !== null);
-        } else if (adviser === 'unassigned') {
-            filtered = filtered.filter(s => s.adviser === null);
-        }
-        if (search) {
-            filtered = filtered.filter(s => 
-                s.section_name.toLowerCase().includes(search) ||
-                (s.adviser && s.adviser.toLowerCase().includes(search)) ||
-                s.grade_name.toLowerCase().includes(search)
-            );
+            const cleanGradeNum = grade.replace('Grade ', '').trim();
+            filtered = filtered.filter(s => {
+                const sGrade = String(s.grade_level || '').trim();
+                return sGrade === grade || sGrade === cleanGradeNum || `Grade ${sGrade}` === grade;
+            });
         }
 
-        recordCount.textContent = `Total: ${filtered.length} sections`;
+        if (adviser === 'assigned') {
+            filtered = filtered.filter(s => !!s.adviser_id);
+        } else if (adviser === 'unassigned') {
+            filtered = filtered.filter(s => !s.adviser_id);
+        }
+
+        if (search) {
+            filtered = filtered.filter(s => {
+                const sName = (s.name || '').toLowerCase();
+                const sGrade = (s.grade_level || '').toLowerCase();
+                const sStrand = (s.strand || '').toLowerCase();
+                const advName = (getAdviserName(s.adviser_id) || '').toLowerCase();
+                return sName.includes(search) || sGrade.includes(search) || sStrand.includes(search) || advName.includes(search);
+            });
+        }
+
+        if (recordCount) {
+            recordCount.textContent = `Total: ${filtered.length} sections`;
+        }
 
         if (filtered.length === 0) {
             tableBody.innerHTML = `
@@ -108,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="no-data">
                             <i class="fas fa-layer-group"></i>
                             <h3>No Sections Found</h3>
-                            <p>Click "Add New Section" to get started.</p>
+                            <p>Click "Add New Section" to create one.</p>
                         </div>
                     </td>
                 </tr>
@@ -118,7 +226,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let html = '';
         filtered.forEach(section => {
-            const initial = section.adviser ? section.adviser.charAt(0).toUpperCase() : '?';
+            const adviserName = getAdviserName(section.adviser_id);
+            const initial = adviserName ? adviserName.charAt(0).toUpperCase() : '?';
+            const gradeDisplay = section.grade_level ? (section.grade_level.toString().startsWith('Grade') ? section.grade_level : `Grade ${section.grade_level}`) : 'Unspecified';
             
             html += `
                 <tr>
@@ -126,27 +236,31 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="section-info">
                             <div class="section-icon"><i class="fas fa-users"></i></div>
                             <div class="section-details">
-                                <h4>${section.section_name}</h4>
-                                <span>ID: ${section.id}</span>
+                                <h4>${section.name}</h4>
+                                <span>${section.room ? `Room: ${section.room}` : 'ID: ' + section.id.substring(0, 8)}</span>
                             </div>
                         </div>
                     </td>
-                    <td><span class="grade-tag">${section.grade_name}</span></td>
                     <td>
-                        ${section.adviser ? `
+                        <span class="grade-tag">${gradeDisplay}</span>
+                        ${section.strand ? `<span class="strand-tag" style="display:inline-block; font-size:11px; padding:2px 8px; background:#e0f2fe; color:#0369a1; border-radius:12px; margin-left:4px;">${section.strand}</span>` : ''}
+                    </td>
+                    <td>
+                        ${adviserName ? `
                             <div class="adviser-info">
                                 <div class="adviser-avatar">${initial}</div>
-                                <span class="adviser-name">${section.adviser}</span>
+                                <span class="adviser-name">${adviserName}</span>
                             </div>
                         ` : `
-                            <span class="no-adviser">Not Assigned</span>
+                            <span class="no-adviser" style="color:#94a3b8; font-style:italic;">Not Assigned</span>
                         `}
                     </td>
                     <td>
                         <div class="action-btns">
-                            <button class="action-btn schedule" onclick="openScheduleModal(${section.id}, '${section.section_name}')" title="Manage Schedule"><i class="fas fa-calendar-alt"></i></button>
-                            <button class="action-btn edit" onclick="openEditModal(${section.id})" title="Edit"><i class="fas fa-edit"></i></button>
-                            <button class="action-btn delete" onclick="deleteSection(${section.id})" title="Delete"><i class="fas fa-trash"></i></button>
+                            <a href="view_section.html?id=${section.id}" class="action-btn view" title="View Section" style="display:inline-flex; align-items:center; justify-content:center; text-decoration:none;"><i class="fas fa-eye"></i></a>
+                            <a href="create_schedule.html?section_id=${section.id}" class="action-btn schedule" title="Manage Schedule" style="display:inline-flex; align-items:center; justify-content:center; text-decoration:none;"><i class="fas fa-calendar-alt"></i></a>
+                            <button class="action-btn edit" onclick="window.openEditModal('${section.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button class="action-btn delete" onclick="window.deleteSection('${section.id}')" title="Delete"><i class="fas fa-trash"></i></button>
                         </div>
                     </td>
                 </tr>
@@ -156,224 +270,206 @@ document.addEventListener('DOMContentLoaded', function() {
         tableBody.innerHTML = html;
     }
 
-    // Show alert
-    function showAlert(message, type = 'error') {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
-        alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
-        alertContainer.appendChild(alertDiv);
+    // ===== MODAL FUNCTIONS (EXPOSED GLOBALLY) =====
 
-        setTimeout(() => {
-            alertDiv.style.opacity = '0';
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 300);
-        }, 5000);
-    }
-
-    // Add section
-    window.addSection = function(data) {
-        const newSection = {
-            id: sections.length + 1,
-            section_name: data.section_name,
-            grade_name: data.grade_name,
-            adviser: data.adviser || null,
-            adviser_id: data.adviser_id || null
-        };
-        sections.push(newSection);
-        updateStats();
-        renderGradeSummary();
-        renderTable();
-        showAlert('✅ Section added successfully!', 'success');
-    };
-
-    // Edit section
-    window.editSection = function(id, data) {
-        const section = sections.find(s => s.id === id);
-        if (section) {
-            section.section_name = data.section_name;
-            section.grade_name = data.grade_name;
-            section.adviser = data.adviser || null;
-            section.adviser_id = data.adviser_id || null;
-            updateStats();
-            renderGradeSummary();
-            renderTable();
-            showAlert('✅ Section updated successfully!', 'success');
-        }
-    };
-
-    // Delete section
-    window.deleteSection = function(id) {
-        const section = sections.find(s => s.id === id);
-        if (!section) return;
-
-        // Check if section has enrolled students (simulated)
-        const hasEnrollments = false; // In real app, check database
-
-        if (hasEnrollments) {
-            showAlert('Cannot delete section because it has enrolled students.', 'error');
-            return;
-        }
-
-        if (confirm(`Delete section "${section.section_name}"?`)) {
-            sections = sections.filter(s => s.id !== id);
-            updateStats();
-            renderGradeSummary();
-            renderTable();
-            showAlert('✅ Section deleted successfully!', 'success');
-        }
-    };
-
-    // ===== MODAL FUNCTIONS =====
-
-    // Open add modal
     window.openAddModal = function() {
+        if (!addModal) return;
         addModal.classList.add('show');
-        document.getElementById('addSectionName').value = '';
-        document.getElementById('addGradeId').value = '';
-        document.getElementById('addAdviserId').value = '';
+        if (document.getElementById('addSectionName')) document.getElementById('addSectionName').value = '';
+        if (document.getElementById('addGradeId')) document.getElementById('addGradeId').value = '';
+        if (document.getElementById('addAdviserName')) document.getElementById('addAdviserName').value = '';
     };
 
-    // Close add modal
     window.closeAddModal = function() {
-        addModal.classList.remove('show');
+        if (addModal) addModal.classList.remove('show');
     };
 
-    // Open edit modal
     window.openEditModal = function(id) {
         const section = sections.find(s => s.id === id);
-        if (!section) return;
+        if (!section || !editModal) return;
 
-        document.getElementById('editSectionId').value = section.id;
-        document.getElementById('editSectionName').value = section.section_name;
-        document.getElementById('editGradeId').value = section.grade_name.replace('Grade ', '');
-        document.getElementById('editAdviserId').value = section.adviser_id || '';
+        if (document.getElementById('editSectionId')) document.getElementById('editSectionId').value = section.id;
+        if (document.getElementById('editSectionName')) document.getElementById('editSectionName').value = section.name || '';
+        
+        const rawGrade = String(section.grade_level || '').replace('Grade ', '').trim();
+        if (document.getElementById('editGradeId')) document.getElementById('editGradeId').value = rawGrade;
+        
+        if (document.getElementById('editAdviserName')) {
+            document.getElementById('editAdviserName').value = section.adviser_name || getAdviserName(section) || '';
+        }
         
         editModal.classList.add('show');
     };
 
-    // Close edit modal
     window.closeEditModal = function() {
-        editModal.classList.remove('show');
+        if (editModal) editModal.classList.remove('show');
     };
 
-    // Open schedule modal
     window.openScheduleModal = function(id, name) {
-        document.getElementById('scheduleSectionName').textContent = name;
-        scheduleModal.classList.add('show');
+        window.location.href = `create_schedule.html?section_id=${id}`;
     };
 
-    // Close schedule modal
     window.closeScheduleModal = function() {
-        scheduleModal.classList.remove('show');
+        if (scheduleModal) scheduleModal.classList.remove('show');
+    };
+
+    // Delete Section
+    window.deleteSection = async function(id) {
+        const section = sections.find(s => s.id === id);
+        if (!section) return;
+
+        try {
+            // Check if section has enrolled students
+            const { count: studentCount, error: countErr } = await supabase
+                .from('students')
+                .select('*', { count: 'exact', head: true })
+                .eq('section_id', id);
+
+            if (studentCount && studentCount > 0) {
+                showAlert(`Cannot delete section "${section.name}" because it has ${studentCount} enrolled student(s).`, 'error');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete section "${section.name}"?`)) {
+                return;
+            }
+
+            const { error: deleteErr } = await supabase
+                .from('sections')
+                .delete()
+                .eq('id', id);
+
+            if (deleteErr) throw deleteErr;
+
+            showAlert(`✅ Section "${section.name}" deleted successfully!`, 'success');
+            await loadSections();
+        } catch (err) {
+            console.error('Error deleting section:', err);
+            showAlert('Failed to delete section: ' + err.message, 'error');
+        }
     };
 
     // ===== FORM HANDLERS =====
 
-    // Add form
     if (addForm) {
-        addForm.addEventListener('submit', function(e) {
+        addForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const sectionName = document.getElementById('addSectionName').value.trim();
             const gradeId = document.getElementById('addGradeId').value;
-            const adviserId = document.getElementById('addAdviserId').value;
+            const adviserName = document.getElementById('addAdviserName') ? document.getElementById('addAdviserName').value.trim() : '';
 
-            if (!sectionName || !gradeId) {
-                showAlert('Please fill in all required fields.', 'error');
+            if (!sectionName || !gradeId || !adviserName) {
+                showAlert('Please fill in all required fields including Class Adviser.', 'error');
                 return;
             }
 
-            const gradeName = `Grade ${gradeId}`;
-            const adviser = adviserId ? teachers.find(t => t.id == adviserId)?.fullname || null : null;
+            const gradeLevelStr = `Grade ${gradeId}`;
+            const matchedTeacher = teachers.find(t => t.name.toLowerCase() === adviserName.toLowerCase());
+            const adviserId = matchedTeacher ? matchedTeacher.id : null;
 
-            // Check for duplicate
-            const exists = sections.some(s => s.section_name === sectionName && s.grade_name === gradeName);
-            if (exists) {
-                showAlert('Section already exists for this grade level.', 'error');
-                return;
+            try {
+                const submitBtn = addForm.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.disabled = true;
+
+                const { data, error } = await supabase
+                    .from('sections')
+                    .insert([{
+                        name: sectionName,
+                        grade_level: gradeLevelStr,
+                        adviser_name: adviserName,
+                        adviser_id: adviserId
+                    }])
+                    .select();
+
+                if (error) throw error;
+
+                showAlert(`✅ Section "${sectionName}" created successfully!`, 'success');
+                window.closeAddModal();
+                addForm.reset();
+                await loadSections();
+            } catch (err) {
+                console.error('Error adding section:', err);
+                showAlert('Failed to create section: ' + err.message, 'error');
+            } finally {
+                const submitBtn = addForm.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.disabled = false;
             }
-
-            addSection({
-                section_name: sectionName,
-                grade_name: gradeName,
-                adviser: adviser,
-                adviser_id: adviserId || null
-            });
-
-            closeAddModal();
-            addForm.reset();
         });
     }
 
-    // Edit form
     if (editForm) {
-        editForm.addEventListener('submit', function(e) {
+        editForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const id = parseInt(document.getElementById('editSectionId').value);
+            const id = document.getElementById('editSectionId').value;
             const sectionName = document.getElementById('editSectionName').value.trim();
             const gradeId = document.getElementById('editGradeId').value;
-            const adviserId = document.getElementById('editAdviserId').value;
+            const adviserName = document.getElementById('editAdviserName') ? document.getElementById('editAdviserName').value.trim() : '';
 
-            if (!sectionName || !gradeId) {
-                showAlert('Please fill in all required fields.', 'error');
+            if (!id || !sectionName || !gradeId || !adviserName) {
+                showAlert('Please fill in all required fields including Class Adviser.', 'error');
                 return;
             }
 
-            const gradeName = `Grade ${gradeId}`;
-            const adviser = adviserId ? teachers.find(t => t.id == adviserId)?.fullname || null : null;
+            const gradeLevelStr = `Grade ${gradeId}`;
+            const matchedTeacher = teachers.find(t => t.name.toLowerCase() === adviserName.toLowerCase());
+            const adviserId = matchedTeacher ? matchedTeacher.id : null;
 
-            // Check for duplicate (excluding current)
-            const exists = sections.some(s => 
-                s.section_name === sectionName && 
-                s.grade_name === gradeName && 
-                s.id !== id
-            );
-            if (exists) {
-                showAlert('Section already exists for this grade level.', 'error');
-                return;
+            try {
+                const submitBtn = editForm.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.disabled = true;
+
+                const { error } = await supabase
+                    .from('sections')
+                    .update({
+                        name: sectionName,
+                        grade_level: gradeLevelStr,
+                        adviser_name: adviserName,
+                        adviser_id: adviserId,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                showAlert(`✅ Section "${sectionName}" updated successfully!`, 'success');
+                window.closeEditModal();
+                await loadSections();
+            } catch (err) {
+                console.error('Error updating section:', err);
+                showAlert('Failed to update section: ' + err.message, 'error');
+            } finally {
+                const submitBtn = editForm.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.disabled = false;
             }
-
-            editSection(id, {
-                section_name: sectionName,
-                grade_name: gradeName,
-                adviser: adviser,
-                adviser_id: adviserId || null
-            });
-
-            closeEditModal();
         });
     }
 
     // ===== EVENT LISTENERS =====
 
-    // Filter changes
     if (gradeFilter) gradeFilter.addEventListener('change', renderTable);
     if (adviserFilter) adviserFilter.addEventListener('change', renderTable);
     if (searchInput) searchInput.addEventListener('input', renderTable);
 
-    // Close modals on outside click
     document.addEventListener('click', function(e) {
-        if (e.target === addModal) closeAddModal();
-        if (e.target === editModal) closeEditModal();
-        if (e.target === scheduleModal) closeScheduleModal();
+        if (e.target === addModal) window.closeAddModal();
+        if (e.target === editModal) window.closeEditModal();
+        if (e.target === scheduleModal) window.closeScheduleModal();
     });
 
     // ===== MOBILE MENU =====
-
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
 
-    if (menuToggle) {
+    if (menuToggle && sidebar) {
         menuToggle.addEventListener('click', function() {
             sidebar.classList.toggle('active');
         });
     }
 
     document.addEventListener('click', function(e) {
-        if (window.innerWidth <= 768) {
+        if (window.innerWidth <= 768 && sidebar && menuToggle) {
             if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
                 sidebar.classList.remove('active');
             }
@@ -381,8 +477,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ===== INIT =====
-
-    updateStats();
-    renderGradeSummary();
-    renderTable();
+    await loadTeachers();
+    await loadSections();
 });

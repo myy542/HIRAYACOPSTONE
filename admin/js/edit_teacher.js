@@ -1,6 +1,10 @@
-// ===== EDIT TEACHER JAVASCRIPT =====
+// ===== EDIT TEACHER JAVASCRIPT (Supabase Dynamic Integration) =====
 
-document.addEventListener('DOMContentLoaded', function() {
+import { supabase } from '../../supabase/config.js';
+
+document.addEventListener('DOMContentLoaded', async function() {
+    'use strict';
+
     // DOM Elements
     const fullnameInput = document.getElementById('fullname');
     const emailInput = document.getElementById('email');
@@ -27,47 +31,47 @@ document.addEventListener('DOMContentLoaded', function() {
     const passwordMatch = document.getElementById('passwordMatch');
     const passwordFields = document.getElementById('passwordFields');
 
-    // Teacher data (from PHP)
-    const teacherData = {
-        id: 1,
-        name: 'Maria Santos',
-        email: 'maria.santos@plshs.edu.ph'
-    };
+    // Get teacher ID from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const teacherId = urlParams.get('id');
+
+    let currentTeacher = null;
+    let currentUserId = null;
 
     // ===== FUNCTIONS =====
 
     // Update preview
     function updatePreview() {
-        const fullname = fullnameInput.value.trim() || 'Teacher Name';
-        previewName.textContent = fullname;
+        const fullname = (fullnameInput?.value.trim()) || 'Teacher Name';
+        if (previewName) previewName.textContent = fullname;
         
         const initial = fullname.charAt(0).toUpperCase() || 'T';
-        previewInitial.textContent = initial;
+        if (previewInitial) previewInitial.textContent = initial;
 
-        const email = emailInput.value.trim() || 'teacher@plshs.edu.ph';
-        previewEmail.innerHTML = `<i class="fas fa-envelope"></i> ${email}`;
+        const email = (emailInput?.value.trim()) || 'teacher@hiraya.edu.ph';
+        if (previewEmail) previewEmail.innerHTML = `<i class="fas fa-envelope"></i> ${email}`;
 
-        const idNumber = idNumberInput.value.trim() || 'N/A';
-        previewId.textContent = idNumber;
+        const idNumber = (idNumberInput?.value.trim()) || 'N/A';
+        if (previewId) previewId.textContent = idNumber;
 
-        const specialization = specializationInput.value.trim() || 'Not set';
-        previewSpecialization.textContent = specialization;
+        const specialization = (specializationInput?.value.trim()) || 'Not set';
+        if (previewSpecialization) previewSpecialization.innerHTML = `<i class="fas fa-book"></i> ${specialization}`;
 
-        const phone = phoneInput.value.trim() || 'N/A';
-        previewPhone.textContent = phone;
+        const phone = (phoneInput?.value.trim()) || 'N/A';
+        if (previewPhone) previewPhone.innerHTML = `<i class="fas fa-phone"></i> ${phone}`;
     }
 
     // Toggle password visibility
     window.togglePassword = function() {
-        const passwordInput = document.getElementById('newPassword');
+        const passInput = document.getElementById('newPassword');
         const toggleBtn = document.querySelector('.toggle-password i');
         
-        if (passwordInput && toggleBtn) {
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
+        if (passInput && toggleBtn) {
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
                 toggleBtn.className = 'fas fa-eye-slash';
             } else {
-                passwordInput.type = 'password';
+                passInput.type = 'password';
                 toggleBtn.className = 'fas fa-eye';
             }
         }
@@ -75,6 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Check password strength
     function checkPasswordStrength() {
+        if (!newPassword) return;
         const password = newPassword.value;
         let strength = 0;
         let strengthLabel = '';
@@ -87,168 +92,300 @@ document.addEventListener('DOMContentLoaded', function() {
         if (password.match(/[!@#$%^&*(),.?":{}|<>]+/)) strength += 1;
 
         if (password.length === 0) {
-            strengthBar.style.width = '0';
-            strengthText.innerHTML = '<i class="fas fa-info-circle"></i> <span>Minimum 6 characters</span>';
+            if (strengthBar) strengthBar.style.width = '0';
+            if (strengthText) strengthText.innerHTML = '<i class="fas fa-info-circle"></i> <span>Minimum 6 characters</span>';
             return;
         }
 
         if (strength <= 2) {
-            strengthBar.style.width = '30%';
-            strengthBar.style.backgroundColor = '#ef4444';
+            if (strengthBar) {
+                strengthBar.style.width = '30%';
+                strengthBar.style.backgroundColor = '#ef4444';
+            }
             strengthLabel = 'Weak';
             strengthColor = '#ef4444';
         } else if (strength <= 4) {
-            strengthBar.style.width = '65%';
-            strengthBar.style.backgroundColor = '#f59e0b';
+            if (strengthBar) {
+                strengthBar.style.width = '65%';
+                strengthBar.style.backgroundColor = '#f59e0b';
+            }
             strengthLabel = 'Medium';
             strengthColor = '#f59e0b';
         } else {
-            strengthBar.style.width = '100%';
-            strengthBar.style.backgroundColor = '#10b981';
+            if (strengthBar) {
+                strengthBar.style.width = '100%';
+                strengthBar.style.backgroundColor = '#10b981';
+            }
             strengthLabel = 'Strong';
             strengthColor = '#10b981';
         }
 
-        strengthText.innerHTML = `<i class="fas fa-shield-alt"></i> <span style="color: ${strengthColor};">Password strength: ${strengthLabel}</span>`;
+        if (strengthText) {
+            strengthText.innerHTML = `<i class="fas fa-shield-alt"></i> <span style="color: ${strengthColor};">Password strength: ${strengthLabel}</span>`;
+        }
     }
 
     // Check password match
     function checkPasswordMatch() {
+        if (!newPassword || !confirmPassword || !passwordMatch) return;
         const password = newPassword.value;
         const confirm = confirmPassword.value;
 
-        if (confirm.length === 0) {
-            passwordMatch.innerHTML = '<i class="fas fa-info-circle"></i> <span>Re-enter new password</span>';
-        } else if (password === confirm) {
-            passwordMatch.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i> <span style="color: #10b981;">Passwords match</span>';
+        if (confirm.length > 0) {
+            if (password === confirm) {
+                passwordMatch.innerHTML = `<i class="fas fa-check-circle" style="color: #10b981;"></i> <span style="color: #10b981;">Passwords match</span>`;
+            } else {
+                passwordMatch.innerHTML = `<i class="fas fa-exclamation-circle" style="color: #ef4444;"></i> <span style="color: #ef4444;">Passwords do not match</span>`;
+            }
         } else {
-            passwordMatch.innerHTML = '<i class="fas fa-exclamation-circle" style="color: #ef4444;"></i> <span style="color: #ef4444;">Passwords do not match</span>';
+            passwordMatch.innerHTML = `<i class="fas fa-info-circle"></i> <span>Re-enter new password</span>`;
         }
     }
 
     // Show alert
     function showAlert(message, type = 'error') {
+        if (!alertContainer) return;
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type}`;
         const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
-        alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
         alertContainer.appendChild(alertDiv);
 
         setTimeout(() => {
             alertDiv.style.opacity = '0';
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 300);
+            setTimeout(() => alertDiv.remove(), 300);
         }, 5000);
     }
 
-    // ===== EVENT LISTENERS =====
+    // Load teacher data from Supabase
+    async function loadTeacherData() {
+        if (!teacherId) {
+            showAlert('No teacher ID provided. Please select a teacher from the list.', 'error');
+            return;
+        }
 
-    // Live preview
+        try {
+            let tRow = null;
+            let uRow = null;
+
+            // Search in teachers table by id, user_id, or employee_id
+            const { data: tById } = await supabase
+                .from('teachers')
+                .select('*')
+                .eq('id', teacherId)
+                .maybeSingle();
+
+            if (tById) {
+                tRow = tById;
+            } else {
+                const { data: tByUserId } = await supabase
+                    .from('teachers')
+                    .select('*')
+                    .eq('user_id', teacherId)
+                    .maybeSingle();
+                if (tByUserId) tRow = tByUserId;
+            }
+
+            if (tRow) {
+                currentTeacher = tRow;
+                currentUserId = tRow.user_id;
+
+                if (tRow.user_id) {
+                    const { data: userRecord } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('id', tRow.user_id)
+                        .maybeSingle();
+                    uRow = userRecord;
+                }
+            } else {
+                // Check users table directly
+                const { data: userRecord } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', teacherId)
+                    .maybeSingle();
+                if (userRecord) {
+                    uRow = userRecord;
+                    currentUserId = userRecord.id;
+                }
+            }
+
+            if (!tRow && !uRow) {
+                showAlert('Teacher record not found in database.', 'error');
+                return;
+            }
+
+            // Populate form fields
+            const fName = uRow 
+                ? `${uRow.first_name || ''} ${uRow.last_name || ''}`.trim() || (uRow.full_name || uRow.name || '')
+                : (tRow ? (tRow.fullname || tRow.name || '') : '');
+            const email = uRow ? (uRow.email || '') : (tRow ? (tRow.email || '') : '');
+            const idNum = (tRow && (tRow.employee_id || tRow.id_number)) || 'PLSNHS-TCH-000001';
+            const phone = (tRow && tRow.phone) || (uRow && uRow.phone) || '';
+            const spec = (tRow && (tRow.specialization || tRow.subject)) || '';
+            const addr = (tRow && tRow.address) || (uRow && uRow.address) || '';
+
+            if (fullnameInput) fullnameInput.value = fName;
+            if (emailInput) emailInput.value = email;
+            if (idNumberInput) idNumberInput.value = idNum;
+            if (phoneInput) phoneInput.value = phone;
+            if (specializationInput) specializationInput.value = spec;
+            if (addressInput) addressInput.value = addr;
+
+            updatePreview();
+        } catch (err) {
+            console.error('Error fetching teacher:', err);
+            showAlert('Failed to load teacher information: ' + err.message, 'error');
+        }
+    }
+
+    // Event listeners
     if (fullnameInput) fullnameInput.addEventListener('input', updatePreview);
     if (emailInput) emailInput.addEventListener('input', updatePreview);
     if (idNumberInput) idNumberInput.addEventListener('input', updatePreview);
     if (phoneInput) phoneInput.addEventListener('input', updatePreview);
     if (specializationInput) specializationInput.addEventListener('input', updatePreview);
-    if (addressInput) addressInput.addEventListener('input', updatePreview);
 
-    // Password change checkbox
     if (changePasswordCheckbox) {
         changePasswordCheckbox.addEventListener('change', function() {
             const isChecked = this.checked;
-            newPassword.disabled = !isChecked;
-            confirmPassword.disabled = !isChecked;
-            passwordFields.classList.toggle('show', isChecked);
-            
+            if (passwordFields) passwordFields.style.display = isChecked ? 'block' : 'none';
+            if (newPassword) newPassword.disabled = !isChecked;
+            if (confirmPassword) confirmPassword.disabled = !isChecked;
             if (!isChecked) {
-                newPassword.value = '';
-                confirmPassword.value = '';
-                strengthBar.style.width = '0';
-                strengthText.innerHTML = '<i class="fas fa-info-circle"></i> <span>Minimum 6 characters</span>';
-                passwordMatch.innerHTML = '<i class="fas fa-info-circle"></i> <span>Re-enter new password</span>';
+                if (newPassword) newPassword.value = '';
+                if (confirmPassword) confirmPassword.value = '';
+                if (strengthBar) strengthBar.style.width = '0';
+                if (strengthText) strengthText.innerHTML = '<i class="fas fa-info-circle"></i> <span>Minimum 6 characters</span>';
+                if (passwordMatch) passwordMatch.innerHTML = '<i class="fas fa-info-circle"></i> <span>Re-enter new password</span>';
             }
         });
     }
 
-    // Password strength
     if (newPassword) {
         newPassword.addEventListener('input', function() {
-            if (changePasswordCheckbox.checked) {
-                checkPasswordStrength();
-                checkPasswordMatch();
-            }
+            checkPasswordStrength();
+            checkPasswordMatch();
         });
     }
 
-    // Confirm password
     if (confirmPassword) {
-        confirmPassword.addEventListener('input', function() {
-            if (changePasswordCheckbox.checked) {
-                checkPasswordMatch();
-            }
-        });
+        confirmPassword.addEventListener('input', checkPasswordMatch);
     }
 
-    // ===== FORM SUBMIT =====
-
+    // Form submission
     if (teacherForm) {
-        teacherForm.addEventListener('submit', function(e) {
+        teacherForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const fullname = fullnameInput.value.trim();
-            const email = emailInput.value.trim();
-            const phone = phoneInput.value.trim();
-            const specialization = specializationInput.value.trim();
-            const address = addressInput.value.trim();
+            const fullname = fullnameInput?.value.trim();
+            const email = emailInput?.value.trim().toLowerCase();
+            const phone = phoneInput?.value.trim() || '';
+            const specialization = specializationInput?.value.trim() || '';
+            const address = addressInput?.value.trim() || '';
+            const employeeId = idNumberInput?.value.trim() || '';
 
-            let errors = [];
-
-            if (!fullname) errors.push('Full name is required');
-            if (!email) errors.push('Email address is required');
-            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                errors.push('Invalid email format');
+            if (!fullname) {
+                showAlert('Full name is required.', 'error');
+                return;
             }
 
-            // Password validation if changing
-            if (changePasswordCheckbox.checked) {
-                const password = newPassword.value;
-                const confirm = confirmPassword.value;
-
-                if (!password) errors.push('New password is required');
-                if (password && password.length < 6) errors.push('Password must be at least 6 characters');
-                if (password !== confirm) errors.push('Passwords do not match');
+            if (!email) {
+                showAlert('Email address is required.', 'error');
+                return;
             }
 
-            if (errors.length > 0) {
-                showAlert(errors.join('<br>'), 'error');
-            } else {
-                showAlert('✅ Teacher information updated successfully!', 'success');
-                updatePreview();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+            const isChangePass = changePasswordCheckbox?.checked;
+            const passVal = newPassword?.value;
+            const confirmVal = confirmPassword?.value;
+
+            if (isChangePass) {
+                if (!passVal || passVal.length < 6) {
+                    showAlert('New password must be at least 6 characters.', 'error');
+                    return;
+                }
+                if (passVal !== confirmVal) {
+                    showAlert('Passwords do not match.', 'error');
+                    return;
+                }
+            }
+
+            const submitBtn = teacherForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            }
+
+            try {
+                const nameParts = fullname.split(' ');
+                const firstName = nameParts[0] || fullname;
+                const lastName = nameParts.slice(1).join(' ') || '';
+
+                // Update users table
+                if (currentUserId) {
+                    const userPayload = {
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email,
+                        updated_at: new Date().toISOString()
+                    };
+                    if (isChangePass && passVal) {
+                        userPayload.password = passVal;
+                    }
+
+                    const { error: uErr } = await supabase
+                        .from('users')
+                        .update(userPayload)
+                        .eq('id', currentUserId);
+
+                    if (uErr) throw uErr;
+                }
+
+                // Update or insert teachers table
+                if (currentTeacher && currentTeacher.id) {
+                    const { error: tErr } = await supabase
+                        .from('teachers')
+                        .update({
+                            employee_id: employeeId || currentTeacher.employee_id,
+                            specialization: specialization,
+                            phone: phone,
+                            address: address,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', currentTeacher.id);
+
+                    if (tErr) throw tErr;
+                } else if (currentUserId) {
+                    const { error: tInsErr } = await supabase
+                        .from('teachers')
+                        .insert([{
+                            user_id: currentUserId,
+                            employee_id: employeeId || `PLSNHS-TCH-${Math.floor(100000 + Math.random() * 900000)}`,
+                            specialization: specialization,
+                            phone: phone,
+                            address: address
+                        }]);
+
+                    if (tInsErr) throw tInsErr;
+                }
+
+                showAlert(`✅ Teacher "${fullname}" updated successfully! Redirecting...`, 'success');
+                setTimeout(() => {
+                    window.location.href = 'teachers.html';
+                }, 1400);
+
+            } catch (err) {
+                console.error('Error updating teacher:', err);
+                showAlert('❌ ' + (err.message || 'Failed to update teacher.'), 'error');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Teacher';
+                }
             }
         });
     }
 
-    // ===== INITIAL PREVIEW =====
-
-    updatePreview();
-
-    // ===== MOBILE MENU =====
-
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('sidebar');
-
-    if (menuToggle) {
-        menuToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
-        });
-    }
-
-    document.addEventListener('click', function(e) {
-        if (window.innerWidth <= 768) {
-            if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-                sidebar.classList.remove('active');
-            }
-        }
-    });
+    // Initial load
+    await loadTeacherData();
 });

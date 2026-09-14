@@ -1,17 +1,14 @@
-/**
- * Section Students - Interactive JavaScript
- * No hardcoded data - all data comes from PHP via window.sectionData
- */
+// ===== REGISTRAR SECTION STUDENTS JAVASCRIPT (SUPABASE POWERED) =====
+import { supabase } from '../../supabase/config.js';
 
-(function() {
+document.addEventListener('DOMContentLoaded', async function() {
     'use strict';
 
-    console.log('📚 Section Students page ready');
+    console.log('📚 Registrar Section Students ready (Supabase dynamic)');
 
     // ============================================
     // DOM ELEMENTS
     // ============================================
-
     const adminName = document.getElementById('adminName');
     const adminInitial = document.getElementById('adminInitial');
     const logoutBtn = document.getElementById('logoutBtn');
@@ -19,18 +16,18 @@
     const sidebar = document.getElementById('sidebar');
     const alertContainer = document.getElementById('alertContainer');
 
-    // Section info
-    const sectionName = document.getElementById('sectionName');
-    const sectionGrade = document.getElementById('sectionGrade');
-    const sectionAdviser = document.getElementById('sectionAdviser');
-    const sectionSubtitle = document.getElementById('sectionSubtitle');
-    const currentCount = document.getElementById('currentCount');
-    const availableCount = document.getElementById('availableCount');
-    const totalGradeCount = document.getElementById('totalGradeCount');
-    const currentBadge = document.getElementById('currentBadge');
-    const availableBadge = document.getElementById('availableBadge');
+    // Section info elements
+    const sectionNameEl = document.getElementById('sectionName');
+    const sectionGradeEl = document.getElementById('sectionGrade');
+    const sectionAdviserEl = document.getElementById('sectionAdviser');
+    const sectionSubtitleEl = document.getElementById('sectionSubtitle');
+    const currentCountEl = document.getElementById('currentCount');
+    const availableCountEl = document.getElementById('availableCount');
+    const totalGradeCountEl = document.getElementById('totalGradeCount');
+    const currentBadgeEl = document.getElementById('currentBadge');
+    const availableBadgeEl = document.getElementById('availableBadge');
 
-    // Student lists
+    // Student list elements
     const currentList = document.getElementById('currentList');
     const availableList = document.getElementById('availableList');
     const searchCurrent = document.getElementById('searchCurrent');
@@ -39,29 +36,37 @@
     // Forms
     const removeForm = document.getElementById('removeForm');
     const assignForm = document.getElementById('assignForm');
-    const removeSelectedBtn = document.getElementById('removeSelectedBtn');
-    const assignSelectedBtn = document.getElementById('assignSelectedBtn');
+
+    // State
+    let currentSection = null;
+    let currentStudents = [];
+    let availableStudents = [];
+    let totalGradeStudentsCount = 0;
+
+    // Get section ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const sectionId = urlParams.get('id');
 
     // ============================================
-    // DATA FROM PHP
+    // ALERT HELPER
     // ============================================
+    function showAlert(message, type = 'success') {
+        if (!alertContainer) return;
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+        alertContainer.appendChild(alertDiv);
 
-    const data = window.sectionData || {
-        id: 0,
-        name: 'Section Name',
-        grade: 'Grade Level',
-        adviser: 'Not Assigned',
-        currentCount: 0,
-        availableCount: 0,
-        totalGradeStudents: 0,
-        currentStudents: [],
-        availableStudents: []
-    };
+        setTimeout(() => {
+            alertDiv.style.opacity = '0';
+            setTimeout(() => alertDiv.remove(), 300);
+        }, 5000);
+    }
 
     // ============================================
-    // SET REGISTRAR NAME (from session/localStorage)
+    // SET REGISTRAR NAME
     // ============================================
-
     try {
         const currentUserStr = localStorage.getItem('currentUser');
         if (currentUserStr) {
@@ -69,25 +74,17 @@
             const name = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : (user.displayName || (user.email ? user.email.split('@')[0] : 'Registrar'));
             if (adminName) adminName.textContent = name;
             if (adminInitial) adminInitial.textContent = name.charAt(0).toUpperCase();
-        } else {
-            const storedName = localStorage.getItem('registrarName') || 'Registrar';
-            if (adminName) adminName.textContent = storedName;
-            if (adminInitial) adminInitial.textContent = storedName.charAt(0).toUpperCase();
         }
     } catch(e) {}
 
     // ============================================
     // LOGOUT
     // ============================================
-
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
+        logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
-            console.log('🚪 Registrar logging out...');
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('registrarName');
-            localStorage.removeItem('plsnhs_registrar_avatar');
-            localStorage.removeItem('plsnhs_registrar_name');
+            try { await supabase.auth.signOut(); } catch(err) {}
             window.location.replace('../auth/login.html');
         });
     }
@@ -95,40 +92,118 @@
     // ============================================
     // MOBILE MENU TOGGLE
     // ============================================
-
     if (menuToggle && sidebar) {
         menuToggle.addEventListener('click', function() {
             sidebar.classList.toggle('active');
         });
+    }
 
-        document.addEventListener('click', function(e) {
-            if (window.innerWidth <= 768) {
-                if (!sidebar.contains(e.target) && e.target !== menuToggle) {
-                    sidebar.classList.remove('active');
-                }
-            }
-        });
+    if (!sectionId) {
+        showAlert('No Section ID provided. Redirecting to sections list...', 'error');
+        setTimeout(() => {
+            window.location.href = 'sections.html';
+        }, 2000);
+        return;
     }
 
     // ============================================
-    // LOAD DATA
+    // FETCH SECTION & STUDENTS
     // ============================================
+    async function loadSectionData() {
+        try {
+            // 1. Fetch section
+            const { data: sectionData, error: sectionError } = await supabase
+                .from('sections')
+                .select('*')
+                .eq('id', sectionId)
+                .single();
 
-    function loadData() {
-        // Section info
-        if (sectionName) sectionName.textContent = data.name;
-        if (sectionGrade) sectionGrade.textContent = data.grade;
-        if (sectionAdviser) sectionAdviser.textContent = data.adviser;
-        if (sectionSubtitle) sectionSubtitle.textContent = `Assign and remove students from ${data.name}`;
+            if (sectionError || !sectionData) {
+                throw new Error(sectionError ? sectionError.message : 'Section not found');
+            }
+
+            currentSection = sectionData;
+
+            // Resolve Adviser Name
+            let adviserDisplayName = currentSection.adviser_name || '';
+            if (!adviserDisplayName && currentSection.adviser_id) {
+                try {
+                    const { data: teacherData } = await supabase
+                        .from('teachers')
+                        .select(`users:user_id(first_name, last_name, email)`)
+                        .eq('id', currentSection.adviser_id)
+                        .single();
+                    if (teacherData && teacherData.users) {
+                        adviserDisplayName = `${teacherData.users.first_name || ''} ${teacherData.users.last_name || ''}`.trim() || teacherData.users.email || '';
+                    }
+                } catch(e) {}
+            }
+            currentSection.resolvedAdviser = adviserDisplayName || 'Not Assigned';
+
+            // 2. Fetch current students in this section
+            const { data: sectionStudentsData, error: currErr } = await supabase
+                .from('students')
+                .select('*')
+                .eq('section_id', sectionId)
+                .order('last_name', { ascending: true });
+
+            if (currErr) throw currErr;
+            currentStudents = sectionStudentsData || [];
+
+            // 3. Fetch available students (in same grade level or without section)
+            const cleanGrade = String(currentSection.grade_level || '').replace('Grade ', '').trim();
+            const gradeVariants = [
+                currentSection.grade_level,
+                cleanGrade,
+                `Grade ${cleanGrade}`,
+                `grade ${cleanGrade}`,
+                `Grade ${cleanGrade}.0`
+            ].filter(Boolean);
+
+            const { data: allGradeStudents, error: availErr } = await supabase
+                .from('students')
+                .select('*')
+                .in('grade_level', gradeVariants)
+                .order('last_name', { ascending: true });
+
+            if (availErr) {
+                console.warn('Could not filter by grade_level directly, fetching all students:', availErr);
+            }
+
+            const allList = allGradeStudents || [];
+            totalGradeStudentsCount = allList.length;
+            availableStudents = allList.filter(s => s.section_id !== sectionId);
+
+            updateUI();
+        } catch (err) {
+            console.error('Error loading section details:', err);
+            showAlert('Failed to load section: ' + err.message, 'error');
+            if (sectionNameEl) sectionNameEl.textContent = 'Error Loading Section';
+        }
+    }
+
+    // ============================================
+    // UPDATE UI
+    // ============================================
+    function updateUI() {
+        if (!currentSection) return;
+
+        // Section header
+        if (sectionNameEl) sectionNameEl.textContent = currentSection.name || 'Unnamed Section';
+        if (sectionGradeEl) sectionGradeEl.textContent = currentSection.grade_level || 'Grade Level';
+        if (sectionAdviserEl) sectionAdviserEl.textContent = currentSection.resolvedAdviser || 'Not Assigned';
+        if (sectionSubtitleEl) sectionSubtitleEl.textContent = `Assign and remove students from ${currentSection.name || 'this section'}`;
 
         // Stats
-        if (currentCount) currentCount.textContent = data.currentCount;
-        if (availableCount) availableCount.textContent = data.availableCount;
-        if (totalGradeCount) totalGradeCount.textContent = data.totalGradeStudents;
-        if (currentBadge) currentBadge.textContent = `${data.currentCount} students`;
-        if (availableBadge) availableBadge.textContent = `${data.availableCount} available`;
+        const currLen = currentStudents.length;
+        const availLen = availableStudents.length;
 
-        // Render student lists
+        if (currentCountEl) currentCountEl.textContent = currLen;
+        if (availableCountEl) availableCountEl.textContent = availLen;
+        if (totalGradeCountEl) totalGradeCountEl.textContent = totalGradeStudentsCount || (currLen + availLen);
+        if (currentBadgeEl) currentBadgeEl.textContent = `${currLen} students`;
+        if (availableBadgeEl) availableBadgeEl.textContent = `${availLen} available`;
+
         renderCurrentStudents();
         renderAvailableStudents();
     }
@@ -136,52 +211,46 @@
     // ============================================
     // RENDER CURRENT STUDENTS
     // ============================================
-
     function renderCurrentStudents() {
         if (!currentList) return;
 
-        if (data.currentStudents.length === 0) {
+        if (currentStudents.length === 0) {
             currentList.innerHTML = `
-                <div class="no-data">
-                    <i class="fas fa-user-graduate"></i>
-                    <p>No students in this section yet.</p>
+                <div class="no-data" style="text-align: center; padding: 30px; color: #64748b;">
+                    <i class="fas fa-user-graduate" style="font-size: 2.5rem; margin-bottom: 12px; color: #94a3b8; display: block;"></i>
+                    <p>No students assigned to this section yet.</p>
                 </div>
             `;
             return;
         }
 
         let html = `
-            <div class="select-all">
-                <label>
-                    <input type="checkbox" id="selectAllCurrent"> <strong>Select All</strong> (${data.currentStudents.length} students)
+            <div class="select-all" style="padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px; border-radius: 6px;">
+                <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
+                    <input type="checkbox" id="selectAllCurrent"> <strong>Select All</strong> (${currentStudents.length} students)
                 </label>
             </div>
         `;
 
-        data.currentStudents.forEach(student => {
-            const initial = student.fullname ? student.fullname.charAt(0) : 'S';
-            const hasProfilePic = student.profile_picture && student.profile_picture !== '';
-            const profilePicUrl = hasProfilePic ? `../${student.profile_picture}?t=${Date.now()}` : '';
+        currentStudents.forEach(student => {
+            const fullName = `${student.first_name || ''} ${student.middle_name || ''} ${student.last_name || ''} ${student.suffix || ''}`.replace(/\s+/g, ' ').trim() || 'Student';
+            const initial = fullName.charAt(0).toUpperCase();
 
             html += `
-                <div class="student-item" data-name="${(student.fullname || '').toLowerCase()}">
-                    <input type="checkbox" name="student_ids[]" value="${student.id}" class="student-checkbox current-checkbox">
-                    ${hasProfilePic ? `
-                        <div class="student-avatar-img">
-                            <img src="${profilePicUrl}" alt="Profile">
-                        </div>
-                    ` : `
-                        <div class="student-avatar">${initial}</div>
-                    `}
-                    <div class="student-info">
-                        <h4>${student.fullname || 'Unknown'}</h4>
-                        <div class="student-meta">
-                            <span><i class="fas fa-envelope"></i> ${student.email || 'N/A'}</span>
-                            <span><i class="fas fa-id-card"></i> ID: ${student.id_number || 'N/A'}</span>
-                            <span><i class="fas fa-calendar"></i> SY: ${student.school_year || 'N/A'}</span>
+                <div class="student-item" data-name="${fullName.toLowerCase()}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #f1f5f9; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+                        <input type="checkbox" name="student_ids[]" value="${student.id}" class="student-checkbox current-checkbox">
+                        <div class="student-avatar" style="width: 38px; height: 38px; border-radius: 50%; background: #1B2A4A; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0;">${initial}</div>
+                        <div class="student-info" style="min-width: 0;">
+                            <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${fullName}</h4>
+                            <div class="student-meta" style="font-size: 12px; color: #64748b; display: flex; flex-wrap: wrap; gap: 10px;">
+                                <span><i class="fas fa-id-card"></i> LRN: ${student.lrn || 'N/A'}</span>
+                                <span><i class="fas fa-layer-group"></i> ${student.grade_level || 'Grade'}</span>
+                                ${student.strand ? `<span><i class="fas fa-graduation-cap"></i> ${student.strand}</span>` : ''}
+                            </div>
                         </div>
                     </div>
-                    <button class="btn-icon remove" onclick="removeStudent(${student.id})">
+                    <button type="button" class="btn-icon remove" onclick="window.removeSingleStudent('${student.id}')" style="background: #fee2e2; color: #ef4444; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
                         <i class="fas fa-times"></i> Remove
                     </button>
                 </div>
@@ -190,7 +259,6 @@
 
         currentList.innerHTML = html;
 
-        // Select All functionality
         const selectAll = document.getElementById('selectAllCurrent');
         if (selectAll) {
             selectAll.addEventListener('change', function() {
@@ -204,52 +272,46 @@
     // ============================================
     // RENDER AVAILABLE STUDENTS
     // ============================================
-
     function renderAvailableStudents() {
         if (!availableList) return;
 
-        if (data.availableStudents.length === 0) {
+        if (availableStudents.length === 0) {
             availableList.innerHTML = `
-                <div class="no-data">
-                    <i class="fas fa-user-check"></i>
-                    <p>No available students in ${data.grade}</p>
+                <div class="no-data" style="text-align: center; padding: 30px; color: #64748b;">
+                    <i class="fas fa-user-check" style="font-size: 2.5rem; margin-bottom: 12px; color: #94a3b8; display: block;"></i>
+                    <p>No available unassigned students for this grade.</p>
                 </div>
             `;
             return;
         }
 
         let html = `
-            <div class="select-all">
-                <label>
-                    <input type="checkbox" id="selectAllAvailable"> <strong>Select All</strong> (${data.availableStudents.length} students)
+            <div class="select-all" style="padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px; border-radius: 6px;">
+                <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
+                    <input type="checkbox" id="selectAllAvailable"> <strong>Select All</strong> (${availableStudents.length} students)
                 </label>
             </div>
         `;
 
-        data.availableStudents.forEach(student => {
-            const initial = student.fullname ? student.fullname.charAt(0) : 'S';
-            const hasProfilePic = student.profile_picture && student.profile_picture !== '';
-            const profilePicUrl = hasProfilePic ? `../${student.profile_picture}?t=${Date.now()}` : '';
+        availableStudents.forEach(student => {
+            const fullName = `${student.first_name || ''} ${student.middle_name || ''} ${student.last_name || ''} ${student.suffix || ''}`.replace(/\s+/g, ' ').trim() || 'Student';
+            const initial = fullName.charAt(0).toUpperCase();
 
             html += `
-                <div class="student-item" data-name="${(student.fullname || '').toLowerCase()}">
-                    <input type="checkbox" name="student_ids[]" value="${student.id}" class="student-checkbox available-checkbox">
-                    ${hasProfilePic ? `
-                        <div class="student-avatar-img">
-                            <img src="${profilePicUrl}" alt="Profile">
-                        </div>
-                    ` : `
-                        <div class="student-avatar">${initial}</div>
-                    `}
-                    <div class="student-info">
-                        <h4>${student.fullname || 'Unknown'}</h4>
-                        <div class="student-meta">
-                            <span><i class="fas fa-envelope"></i> ${student.email || 'N/A'}</span>
-                            <span><i class="fas fa-id-card"></i> ID: ${student.id_number || 'N/A'}</span>
-                            <span><i class="fas fa-calendar"></i> SY: ${student.school_year || 'N/A'}</span>
+                <div class="student-item" data-name="${fullName.toLowerCase()}" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #f1f5f9; gap: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0;">
+                        <input type="checkbox" name="student_ids[]" value="${student.id}" class="student-checkbox available-checkbox">
+                        <div class="student-avatar" style="width: 38px; height: 38px; border-radius: 50%; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0;">${initial}</div>
+                        <div class="student-info" style="min-width: 0;">
+                            <h4 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${fullName}</h4>
+                            <div class="student-meta" style="font-size: 12px; color: #64748b; display: flex; flex-wrap: wrap; gap: 10px;">
+                                <span><i class="fas fa-id-card"></i> LRN: ${student.lrn || 'N/A'}</span>
+                                <span><i class="fas fa-layer-group"></i> ${student.grade_level || 'Grade'}</span>
+                                ${student.strand ? `<span><i class="fas fa-graduation-cap"></i> ${student.strand}</span>` : ''}
+                            </div>
                         </div>
                     </div>
-                    <button class="btn-icon assign" onclick="assignStudent(${student.id})">
+                    <button type="button" class="btn-icon assign" onclick="window.assignSingleStudent('${student.id}')" style="background: #dbeafe; color: #2563eb; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
                         <i class="fas fa-plus"></i> Assign
                     </button>
                 </div>
@@ -258,7 +320,6 @@
 
         availableList.innerHTML = html;
 
-        // Select All functionality
         const selectAll = document.getElementById('selectAllAvailable');
         if (selectAll) {
             selectAll.addEventListener('change', function() {
@@ -270,35 +331,24 @@
     }
 
     // ============================================
-    // SEARCH FUNCTIONALITY
+    // SEARCH FILTER
     // ============================================
-
-    if (searchCurrent) {
+    if (searchCurrent && currentList) {
         searchCurrent.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            const items = currentList.querySelectorAll('.student-item');
-            items.forEach(item => {
+            const term = this.value.toLowerCase().trim();
+            currentList.querySelectorAll('.student-item').forEach(item => {
                 const name = item.dataset.name || '';
-                if (name.includes(searchTerm)) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
+                item.style.display = name.includes(term) ? 'flex' : 'none';
             });
         });
     }
 
-    if (searchAvailable) {
+    if (searchAvailable && availableList) {
         searchAvailable.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            const items = availableList.querySelectorAll('.student-item');
-            items.forEach(item => {
+            const term = this.value.toLowerCase().trim();
+            availableList.querySelectorAll('.student-item').forEach(item => {
                 const name = item.dataset.name || '';
-                if (name.includes(searchTerm)) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
+                item.style.display = name.includes(term) ? 'flex' : 'none';
             });
         });
     }
@@ -306,7 +356,6 @@
     // ============================================
     // TOGGLE ALL CHECKBOXES
     // ============================================
-
     window.toggleAll = function(type) {
         const checkboxClass = type === 'current' ? '.current-checkbox' : '.available-checkbox';
         const checkboxes = document.querySelectorAll(checkboxClass);
@@ -315,57 +364,54 @@
     };
 
     // ============================================
-    // ASSIGN STUDENT (Single)
+    // ASSIGN SINGLE STUDENT
     // ============================================
+    window.assignSingleStudent = async function(studentId) {
+        if (!confirm('Assign this student to the section?')) return;
 
-    window.assignStudent = function(studentId) {
-        if (confirm('Assign this student to the section?')) {
-            // Simulate AJAX request
+        try {
+            const { error } = await supabase
+                .from('students')
+                .update({ section_id: sectionId, updated_at: new Date().toISOString() })
+                .eq('id', studentId);
+
+            if (error) throw error;
+
             showAlert('✅ Student assigned to section successfully!', 'success');
-
-            // Move student from available to current
-            const studentIndex = data.availableStudents.findIndex(s => s.id === studentId);
-            if (studentIndex !== -1) {
-                const student = data.availableStudents.splice(studentIndex, 1)[0];
-                data.currentStudents.push(student);
-                data.currentCount = data.currentStudents.length;
-                data.availableCount = data.availableStudents.length;
-                renderCurrentStudents();
-                renderAvailableStudents();
-                updateStats();
-            }
+            await loadSectionData();
+        } catch (err) {
+            console.error('Error assigning student:', err);
+            showAlert('❌ Failed to assign student: ' + err.message, 'error');
         }
     };
 
     // ============================================
-    // REMOVE STUDENT (Single)
+    // REMOVE SINGLE STUDENT
     // ============================================
+    window.removeSingleStudent = async function(studentId) {
+        if (!confirm('Remove this student from the section?')) return;
 
-    window.removeStudent = function(studentId) {
-        if (confirm('Remove this student from the section?')) {
-            // Simulate AJAX request
+        try {
+            const { error } = await supabase
+                .from('students')
+                .update({ section_id: null, updated_at: new Date().toISOString() })
+                .eq('id', studentId);
+
+            if (error) throw error;
+
             showAlert('✅ Student removed from section successfully!', 'success');
-
-            // Move student from current to available
-            const studentIndex = data.currentStudents.findIndex(s => s.id === studentId);
-            if (studentIndex !== -1) {
-                const student = data.currentStudents.splice(studentIndex, 1)[0];
-                data.availableStudents.push(student);
-                data.currentCount = data.currentStudents.length;
-                data.availableCount = data.availableStudents.length;
-                renderCurrentStudents();
-                renderAvailableStudents();
-                updateStats();
-            }
+            await loadSectionData();
+        } catch (err) {
+            console.error('Error removing student:', err);
+            showAlert('❌ Failed to remove student: ' + err.message, 'error');
         }
     };
 
     // ============================================
     // BULK ASSIGN
     // ============================================
-
     if (assignForm) {
-        assignForm.addEventListener('submit', function(e) {
+        assignForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const selected = document.querySelectorAll('.available-checkbox:checked');
@@ -374,26 +420,23 @@
                 return;
             }
 
-            if (confirm(`Assign ${selected.length} student(s) to this section?`)) {
-                const studentIds = Array.from(selected).map(cb => parseInt(cb.value));
+            if (!confirm(`Assign ${selected.length} student(s) to this section?`)) return;
 
-                // Simulate AJAX request
-                showAlert(`✅ ${selected.length} student(s) assigned to section successfully!`, 'success');
+            const studentIds = Array.from(selected).map(cb => cb.value);
 
-                // Move selected students from available to current
-                studentIds.forEach(id => {
-                    const studentIndex = data.availableStudents.findIndex(s => s.id === id);
-                    if (studentIndex !== -1) {
-                        const student = data.availableStudents.splice(studentIndex, 1)[0];
-                        data.currentStudents.push(student);
-                    }
-                });
+            try {
+                const { error } = await supabase
+                    .from('students')
+                    .update({ section_id: sectionId, updated_at: new Date().toISOString() })
+                    .in('id', studentIds);
 
-                data.currentCount = data.currentStudents.length;
-                data.availableCount = data.availableStudents.length;
-                renderCurrentStudents();
-                renderAvailableStudents();
-                updateStats();
+                if (error) throw error;
+
+                showAlert(`✅ ${studentIds.length} student(s) assigned to section successfully!`, 'success');
+                await loadSectionData();
+            } catch (err) {
+                console.error('Error in bulk assign:', err);
+                showAlert('❌ Failed to assign students: ' + err.message, 'error');
             }
         });
     }
@@ -401,9 +444,8 @@
     // ============================================
     // BULK REMOVE
     // ============================================
-
     if (removeForm) {
-        removeForm.addEventListener('submit', function(e) {
+        removeForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const selected = document.querySelectorAll('.current-checkbox:checked');
@@ -412,86 +454,29 @@
                 return;
             }
 
-            if (confirm(`Remove ${selected.length} student(s) from this section?`)) {
-                const studentIds = Array.from(selected).map(cb => parseInt(cb.value));
+            if (!confirm(`Remove ${selected.length} student(s) from this section?`)) return;
 
-                // Simulate AJAX request
-                showAlert(`✅ ${selected.length} student(s) removed from section successfully!`, 'success');
+            const studentIds = Array.from(selected).map(cb => cb.value);
 
-                // Move selected students from current to available
-                studentIds.forEach(id => {
-                    const studentIndex = data.currentStudents.findIndex(s => s.id === id);
-                    if (studentIndex !== -1) {
-                        const student = data.currentStudents.splice(studentIndex, 1)[0];
-                        data.availableStudents.push(student);
-                    }
-                });
+            try {
+                const { error } = await supabase
+                    .from('students')
+                    .update({ section_id: null, updated_at: new Date().toISOString() })
+                    .in('id', studentIds);
 
-                data.currentCount = data.currentStudents.length;
-                data.availableCount = data.availableStudents.length;
-                renderCurrentStudents();
-                renderAvailableStudents();
-                updateStats();
+                if (error) throw error;
+
+                showAlert(`✅ ${studentIds.length} student(s) removed from section successfully!`, 'success');
+                await loadSectionData();
+            } catch (err) {
+                console.error('Error in bulk remove:', err);
+                showAlert('❌ Failed to remove students: ' + err.message, 'error');
             }
         });
     }
 
     // ============================================
-    // UPDATE STATS
+    // INITIAL LOAD
     // ============================================
-
-    function updateStats() {
-        if (currentCount) currentCount.textContent = data.currentCount;
-        if (availableCount) availableCount.textContent = data.availableCount;
-        if (currentBadge) currentBadge.textContent = `${data.currentCount} students`;
-        if (availableBadge) availableBadge.textContent = `${data.availableCount} available`;
-    }
-
-    // ============================================
-    // SHOW ALERT
-    // ============================================
-
-    function showAlert(message, type = 'success') {
-        if (!alertContainer) return;
-
-        alertContainer.innerHTML = '';
-
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        alertDiv.innerHTML = `
-            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-            ${message}
-        `;
-        alertContainer.appendChild(alertDiv);
-
-        setTimeout(() => {
-            alertDiv.style.opacity = '0';
-            setTimeout(() => alertDiv.remove(), 300);
-        }, 5000);
-    }
-
-    // ============================================
-    // AUTO-HIDE ALERTS
-    // ============================================
-
-    setTimeout(function() {
-        const alerts = document.querySelectorAll('.alert');
-        alerts.forEach(alert => {
-            alert.style.opacity = '0';
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 300);
-        });
-    }, 5000);
-
-    // ============================================
-    // INITIALIZE
-    // ============================================
-
-    loadData();
-
-    console.log('✅ Section Students ready!');
-    console.log('📚 Section:', data.name);
-    console.log(`👥 ${data.currentCount} students in section, ${data.availableCount} available`);
-
-})();
+    await loadSectionData();
+});

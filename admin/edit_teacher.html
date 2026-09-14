@@ -32,10 +32,10 @@
 
         <div class="admin-profile">
             <div class="admin-avatar">
-                <div class="avatar-initial" id="adminAvatar">J</div>
+                <div class="avatar-initial" id="adminAvatar">A</div>
                 <div class="online-dot"></div>
             </div>
-            <div class="admin-name" id="adminName">Justine</div>
+            <div class="admin-name" id="adminName">Admin</div>
             <div class="admin-role"><i class="fas fa-shield-alt"></i> Administrator</div>
         </div>
 
@@ -98,7 +98,7 @@
                                    name="fullname" 
                                    id="fullname"
                                    placeholder="e.g., Juan Dela Cruz" 
-                                   value="Maria Santos"
+                                   value=""
                                    required>
                         </div>
 
@@ -108,7 +108,7 @@
                                    name="email" 
                                    id="email"
                                    placeholder="teacher@plshs.edu.ph" 
-                                   value="maria.santos@plshs.edu.ph"
+                                   value=""
                                    required>
                         </div>
                     </div>
@@ -120,8 +120,8 @@
                                    name="id_number" 
                                    id="id_number"
                                    class="readonly-field"
-                                   placeholder="e.g., TCH-2024-001" 
-                                   value="PLSNHS-TCH-000001"
+                                   placeholder="e.g., PLSNHS-TCH-000001" 
+                                   value=""
                                    readonly>
                             <div class="form-hint">
                                 <i class="fas fa-lock"></i>
@@ -135,7 +135,7 @@
                                    name="phone" 
                                    id="phone"
                                    placeholder="e.g., 09123456789" 
-                                   value="09123456789">
+                                   value="">
                         </div>
                     </div>
 
@@ -145,7 +145,7 @@
                                name="specialization" 
                                id="specialization"
                                placeholder="e.g., Mathematics, Science, English" 
-                               value="Mathematics">
+                               value="">
                     </div>
 
                     <div class="form-group">
@@ -153,7 +153,7 @@
                         <textarea name="address" 
                                   id="address" 
                                   rows="3"
-                                  placeholder="Complete address">123 Main St., Manila, Philippines</textarea>
+                                  placeholder="Complete address"></textarea>
                     </div>
 
                     <!-- Live Preview -->
@@ -163,16 +163,16 @@
                             <h4>Live Preview</h4>
                         </div>
                         <div class="preview-content">
-                            <div class="preview-avatar" id="previewInitial">M</div>
+                            <div class="preview-avatar" id="previewInitial">T</div>
                             <div class="preview-details">
-                                <h5 id="previewName">Maria Santos</h5>
+                                <h5 id="previewName">Loading...</h5>
                                 <div class="preview-email" id="previewEmail">
-                                    <i class="fas fa-envelope"></i> maria.santos@plshs.edu.ph
+                                    <i class="fas fa-envelope"></i> teacher@plshs.edu.ph
                                 </div>
                                 <div class="preview-meta" id="previewMeta">
-                                    <span><i class="fas fa-id-card"></i> <span id="previewId">PLSNHS-TCH-000001</span></span>
-                                    <span><i class="fas fa-book"></i> <span id="previewSpecialization">Mathematics</span></span>
-                                    <span><i class="fas fa-phone"></i> <span id="previewPhone">09123456789</span></span>
+                                    <span><i class="fas fa-id-card"></i> <span id="previewId">PLSNHS-TCH-000000</span></span>
+                                    <span><i class="fas fa-book"></i> <span id="previewSpecialization">Not set</span></span>
+                                    <span><i class="fas fa-phone"></i> <span id="previewPhone">N/A</span></span>
                                 </div>
                             </div>
                         </div>
@@ -239,6 +239,7 @@
         </div>
     </main>
 
-    <script src="js/edit_teacher.js"></script>
+    <script src="js/admin_avatar_sync.js"></script>
+    <script type="module" src="js/edit_teacher.js"></script>
 </body>
 </html>

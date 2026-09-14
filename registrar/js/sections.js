@@ -1,17 +1,12 @@
-/**
- * Sections Management - Interactive JavaScript
- * No hardcoded data - all data comes from PHP via window.sectionsData
- */
+// ===== REGISTRAR SECTIONS JAVASCRIPT (SUPABASE POWERED) =====
+import { supabase } from '../../supabase/config.js';
 
-(function() {
+document.addEventListener('DOMContentLoaded', async function() {
     'use strict';
 
-    console.log('📚 Sections Management ready');
+    console.log('📚 Registrar Sections Management ready (Supabase dynamic)');
 
-    // ============================================
-    // DOM ELEMENTS
-    // ============================================
-
+    // DOM Elements
     const adminName = document.getElementById('adminName');
     const adminInitial = document.getElementById('adminInitial');
     const logoutBtn = document.getElementById('logoutBtn');
@@ -35,7 +30,7 @@
     const addSectionForm = document.getElementById('addSectionForm');
     const addSectionName = document.getElementById('addSectionName');
     const addGradeId = document.getElementById('addGradeId');
-    const addAdviserId = document.getElementById('addAdviserId');
+    const addAdviserName = document.getElementById('addAdviserName');
 
     // Edit Modal
     const editModal = document.getElementById('editModal');
@@ -43,30 +38,32 @@
     const editSectionId = document.getElementById('editSectionId');
     const editSectionName = document.getElementById('editSectionName');
     const editGradeId = document.getElementById('editGradeId');
-    const editAdviserId = document.getElementById('editAdviserId');
+    const editAdviserName = document.getElementById('editAdviserName');
     const editWarning = document.getElementById('editWarning');
     const editStudentCount = document.getElementById('editStudentCount');
 
-    // ============================================
-    // DATA FROM PHP
-    // ============================================
+    // State
+    let sections = [];
+    let teachers = [];
+    let studentsCountMap = {};
+    const gradeLevels = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
 
-    const data = window.sectionsData || {
-        sections: [],
-        grade_levels: [],
-        teachers: [],
-        edit_section: null,
-        stats: {
-            total: 0,
-            students: 0,
-            with_adviser: 0
-        }
-    };
+    // ===== ALERT HELPER =====
+    function showAlert(message, type = 'error') {
+        if (!alertContainer) return;
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+        alertContainer.appendChild(alertDiv);
 
-    // ============================================
-    // SET REGISTRAR NAME (from session/localStorage)
-    // ============================================
+        setTimeout(() => {
+            alertDiv.style.opacity = '0';
+            setTimeout(() => alertDiv.remove(), 300);
+        }, 5000);
+    }
 
+    // ===== SET REGISTRAR NAME =====
     try {
         const currentUserStr = localStorage.getItem('currentUser');
         if (currentUserStr) {
@@ -74,183 +71,214 @@
             const name = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : (user.displayName || (user.email ? user.email.split('@')[0] : 'Registrar'));
             if (adminName) adminName.textContent = name;
             if (adminInitial) adminInitial.textContent = name.charAt(0).toUpperCase();
-        } else {
-            const storedName = localStorage.getItem('registrarName') || 'Registrar';
-            if (adminName) adminName.textContent = storedName;
-            if (adminInitial) adminInitial.textContent = storedName.charAt(0).toUpperCase();
         }
     } catch(e) {}
 
-    // ============================================
-    // LOGOUT
-    // ============================================
-
+    // ===== LOGOUT =====
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
+        logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
-            console.log('🚪 Registrar logging out...');
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('registrarName');
-            localStorage.removeItem('plsnhs_registrar_avatar');
-            localStorage.removeItem('plsnhs_registrar_name');
+            try { await supabase.auth.signOut(); } catch(err) {}
             window.location.replace('../auth/login.html');
         });
     }
 
-    // ============================================
-    // MOBILE MENU TOGGLE
-    // ============================================
-
+    // ===== MOBILE MENU TOGGLE =====
     if (menuToggle && sidebar) {
         menuToggle.addEventListener('click', function() {
             sidebar.classList.toggle('active');
         });
-
-        document.addEventListener('click', function(e) {
-            if (window.innerWidth <= 768) {
-                if (!sidebar.contains(e.target) && e.target !== menuToggle) {
-                    sidebar.classList.remove('active');
-                }
-            }
-        });
     }
 
-    // ============================================
-    // LOAD DATA
-    // ============================================
+    // ===== DATA FETCHING =====
+    async function loadTeachers() {
+        try {
+            const { data, error } = await supabase
+                .from('teachers')
+                .select(`
+                    id,
+                    user_id,
+                    employee_id,
+                    users:user_id (
+                        id,
+                        first_name,
+                        last_name,
+                        email
+                    )
+                `);
 
-    function loadData() {
-        // Stats
-        if (totalSections) totalSections.textContent = data.stats.total;
-        if (totalStudents) totalStudents.textContent = data.stats.students;
-        if (sectionsWithAdviser) sectionsWithAdviser.textContent = data.stats.with_adviser;
-        if (currentYear) currentYear.textContent = new Date().getFullYear();
+            if (error) throw error;
 
-        // Populate dropdowns
-        populateGradeFilter();
-        populateAddFormDropdowns();
-        populateEditFormDropdowns();
-
-        // Render sections
-        renderSections();
-
-        // Check if edit modal should open
-        if (data.edit_section) {
-            openEditModal(data.edit_section);
+            teachers = (data || []).map(t => {
+                const u = t.users || {};
+                const name = (u.first_name || u.last_name) 
+                    ? `${u.first_name || ''} ${u.last_name || ''}`.trim()
+                    : (u.email || t.employee_id || 'Teacher');
+                return {
+                    id: t.id,
+                    user_id: t.user_id,
+                    name: name
+                };
+            });
+        } catch (err) {
+            console.error('Error loading teachers:', err);
         }
     }
 
-    // ============================================
-    // POPULATE DROPDOWNS
-    // ============================================
+    function getAdviserName(sectionOrId) {
+        if (!sectionOrId) return null;
+        if (typeof sectionOrId === 'object' && sectionOrId !== null) {
+            if (sectionOrId.adviser_name) return sectionOrId.adviser_name;
+            if (sectionOrId.adviser_id) {
+                const teacher = teachers.find(t => t.id === sectionOrId.adviser_id || t.user_id === sectionOrId.adviser_id);
+                if (teacher) return teacher.name;
+            }
+            return null;
+        }
+        const teacher = teachers.find(t => t.id === sectionOrId || t.user_id === sectionOrId);
+        return teacher ? teacher.name : null;
+    }
 
     function populateGradeFilter() {
         if (!gradeFilter) return;
-        const grades = data.grade_levels || [];
-        gradeFilter.innerHTML = '<option value="">All Grades</option>';
-        grades.forEach(grade => {
-            gradeFilter.innerHTML += `
-                <option value="${grade.grade_name}">${grade.grade_name}</option>
-            `;
-        });
+        gradeFilter.innerHTML = '<option value="">All Grades</option>' +
+            gradeLevels.map(g => `<option value="${g}">${g}</option>`).join('');
     }
 
-    function populateAddFormDropdowns() {
-        // Grade levels
-        if (addGradeId) {
-            const grades = data.grade_levels || [];
-            addGradeId.innerHTML = '<option value="">Select Grade Level</option>';
-            grades.forEach(grade => {
-                addGradeId.innerHTML += `
-                    <option value="${grade.id}">${grade.grade_name}</option>
+    async function loadSections() {
+        try {
+            if (sectionsGrid) {
+                sectionsGrid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: #0b2b4a;"></i>
+                        <p style="margin-top: 12px; color: #64748b;">Loading sections from database...</p>
+                    </div>
                 `;
-            });
-        }
+            }
 
-        // Teachers
-        if (addAdviserId) {
-            const teachers = data.teachers || [];
-            addAdviserId.innerHTML = '<option value="">Select Teacher (Optional)</option>';
-            teachers.forEach(teacher => {
-                addAdviserId.innerHTML += `
-                    <option value="${teacher.id}">${teacher.fullname}</option>
+            const { data: secData, error: secErr } = await supabase
+                .from('sections')
+                .select('*')
+                .order('name', { ascending: true });
+
+            if (secErr) throw secErr;
+            sections = secData || [];
+
+            // Fetch student counts per section
+            studentsCountMap = {};
+            let totalStudentsCount = 0;
+            try {
+                const { data: stdData } = await supabase
+                    .from('students')
+                    .select('id, section_id');
+
+                if (stdData) {
+                    totalStudentsCount = stdData.length;
+                    stdData.forEach(s => {
+                        if (s.section_id) {
+                            studentsCountMap[s.section_id] = (studentsCountMap[s.section_id] || 0) + 1;
+                        }
+                    });
+                }
+            } catch(e) {}
+
+            updateStats(totalStudentsCount);
+            renderSections();
+        } catch (err) {
+            console.error('Error loading sections:', err);
+            showAlert('Failed to load sections: ' + err.message, 'error');
+            if (sectionsGrid) {
+                sectionsGrid.innerHTML = `
+                    <div class="no-data">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Failed to load sections</h3>
+                        <p>${err.message}</p>
+                    </div>
                 `;
-            });
+            }
         }
     }
 
-    function populateEditFormDropdowns() {
-        // Grade levels
-        if (editGradeId) {
-            const grades = data.grade_levels || [];
-            editGradeId.innerHTML = '<option value="">Select Grade Level</option>';
-            grades.forEach(grade => {
-                editGradeId.innerHTML += `
-                    <option value="${grade.id}">${grade.grade_name}</option>
-                `;
-            });
-        }
+    // ===== UI RENDERING =====
+    function updateStats(studentCount = 0) {
+        const total = sections.length;
+        const withAdviser = sections.filter(s => !!(s.adviser_name || s.adviser_id)).length;
 
-        // Teachers
-        if (editAdviserId) {
-            const teachers = data.teachers || [];
-            editAdviserId.innerHTML = '<option value="">Select Teacher (Optional)</option>';
-            teachers.forEach(teacher => {
-                editAdviserId.innerHTML += `
-                    <option value="${teacher.id}">${teacher.fullname}</option>
-                `;
-            });
-        }
+        if (totalSections) totalSections.textContent = total;
+        if (totalStudents) totalStudents.textContent = studentCount;
+        if (sectionsWithAdviser) sectionsWithAdviser.textContent = withAdviser;
+        if (currentYear) currentYear.textContent = new Date().getFullYear();
     }
 
-    // ============================================
-    // RENDER SECTIONS
-    // ============================================
+    function renderSections() {
+        if (!sectionsGrid) return;
 
-    function renderSections(filteredSections) {
-        const sections = filteredSections || data.sections || [];
+        const grade = gradeFilter ? gradeFilter.value : '';
+        const search = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-        if (sections.length === 0) {
+        let filtered = [...sections];
+
+        if (grade) {
+            const cleanGradeNum = grade.replace('Grade ', '').trim();
+            filtered = filtered.filter(s => {
+                const sGrade = String(s.grade_level || '').trim();
+                return sGrade === grade || sGrade === cleanGradeNum || `Grade ${sGrade}` === grade;
+            });
+        }
+
+        if (search) {
+            filtered = filtered.filter(s => {
+                const sName = (s.name || '').toLowerCase();
+                const sGrade = (s.grade_level || '').toLowerCase();
+                const sStrand = (s.strand || '').toLowerCase();
+                const advName = (getAdviserName(s) || '').toLowerCase();
+                return sName.includes(search) || sGrade.includes(search) || sStrand.includes(search) || advName.includes(search);
+            });
+        }
+
+        if (filtered.length === 0) {
             sectionsGrid.innerHTML = `
-                <div class="no-data">
+                <div class="no-data" style="grid-column: 1 / -1;">
                     <i class="fas fa-layer-group"></i>
                     <h3>No Sections Found</h3>
-                    <p>Click "Add New Section" to create your first section.</p>
+                    <p>Click "Add New Section" to create one.</p>
                 </div>
             `;
             return;
         }
 
         let html = '';
-        sections.forEach(section => {
-            const initial = section.adviser_name ? section.adviser_name.charAt(0) : '?';
-            const hasAdviser = section.adviser_name && section.adviser_name !== '';
+        filtered.forEach(section => {
+            const adviser = getAdviserName(section) || 'Not Assigned';
+            const initial = adviser !== 'Not Assigned' ? adviser.charAt(0).toUpperCase() : '?';
+            const count = studentsCountMap[section.id] || 0;
 
             html += `
-                <div class="section-card" data-grade="${section.grade_name || ''}">
+                <div class="section-card" data-grade="${section.grade_level || ''}">
                     <div class="section-header">
                         <div class="section-icon"><i class="fas fa-users"></i></div>
-                        <span class="section-badge">${section.student_count || 0} Students</span>
+                        <span class="section-badge">${count} Students</span>
                     </div>
-                    <div class="section-name">${section.section_name || 'Unknown'}</div>
-                    <div class="grade-level"><i class="fas fa-layer-group"></i> ${section.grade_name || 'N/A'}</div>
+                    <div class="section-name">${section.name || 'Unnamed Section'}</div>
+                    <div class="grade-level"><i class="fas fa-layer-group"></i> ${section.grade_level || 'N/A'} ${section.strand ? `• ${section.strand}` : ''}</div>
                     
                     <div class="adviser-info">
                         <div class="adviser-avatar">${initial}</div>
                         <div class="adviser-details">
                             <div class="adviser-label">Class Adviser</div>
-                            <div class="adviser-name">${section.adviser_name || 'Not Assigned'}</div>
+                            <div class="adviser-name">${adviser}</div>
                         </div>
                     </div>
 
                     <div class="stats-row">
                         <div class="stat-item">
-                            <div class="stat-value">${section.student_count || 0}</div>
+                            <div class="stat-value">${count}</div>
                             <div class="stat-label">Students</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-value">-</div>
-                            <div class="stat-label">Subjects</div>
+                            <div class="stat-value">${section.strand || 'General'}</div>
+                            <div class="stat-label">Strand/Track</div>
                         </div>
                     </div>
 
@@ -258,10 +286,10 @@
                         <a href="section_students.html?id=${section.id}" class="btn-action btn-students" title="View Students">
                             <i class="fas fa-users"></i> Students
                         </a>
-                        <button class="btn-action btn-edit" onclick="openEditModalById(${section.id})" title="Edit Section">
+                        <button class="btn-action btn-edit" onclick="window.openEditModalById('${section.id}')" title="Edit Section">
                             <i class="fas fa-edit"></i> Edit
                         </button>
-                        <button class="btn-action btn-delete" onclick="deleteSection(${section.id}, '${section.section_name || ''}', ${section.student_count || 0})" title="Delete Section">
+                        <button class="btn-action btn-delete" onclick="window.deleteSection('${section.id}', '${section.name || ''}', ${count})" title="Delete Section">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </div>
@@ -272,304 +300,187 @@
         sectionsGrid.innerHTML = html;
     }
 
-    // ============================================
-    // FILTER SECTIONS
-    // ============================================
+    // ===== MODAL FUNCTIONS (EXPOSED GLOBALLY) =====
 
-    function filterSections() {
-        const grade = gradeFilter ? gradeFilter.value : '';
-        const search = searchInput ? searchInput.value.toLowerCase().trim() : '';
-
-        let filtered = data.sections || [];
-
-        if (grade) {
-            filtered = filtered.filter(s => s.grade_name === grade);
-        }
-
-        if (search) {
-            filtered = filtered.filter(s => 
-                s.section_name && s.section_name.toLowerCase().includes(search)
-            );
-        }
-
-        renderSections(filtered);
-    }
-
-    if (gradeFilter) {
-        gradeFilter.addEventListener('change', filterSections);
-    }
-
-    if (searchInput) {
-        let debounceTimer;
-        searchInput.addEventListener('input', function() {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(filterSections, 300);
-        });
-    }
-
-    // ============================================
-    // ADD SECTION
-    // ============================================
-
-    function openAddModal() {
+    window.openAddModal = function() {
+        if (!addModal) return;
         addModal.classList.add('active');
         document.body.style.overflow = 'hidden';
-        addSectionForm.reset();
-    }
+        if (addSectionForm) addSectionForm.reset();
+    };
 
-    window.openAddModal = openAddModal;
-
-    function closeAddModal() {
+    window.closeAddModal = function() {
+        if (!addModal) return;
         addModal.classList.remove('active');
         document.body.style.overflow = 'auto';
-    }
+    };
 
-    window.closeAddModal = closeAddModal;
+    window.openEditModalById = function(id) {
+        const section = sections.find(s => s.id === id || String(s.id) === String(id));
+        if (!section || !editModal) return;
 
-    if (addSectionForm) {
-        addSectionForm.addEventListener('submit', function(e) {
-            e.preventDefault();
+        if (editSectionId) editSectionId.value = section.id;
+        if (editSectionName) editSectionName.value = section.name || '';
+        
+        const rawGrade = String(section.grade_level || '').replace('Grade ', '').trim();
+        if (editGradeId) editGradeId.value = rawGrade;
+        if (editAdviserName) editAdviserName.value = section.adviser_name || getAdviserName(section) || '';
 
-            const formData = new FormData(this);
-            const name = formData.get('section_name');
-            const gradeId = formData.get('grade_id');
-            const adviserId = formData.get('adviser_id');
-
-            if (!name || !gradeId) {
-                showAlert('❌ Please fill in all required fields.', 'error');
-                return;
-            }
-
-            // Simulate AJAX request
-            const btn = this.querySelector('.btn-save');
-            btn.disabled = true;
-            btn.textContent = 'Adding...';
-
-            setTimeout(() => {
-                const newSection = {
-                    id: Date.now(),
-                    section_name: name,
-                    grade_id: parseInt(gradeId),
-                    grade_name: addGradeId.options[addGradeId.selectedIndex].text,
-                    adviser_id: adviserId ? parseInt(adviserId) : null,
-                    adviser_name: adviserId ? addAdviserId.options[addAdviserId.selectedIndex].text : null,
-                    student_count: 0
-                };
-
-                data.sections.unshift(newSection);
-                data.stats.total++;
-                updateStats();
-                renderSections();
-                filterSections();
-
-                btn.disabled = false;
-                btn.textContent = 'Add Section';
-                closeAddModal();
-                showAlert(`✅ Section "${name}" added successfully!`, 'success');
-            }, 800);
-        });
-    }
-
-    // ============================================
-    // EDIT SECTION
-    // ============================================
-
-    function openEditModalById(id) {
-        const section = data.sections.find(s => s.id === id);
-        if (section) {
-            openEditModal(section);
-        }
-    }
-
-    window.openEditModalById = openEditModalById;
-
-    function openEditModal(section) {
-        if (!section) return;
-
-        editSectionId.value = section.id;
-        editSectionName.value = section.section_name || '';
-        editGradeId.value = section.grade_id || '';
-        editAdviserId.value = section.adviser_id || '';
-
-        // Show warning if section has students
-        const studentCount = section.student_count || 0;
-        if (studentCount > 0) {
-            editWarning.style.display = 'block';
-            editStudentCount.textContent = studentCount;
-        } else {
-            editWarning.style.display = 'none';
-        }
+        const count = studentsCountMap[section.id] || 0;
+        if (editStudentCount) editStudentCount.textContent = count;
+        if (editWarning) editWarning.style.display = count > 0 ? 'flex' : 'none';
 
         editModal.classList.add('active');
         document.body.style.overflow = 'hidden';
-    }
+    };
 
-    window.openEditModal = openEditModal;
-
-    function closeEditModal() {
+    window.closeEditModal = function() {
+        if (!editModal) return;
         editModal.classList.remove('active');
         document.body.style.overflow = 'auto';
-    }
+    };
 
-    window.closeEditModal = closeEditModal;
-
-    if (editSectionForm) {
-        editSectionForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(this);
-            const id = formData.get('section_id');
-            const name = formData.get('section_name');
-            const gradeId = formData.get('grade_id');
-
-            if (!name || !gradeId) {
-                showAlert('❌ Please fill in all required fields.', 'error');
-                return;
-            }
-
-            // Simulate AJAX request
-            const btn = this.querySelector('.btn-save');
-            btn.disabled = true;
-            btn.textContent = 'Saving...';
-
-            setTimeout(() => {
-                const section = data.sections.find(s => s.id === parseInt(id));
-                if (section) {
-                    const oldGrade = section.grade_name;
-                    section.section_name = name;
-                    section.grade_id = parseInt(gradeId);
-                    section.grade_name = editGradeId.options[editGradeId.selectedIndex].text;
-                    section.adviser_id = parseInt(formData.get('adviser_id')) || null;
-                    section.adviser_name = section.adviser_id ? 
-                        editAdviserId.options[editAdviserId.selectedIndex].text : null;
-
-                    renderSections();
-                    filterSections();
-
-                    btn.disabled = false;
-                    btn.textContent = 'Save Changes';
-                    closeEditModal();
-
-                    const gradeMsg = oldGrade !== section.grade_name ? 
-                        ` Grade changed from "${oldGrade}" to "${section.grade_name}".` : '';
-                    showAlert(`✅ Section "${name}" updated successfully!${gradeMsg}`, 'success');
-                }
-            }, 800);
-        });
-    }
-
-    // ============================================
-    // DELETE SECTION
-    // ============================================
-
-    window.deleteSection = function(id, name, studentCount) {
-        let message = `Delete section "${name}"?`;
-        if (studentCount > 0) {
-            message += `\n\n⚠️ Warning: This section has ${studentCount} enrolled student(s).\nThey will be unassigned from this section.`;
+    window.deleteSection = async function(id, name, count) {
+        if (count > 0) {
+            showAlert(`Cannot delete section "${name}" because it has ${count} enrolled student(s).`, 'error');
+            return;
         }
-        message += '\n\nThis action cannot be undone.';
 
-        if (confirm(message)) {
-            // Simulate AJAX request
-            const index = data.sections.findIndex(s => s.id === id);
-            if (index !== -1) {
-                data.sections.splice(index, 1);
-                data.stats.total--;
-                updateStats();
-                renderSections();
-                filterSections();
-                showAlert(`🗑️ Section "${name}" deleted successfully!`, 'success');
-            }
+        if (!confirm(`Are you sure you want to delete section "${name}"?`)) {
+            return;
+        }
+
+        try {
+            const { error: delErr } = await supabase
+                .from('sections')
+                .delete()
+                .eq('id', id);
+
+            if (delErr) throw delErr;
+
+            showAlert(`✅ Section "${name}" deleted successfully!`, 'success');
+            await loadSections();
+        } catch(err) {
+            console.error('Error deleting section:', err);
+            showAlert('Failed to delete section: ' + err.message, 'error');
         }
     };
 
-    // ============================================
-    // UPDATE STATS
-    // ============================================
+    // ===== FORM SUBMISSION =====
 
-    function updateStats() {
-        if (totalSections) totalSections.textContent = data.stats.total;
-        if (totalStudents) {
-            let total = 0;
-            data.sections.forEach(s => total += (s.student_count || 0));
-            totalStudents.textContent = total;
-        }
-        if (sectionsWithAdviser) {
-            let count = 0;
-            data.sections.forEach(s => {
-                if (s.adviser_name && s.adviser_name !== 'Not Assigned') count++;
-            });
-            sectionsWithAdviser.textContent = count;
-        }
-    }
+    if (addSectionForm) {
+        addSectionForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
 
-    // ============================================
-    // SHOW ALERT
-    // ============================================
+            const name = addSectionName.value.trim();
+            const gradeId = addGradeId.value;
+            const adviserName = addAdviserName ? addAdviserName.value.trim() : '';
 
-    function showAlert(message, type = 'success') {
-        if (!alertContainer) return;
+            if (!name || !gradeId || !adviserName) {
+                showAlert('Please fill in all required fields including Class Adviser.', 'error');
+                return;
+            }
 
-        alertContainer.innerHTML = '';
+            const gradeLevelStr = `Grade ${gradeId}`;
+            const matchedTeacher = teachers.find(t => t.name.toLowerCase() === adviserName.toLowerCase());
+            const adviserId = matchedTeacher ? matchedTeacher.id : null;
 
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        alertDiv.innerHTML = `
-            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-            ${message}
-        `;
-        alertContainer.appendChild(alertDiv);
+            // Determine strand
+            let strand = null;
+            const upper = name.toUpperCase();
+            if (upper.includes('STEM')) strand = 'STEM';
+            else if (upper.includes('TVL') || upper.includes('ICT')) strand = 'TVL';
+            else if (upper.includes('HUMSS')) strand = 'HUMSS';
+            else if (upper.includes('ABM')) strand = 'ABM';
+            else if (upper.includes('GAS')) strand = 'GAS';
 
-        setTimeout(() => {
-            alertDiv.style.opacity = '0';
-            setTimeout(() => alertDiv.remove(), 300);
-        }, 5000);
-    }
+            const submitBtn = this.querySelector('button[type="submit"]');
+            try {
+                if (submitBtn) submitBtn.disabled = true;
 
-    // ============================================
-    // AUTO-HIDE ALERTS
-    // ============================================
+                const { error } = await supabase
+                    .from('sections')
+                    .insert([{
+                        name: name,
+                        grade_level: gradeLevelStr,
+                        strand: strand,
+                        adviser_name: adviserName,
+                        adviser_id: adviserId
+                    }]);
 
-    setTimeout(function() {
-        const alerts = document.querySelectorAll('.alert');
-        alerts.forEach(alert => {
-            alert.style.opacity = '0';
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 300);
+                if (error) throw error;
+
+                showAlert(`✅ Section "${name}" created successfully!`, 'success');
+                window.closeAddModal();
+                await loadSections();
+            } catch(err) {
+                console.error('Error creating section:', err);
+                showAlert('Failed to create section: ' + err.message, 'error');
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
         });
-    }, 5000);
+    }
 
-    // ============================================
-    // CLOSE MODALS ON OUTSIDE CLICK
-    // ============================================
+    if (editSectionForm) {
+        editSectionForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
 
-    [addModal, editModal].forEach(modal => {
-        if (modal) {
-            modal.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    if (this === addModal) closeAddModal();
-                    else closeEditModal();
-                }
-            });
-        }
-    });
+            const id = editSectionId.value;
+            const name = editSectionName.value.trim();
+            const gradeId = editGradeId.value;
+            const adviserName = editAdviserName ? editAdviserName.value.trim() : '';
 
-    // Close on Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            if (addModal && addModal.classList.contains('active')) closeAddModal();
-            if (editModal && editModal.classList.contains('active')) closeEditModal();
-        }
-    });
+            if (!id || !name || !gradeId || !adviserName) {
+                showAlert('Please fill in all required fields including Class Adviser.', 'error');
+                return;
+            }
 
-    // ============================================
-    // INITIALIZE
-    // ============================================
+            const gradeLevelStr = `Grade ${gradeId}`;
+            const matchedTeacher = teachers.find(t => t.name.toLowerCase() === adviserName.toLowerCase());
+            const adviserId = matchedTeacher ? matchedTeacher.id : null;
 
-    loadData();
+            const submitBtn = this.querySelector('button[type="submit"]');
+            try {
+                if (submitBtn) submitBtn.disabled = true;
 
-    console.log('✅ Sections Management ready!');
-    console.log(`📚 ${data.sections.length} sections loaded`);
+                const { error } = await supabase
+                    .from('sections')
+                    .update({
+                        name: name,
+                        grade_level: gradeLevelStr,
+                        adviser_name: adviserName,
+                        adviser_id: adviserId,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', id);
 
-})();
+                if (error) throw error;
+
+                showAlert(`✅ Section "${name}" updated successfully!`, 'success');
+                window.closeEditModal();
+                await loadSections();
+            } catch(err) {
+                console.error('Error updating section:', err);
+                showAlert('Failed to update section: ' + err.message, 'error');
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        });
+    }
+
+    // ===== EVENT LISTENERS =====
+    if (gradeFilter) gradeFilter.addEventListener('change', renderSections);
+    if (searchInput) {
+        let timer;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(timer);
+            timer = setTimeout(renderSections, 250);
+        });
+    }
+
+    // ===== INIT =====
+    populateGradeFilter();
+    await loadTeachers();
+    await loadSections();
+});

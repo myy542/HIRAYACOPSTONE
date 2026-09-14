@@ -1,12 +1,14 @@
 /**
- * Reports - Interactive JavaScript
- * No hardcoded data - all data comes from PHP via window.reportData
+ * Reports - Interactive JavaScript (Supabase Integrated)
+ * Live data querying and generation
  */
 
-(function() {
+import { supabase } from '../../supabase/config.js';
+
+(async function() {
     'use strict';
 
-    console.log('📊 Reports page ready');
+    console.log('📊 Reports page initializing with Supabase...');
 
     // ============================================
     // DOM ELEMENTS
@@ -20,10 +22,11 @@
     const alertContainer = document.getElementById('alertContainer');
 
     // Stats
-    const totalStudents = document.getElementById('totalStudents');
-    const totalEnrollments = document.getElementById('totalEnrollments');
-    const enrolledCount = document.getElementById('enrolledCount');
-    const monthlyCount = document.getElementById('monthlyCount');
+    const totalStudentsEl = document.getElementById('totalStudents');
+    const totalEnrollmentsEl = document.getElementById('totalEnrollments');
+    const enrolledCountEl = document.getElementById('enrolledCount');
+    const monthlyCountEl = document.getElementById('monthlyCount');
+    const pendingBadge = document.getElementById('pendingEnrollmentsBadge');
 
     // Report elements
     const reportForm = document.getElementById('reportForm');
@@ -37,36 +40,11 @@
     const reportHead = document.getElementById('reportHead');
     const reportBody = document.getElementById('reportBody');
     const reportFoot = document.getElementById('reportFoot');
-    const reportCard = document.getElementById('reportCard');
     const exportExcelBtn = document.getElementById('exportExcelBtn');
     const printBtn = document.getElementById('printBtn');
 
     // ============================================
-    // DATA FROM PHP
-    // ============================================
-
-    const data = window.reportData || {
-        stats: {
-            total_students: 0,
-            total_enrollments: 0,
-            enrolled_count: 0,
-            monthly_count: 0
-        },
-        grade_levels: [],
-        report: {
-            type: 'enrollment_summary',
-            title: 'Enrollment Summary Report',
-            headers: [],
-            rows: [],
-            date_from: '',
-            date_to: '',
-            grade_filter: '',
-            status_filter: ''
-        }
-    };
-
-    // ============================================
-    // SET REGISTRAR NAME (from session/localStorage)
+    // SESSION & PROFILE
     // ============================================
 
     try {
@@ -83,26 +61,23 @@
         }
     } catch(e) {}
 
-    // ============================================
-    // LOGOUT
-    // ============================================
-
+    // Logout
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
+        logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             console.log('🚪 Registrar logging out...');
             localStorage.removeItem('currentUser');
             localStorage.removeItem('registrarName');
             localStorage.removeItem('plsnhs_registrar_avatar');
             localStorage.removeItem('plsnhs_registrar_name');
+            try {
+                await supabase.auth.signOut();
+            } catch(err) {}
             window.location.replace('../auth/login.html');
         });
     }
 
-    // ============================================
-    // SET DATE
-    // ============================================
-
+    // Set Current Date Badge
     const dateBadge = document.getElementById('dateBadge');
     if (dateBadge) {
         const now = new Date();
@@ -110,10 +85,7 @@
         dateBadge.innerHTML = `<i class="fas fa-calendar-alt"></i> ${now.toLocaleDateString('en-US', options)}`;
     }
 
-    // ============================================
-    // MOBILE MENU TOGGLE
-    // ============================================
-
+    // Mobile Menu Toggle
     if (menuToggle && sidebar) {
         menuToggle.addEventListener('click', function() {
             sidebar.classList.toggle('active');
@@ -128,31 +100,6 @@
         });
     }
 
-    // ============================================
-    // LOAD DATA
-    // ============================================
-
-    function loadData() {
-        // Stats
-        if (totalStudents) totalStudents.textContent = data.stats.total_students;
-        if (totalEnrollments) totalEnrollments.textContent = data.stats.total_enrollments;
-        if (enrolledCount) enrolledCount.textContent = data.stats.enrolled_count;
-        if (monthlyCount) monthlyCount.textContent = data.stats.monthly_count;
-
-        // Grade levels dropdown
-        populateGradeFilter();
-
-        // Set form values
-        if (dateFrom) dateFrom.value = data.report.date_from || getDefaultDateFrom();
-        if (dateTo) dateTo.value = data.report.date_to || getDefaultDateTo();
-        if (reportType) reportType.value = data.report.type || 'enrollment_summary';
-        if (gradeFilter) gradeFilter.value = data.report.grade_filter || '';
-        if (statusFilter) statusFilter.value = data.report.status_filter || '';
-
-        // Render report
-        renderReport();
-    }
-
     function getDefaultDateFrom() {
         const date = new Date();
         date.setDate(date.getDate() - 30);
@@ -164,215 +111,306 @@
     }
 
     // ============================================
+    // LOAD STATS
+    // ============================================
+
+    async function loadStats() {
+        try {
+            const [
+                { count: totalStCount },
+                { count: totalEnCount },
+                { count: approvedCount },
+                { count: pendingCount }
+            ] = await Promise.all([
+                supabase.from('students').select('*', { count: 'exact', head: true }),
+                supabase.from('enrollments').select('*', { count: 'exact', head: true }),
+                supabase.from('enrollments').select('*', { count: 'exact', head: true }).or('status.ilike.enrolled,status.ilike.approved,status.eq.approved,status.eq.enrolled'),
+                supabase.from('enrollments').select('*', { count: 'exact', head: true }).or('status.ilike.pending,status.eq.Pending,status.eq.pending')
+            ]);
+
+            // Monthly enrollments (this calendar month)
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            const { count: monthlyEnCount } = await supabase
+                .from('enrollments')
+                .select('*', { count: 'exact', head: true })
+                .gte('created_at', startOfMonth);
+
+            if (totalStudentsEl) totalStudentsEl.textContent = totalStCount || 0;
+            if (totalEnrollmentsEl) totalEnrollmentsEl.textContent = totalEnCount || 0;
+            if (enrolledCountEl) enrolledCountEl.textContent = approvedCount || 0;
+            if (monthlyCountEl) monthlyCountEl.textContent = monthlyEnCount || 0;
+
+            if (pendingBadge) {
+                if (pendingCount && pendingCount > 0) {
+                    pendingBadge.textContent = pendingCount;
+                    pendingBadge.style.display = 'inline-flex';
+                } else {
+                    pendingBadge.style.display = 'none';
+                }
+            }
+        } catch(err) {
+            console.warn('Error loading stats for reports:', err);
+        }
+    }
+
+    // ============================================
     // POPULATE GRADE FILTER
     // ============================================
 
     function populateGradeFilter() {
         if (!gradeFilter) return;
-
-        const grades = data.grade_levels || [];
+        const defaultGrades = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
         gradeFilter.innerHTML = '<option value="">All Grades</option>';
-        grades.forEach(grade => {
-            gradeFilter.innerHTML += `
-                <option value="${grade.id}">${grade.grade_name}</option>
-            `;
+        defaultGrades.forEach(g => {
+            gradeFilter.innerHTML += `<option value="${g}">${g}</option>`;
         });
     }
 
     // ============================================
-    // RENDER REPORT
+    // GENERATE REPORT (FROM SUPABASE)
     // ============================================
 
-    function renderReport() {
-        const headers = data.report.headers || [];
-        const rows = data.report.rows || [];
-        const title = data.report.title || 'Enrollment Summary Report';
+    let currentReportRows = [];
+    let currentHeaders = [];
 
-        // Set title
-        if (reportTitle) reportTitle.textContent = title;
+    async function generateReport() {
+        const fromVal = (dateFrom && dateFrom.value) ? dateFrom.value : getDefaultDateFrom();
+        const toVal = (dateTo && dateTo.value) ? dateTo.value : getDefaultDateTo();
+        const type = (reportType && reportType.value) || 'enrollment_summary';
+        const gradeVal = (gradeFilter && gradeFilter.value) || '';
+        const statusVal = (statusFilter && statusFilter.value) || '';
 
-        // Set date range
+        // Display date range
         if (dateRange) {
-            const from = data.report.date_from || getDefaultDateFrom();
-            const to = data.report.date_to || getDefaultDateTo();
-            const fromDate = new Date(from + 'T00:00:00');
-            const toDate = new Date(to + 'T00:00:00');
+            const fromDate = new Date(fromVal + 'T00:00:00');
+            const toDate = new Date(toVal + 'T23:59:59');
             dateRange.innerHTML = `
                 <i class="fas fa-calendar-alt"></i>
-                Report Period: ${fromDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} - 
-                ${toDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                Report Period: ${fromDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - 
+                ${toDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             `;
         }
 
-        // Render table
-        if (headers.length === 0 || rows.length === 0) {
-            reportHead.innerHTML = `<tr><th>No Data</th></tr>`;
+        // Set Title
+        const typeTitles = {
+            'enrollment_summary': 'Enrollment Summary Report',
+            'grade_level': 'Grade Level Distribution Report',
+            'strand_distribution': 'Senior High Strand Report',
+            'monthly_trend': 'Monthly Enrollment Statistics',
+            'rejected_applications': 'Rejected Applications Report'
+        };
+        if (reportTitle) {
+            reportTitle.textContent = typeTitles[type] || 'Enrollment Report';
+        }
+
+        // Loading UI
+        if (reportHead) reportHead.innerHTML = `<tr><th>Loading columns...</th></tr>`;
+        if (reportBody) {
             reportBody.innerHTML = `
                 <tr>
                     <td>
-                        <div class="no-data">
-                            <i class="fas fa-chart-bar"></i>
-                            <h3>No Data Available</h3>
-                            <p>No records found for the selected criteria. Try adjusting your filters.</p>
+                        <div class="no-data" style="text-align: center; padding: 30px;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #1B2A4A; margin-bottom: 8px;"></i>
+                            <p>Querying Supabase database...</p>
                         </div>
                     </td>
                 </tr>
             `;
-            reportFoot.innerHTML = '';
-            return;
         }
+        if (reportFoot) reportFoot.innerHTML = '';
 
-        // Headers
-        reportHead.innerHTML = `
-            <tr>
-                ${headers.map(h => `<th>${h}</th>`).join('')}
-            </tr>
-        `;
+        try {
+            // Build Supabase Query
+            let query = supabase
+                .from('enrollments')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-        // Body
-        reportBody.innerHTML = rows.map(row => `
-            <tr>
-                ${row.map(cell => `<td>${cell}</td>`).join('')}
-            </tr>
-        `).join('');
-
-        // Footer
-        reportFoot.innerHTML = `
-            <tr class="total-records">
-                <td colspan="${headers.length}">
-                    <strong>Total Records: ${rows.length}</strong>
-                </td>
-            </tr>
-        `;
-    }
-
-    // ============================================
-    // REPORT FORM SUBMIT
-    // ============================================
-
-    if (reportForm) {
-        reportForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(this);
-            const params = new URLSearchParams();
-
-            for (let [key, value] of formData.entries()) {
-                if (value) params.append(key, value);
+            // Apply date filters
+            if (fromVal) {
+                query = query.gte('created_at', `${fromVal}T00:00:00`);
+            }
+            if (toVal) {
+                query = query.lte('created_at', `${toVal}T23:59:59`);
             }
 
-            // Simulate loading
-            reportBody.innerHTML = `
-                <tr>
-                    <td colspan="10">
-                        <div class="no-data">
-                            <i class="fas fa-spinner fa-spin"></i>
-                            <h3>Generating Report...</h3>
-                            <p>Please wait while we generate your report.</p>
-                        </div>
-                    </td>
-                </tr>
-            `;
+            // Apply Grade filter
+            if (gradeVal) {
+                query = query.ilike('grade_level', `%${gradeVal}%`);
+            }
 
-            // Simulate AJAX request
-            setTimeout(() => {
-                // Update URL with params
-                const url = new URL(window.location.href);
-                url.search = params.toString();
-                window.history.pushState({}, '', url);
+            // Apply Status filter
+            if (statusVal) {
+                if (statusVal.toLowerCase() === 'enrolled' || statusVal.toLowerCase() === 'approved') {
+                    query = query.or('status.ilike.enrolled,status.ilike.approved,status.eq.approved,status.eq.enrolled');
+                } else if (statusVal.toLowerCase() === 'pending') {
+                    query = query.or('status.ilike.pending,status.eq.pending,status.eq.Pending');
+                } else if (statusVal.toLowerCase() === 'rejected') {
+                    query = query.or('status.ilike.rejected,status.eq.rejected,status.eq.Rejected');
+                }
+            }
 
-                // Reload page to get new data from PHP
-                window.location.reload();
-            }, 800);
-        });
-    }
+            // If report type is rejected applications
+            if (type === 'rejected_applications') {
+                query = query.or('status.ilike.rejected,status.eq.rejected,status.eq.Rejected');
+            }
 
-    // ============================================
-    // EXPORT EXCEL
-    // ============================================
+            const { data: enrollments, error } = await query;
+            if (error) throw error;
 
-    if (exportExcelBtn) {
-        exportExcelBtn.addEventListener('click', function() {
-            const table = document.getElementById('reportTable');
-            if (!table) return;
+            const records = enrollments || [];
 
-            // Get headers
-            const headers = [];
-            const headRows = table.querySelectorAll('thead th');
-            headRows.forEach(th => headers.push(th.textContent.trim()));
+            // Define table structure
+            currentHeaders = ['#', 'Enrollment ID', 'Student Name', 'Grade Level', 'Strand', 'Previous School', 'Status', 'Date Submitted'];
+            currentReportRows = [];
 
-            // Get rows
-            const rows = [];
-            const bodyRows = table.querySelectorAll('tbody tr');
-            bodyRows.forEach(tr => {
-                const row = [];
-                const cells = tr.querySelectorAll('td');
-                cells.forEach(td => {
-                    // Skip no-data rows
-                    if (td.querySelector('.no-data')) return;
-                    row.push(td.textContent.trim());
-                });
-                if (row.length > 0) rows.push(row);
-            });
-
-            if (rows.length === 0) {
-                showAlert('❌ No data to export.', 'error');
+            if (records.length === 0) {
+                if (reportHead) reportHead.innerHTML = `<tr><th>No Data</th></tr>`;
+                if (reportBody) {
+                    reportBody.innerHTML = `
+                        <tr>
+                            <td>
+                                <div class="no-data">
+                                    <i class="fas fa-chart-bar"></i>
+                                    <h3>No Records Found</h3>
+                                    <p>No enrollment records match the selected date and filters.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
                 return;
             }
 
-            // Build CSV
-            let csv = headers.join(',') + '\n';
-            rows.forEach(row => {
-                csv += row.join(',') + '\n';
+            // Populate rows
+            let html = '';
+            records.forEach((e, index) => {
+                const name = (e.first_name || e.firstName)
+                    ? `${e.first_name || e.firstName} ${e.last_name || e.lastName || ''}`.trim()
+                    : (e.student_name || e.email || 'N/A');
+                const grade = e.grade_level || e.grade || 'N/A';
+                const strand = e.strand || 'N/A';
+                const prevSchool = e.previous_school || 'N/A';
+                const rawStatus = (e.status || 'pending').toLowerCase();
+                const statusBadgeClass = rawStatus === 'approved' || rawStatus === 'enrolled'
+                    ? 'status-enrolled'
+                    : (rawStatus === 'rejected' ? 'status-rejected' : 'status-pending');
+                const displayStatus = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
+                const dateStr = e.created_at ? new Date(e.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A';
+                const shortId = e.id ? e.id.substring(0, 8).toUpperCase() : `ENR-${index + 1}`;
+
+                currentReportRows.push([
+                    index + 1,
+                    shortId,
+                    name,
+                    grade,
+                    strand,
+                    prevSchool,
+                    displayStatus,
+                    dateStr
+                ]);
+
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td><strong>${shortId}</strong></td>
+                        <td>${name}</td>
+                        <td>${grade}</td>
+                        <td>${strand}</td>
+                        <td>${prevSchool}</td>
+                        <td><span class="status-badge ${statusBadgeClass}">${displayStatus}</span></td>
+                        <td>${dateStr}</td>
+                    </tr>
+                `;
             });
 
-            // Download
+            // Set headers
+            if (reportHead) {
+                reportHead.innerHTML = `
+                    <tr>
+                        ${currentHeaders.map(h => `<th>${h}</th>`).join('')}
+                    </tr>
+                `;
+            }
+
+            // Set body
+            if (reportBody) {
+                reportBody.innerHTML = html;
+            }
+
+            // Set footer
+            if (reportFoot) {
+                reportFoot.innerHTML = `
+                    <tr class="total-records">
+                        <td colspan="${currentHeaders.length}">
+                            <strong>Total Records Found: ${records.length}</strong>
+                        </td>
+                    </tr>
+                `;
+            }
+
+        } catch(err) {
+            console.error('Error generating report:', err);
+            if (reportBody) {
+                reportBody.innerHTML = `
+                    <tr>
+                        <td>
+                            <div class="no-data">
+                                <i class="fas fa-exclamation-circle" style="color: #ef4444;"></i>
+                                <h3>Error Generating Report</h3>
+                                <p>${err.message || 'Failed to query enrollment data.'}</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    }
+
+    // Report Form Submit
+    if (reportForm) {
+        reportForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            generateReport();
+        });
+    }
+
+    // Export Excel / CSV
+    if (exportExcelBtn) {
+        exportExcelBtn.addEventListener('click', function() {
+            if (!currentReportRows || currentReportRows.length === 0) {
+                showAlert('❌ No records available to export.', 'error');
+                return;
+            }
+
+            let csv = currentHeaders.map(h => `"${h}"`).join(',') + '\n';
+            currentReportRows.forEach(row => {
+                csv += row.map(cell => `"${cell}"`).join(',') + '\n';
+            });
+
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `report_${new Date().toISOString().split('T')[0]}.csv`;
+            link.download = `enrollment_report_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
             URL.revokeObjectURL(link.href);
 
-            showAlert('✅ Report exported successfully!', 'success');
+            showAlert('✅ Report downloaded as CSV successfully!', 'success');
         });
     }
 
-    // ============================================
-    // PRINT REPORT
-    // ============================================
-
+    // Print Report
     if (printBtn) {
         printBtn.addEventListener('click', function() {
-            const printContents = document.getElementById('reportCard').innerHTML;
-            const originalContents = document.body.innerHTML;
-
-            document.body.innerHTML = `
-                <div style="padding: 20px; font-family: Arial, sans-serif;">
-                    <h1 style="text-align: center; color: #0b2b4a;">Placido L. Señor NHS</h1>
-                    <h2 style="text-align: center; color: #555;">${reportTitle ? reportTitle.textContent : 'Enrollment Report'}</h2>
-                    <div style="text-align: center; color: #666; margin-bottom: 20px;">
-                        ${dateRange ? dateRange.textContent : ''}
-                    </div>
-                    ${printContents}
-                </div>
-            `;
-
             window.print();
-            document.body.innerHTML = originalContents;
-            window.location.reload();
         });
     }
 
-    // ============================================
-    // SHOW ALERT
-    // ============================================
-
+    // Show Alert
     function showAlert(message, type = 'success') {
         if (!alertContainer) return;
-
         alertContainer.innerHTML = '';
-
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type}`;
         alertDiv.innerHTML = `
@@ -380,33 +418,21 @@
             ${message}
         `;
         alertContainer.appendChild(alertDiv);
-
         setTimeout(() => {
             alertDiv.style.opacity = '0';
             setTimeout(() => alertDiv.remove(), 300);
         }, 5000);
     }
 
-    // ============================================
-    // AUTO-HIDE ALERTS
-    // ============================================
+    // Set Default Form Values
+    if (dateFrom) dateFrom.value = getDefaultDateFrom();
+    if (dateTo) dateTo.value = getDefaultDateTo();
+    populateGradeFilter();
 
-    setTimeout(function() {
-        const alerts = document.querySelectorAll('.alert');
-        alerts.forEach(alert => {
-            alert.style.opacity = '0';
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 300);
-        });
-    }, 5000);
+    // Initial load
+    await loadStats();
+    await generateReport();
 
-    // ============================================
-    // INITIALIZE
-    // ============================================
-
-    loadData();
-
-    console.log('✅ Reports ready!');
+    console.log('✅ Reports initialized successfully with live Supabase data.');
 
 })();

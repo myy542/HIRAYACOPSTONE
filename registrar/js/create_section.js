@@ -1,4 +1,4 @@
-// ===== CREATE SECTION JAVASCRIPT (SUPABASE POWERED) =====
+// ===== REGISTRAR CREATE SECTION JAVASCRIPT (SUPABASE POWERED) =====
 import { supabase } from '../../supabase/config.js';
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const sectionForm = document.getElementById('sectionForm');
     const alertContainer = document.getElementById('alertContainer');
     const quickButtons = document.querySelectorAll('.quick-btn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
 
     // State
     let teachers = [];
@@ -120,7 +123,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             updatePreview();
             
-            this.style.background = '#1B2A4A';
+            this.style.background = '#0b2b4a';
             this.style.color = '#fff';
             setTimeout(() => {
                 this.style.background = '';
@@ -133,6 +136,21 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (sectionNameInput) sectionNameInput.addEventListener('input', updatePreview);
     if (gradeSelect) gradeSelect.addEventListener('change', updatePreview);
     if (adviserInput) adviserInput.addEventListener('input', updatePreview);
+
+    // ===== LOGOUT & MOBILE MENU =====
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('currentUser');
+            window.location.replace('../auth/login.html');
+        });
+    }
+
+    if (menuToggle && sidebar) {
+        menuToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+        });
+    }
 
     // ===== FORM SUBMIT =====
     if (sectionForm) {
@@ -196,16 +214,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             } finally {
                 if (submitBtn) submitBtn.disabled = false;
             }
-        });
-    }
-
-    // ===== MOBILE MENU =====
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('sidebar');
-
-    if (menuToggle && sidebar) {
-        menuToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
         });
     }
 

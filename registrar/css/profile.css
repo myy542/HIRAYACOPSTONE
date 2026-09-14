@@ -181,6 +181,23 @@ body {
     width: 20px;
     text-align: center;
     font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.nav-items a .nav-badge,
+.nav-badge {
+    margin-left: auto;
+    background: #ef4444;
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 700;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .nav-items a:hover {
@@ -307,8 +324,7 @@ body {
     border: 1px solid var(--gray-200);
     padding: 2rem;
     text-align: center;
-    position: sticky;
-    top: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .profile-avatar-large {
@@ -1203,11 +1219,13 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.75rem 1rem;
+    padding: 0.75rem 0.9rem;
     background: white;
     border: 1px solid var(--gray-200);
     border-radius: var(--radius);
     transition: var(--transition);
+    gap: 0.75rem;
+    position: relative;
 }
 
 .doc-item:hover {
@@ -1219,7 +1237,9 @@ body {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    flex: 1 1 0%;
     min-width: 0;
+    overflow: hidden;
 }
 
 .doc-item-icon {
@@ -1237,6 +1257,12 @@ body {
 .doc-icon-img { background: #dbeafe; color: #2563eb; }
 .doc-icon-doc { background: #fef3c7; color: #d97706; }
 
+.doc-item-info {
+    flex: 1 1 0%;
+    min-width: 0;
+    overflow: hidden;
+}
+
 .doc-item-title {
     font-size: 0.85rem;
     font-weight: 600;
@@ -1244,24 +1270,29 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
+    margin-bottom: 2px;
 }
 
 .doc-item-meta {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.75rem;
+    gap: 0.35rem;
+    font-size: 0.72rem;
     color: var(--gray-500);
-    flex-wrap: wrap;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .doc-category-pill {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     font-weight: 600;
-    padding: 0.1rem 0.5rem;
-    border-radius: 8px;
+    padding: 0.1rem 0.45rem;
+    border-radius: 6px;
     background: var(--gray-100);
     color: var(--gray-700);
+    flex-shrink: 0;
 }
 
 .doc-item-actions {
@@ -1269,6 +1300,7 @@ body {
     align-items: center;
     gap: 0.35rem;
     flex-shrink: 0;
+    margin-left: 0.5rem;
 }
 
 .doc-btn {

@@ -119,7 +119,6 @@ body {
     color: rgba(255, 255, 255, 0.45);
     letter-spacing: 0.3px;
     text-transform: uppercase;
-    /* Center this below PLSNHS - use padding-left to align with PLSNHS start */
     padding-left: 0px;
     text-align: left;
 }
@@ -414,6 +413,8 @@ body {
     color: var(--gray-500);
     margin-top: 2px;
     line-height: 1.4;
+    white-space: pre-line;
+    word-break: break-word;
 }
 
 .notif-time {

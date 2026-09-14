@@ -1,4 +1,5 @@
-// ===== ADD ACCOUNT JAVASCRIPT =====
+// ===== ADD ACCOUNT JAVASCRIPT (SUPABASE POWERED) =====
+import { supabase } from '../../supabase/config.js';
 
 document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
@@ -22,7 +23,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
 
-    // Mobile menu toggle
     if (menuToggle && sidebar) {
         menuToggle.addEventListener('click', function() {
             sidebar.classList.toggle('active');
@@ -31,7 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ===== FUNCTIONS =====
 
-    // Generate preview ID number based on role
     function getPreviewIDNumber(role) {
         if (role === 'Teacher') {
             return 'PLSNHS-TCH-XXXXX';
@@ -43,7 +42,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return 'Will be auto-generated';
     }
 
-    // Generate actual ID number
     function generateActualIDNumber(role) {
         const rand = Math.floor(10000 + Math.random() * 90000);
         if (role === 'Teacher') {
@@ -56,30 +54,19 @@ document.addEventListener('DOMContentLoaded', function() {
         return `PLSNHS-ACC-${rand}`;
     }
 
-    // Update ID preview
     function updateIDPreview() {
         const role = roleSelect ? roleSelect.value : '';
         const idValue = getPreviewIDNumber(role);
-        if (idPreview) {
-            idPreview.value = idValue;
-        }
-        if (previewIDNumber) {
-            previewIDNumber.textContent = idValue;
-        }
+        if (idPreview) idPreview.value = idValue;
+        if (previewIDNumber) previewIDNumber.textContent = idValue;
     }
 
-    // Update live preview
     function updatePreview() {
         const fullname = (fullnameInput ? fullnameInput.value.trim() : '') || 'New User';
         if (previewName) previewName.textContent = fullname;
 
         const initial = fullname.charAt(0).toUpperCase() || 'U';
-        if (previewInitial) {
-            previewInitial.textContent = initial;
-            previewInitial.classList.remove('changed');
-            void previewInitial.offsetWidth;
-            previewInitial.classList.add('changed');
-        }
+        if (previewInitial) previewInitial.textContent = initial;
 
         const email = (emailInput ? emailInput.value.trim() : '') || 'user@plshs.edu.ph';
         if (previewEmail) previewEmail.innerHTML = `<i class="fas fa-envelope"></i> ${email}`;
@@ -103,7 +90,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updateIDPreview();
     }
 
-    // Check password strength
     function checkPasswordStrength() {
         if (!passwordInput || !strengthBar || !strengthText) return;
         const password = passwordInput.value;
@@ -143,7 +129,6 @@ document.addEventListener('DOMContentLoaded', function() {
         strengthText.innerHTML = `<i class="fas fa-shield-alt"></i> <span style="color: ${strengthColor};">Password strength: ${strengthLabel}</span>`;
     }
 
-    // Check password match
     function checkPasswordMatch() {
         if (!passwordInput || !confirmInput || !passwordMatch) return;
         const password = passwordInput.value;
@@ -158,7 +143,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Toggle password visibility
     function togglePassword() {
         if (!passwordInput) return;
         const toggleIcon = togglePasswordBtn ? togglePasswordBtn.querySelector('i') : null;
@@ -171,12 +155,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    if (togglePasswordBtn) {
-        togglePasswordBtn.addEventListener('click', togglePassword);
-    }
-    window.togglePassword = togglePassword;
+    if (togglePasswordBtn) togglePasswordBtn.addEventListener('click', togglePassword);
 
-    // Show alert messages
     function showAlert(message, type = 'error') {
         if (!alertContainer) return;
         alertContainer.innerHTML = '';
@@ -195,18 +175,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===== EVENT LISTENERS =====
-
-    if (roleSelect) {
-        roleSelect.addEventListener('change', updatePreview);
-    }
-
-    if (fullnameInput) {
-        fullnameInput.addEventListener('input', updatePreview);
-    }
-
-    if (emailInput) {
-        emailInput.addEventListener('input', updatePreview);
-    }
+    if (roleSelect) roleSelect.addEventListener('change', updatePreview);
+    if (fullnameInput) fullnameInput.addEventListener('input', updatePreview);
+    if (emailInput) emailInput.addEventListener('input', updatePreview);
 
     if (passwordInput) {
         passwordInput.addEventListener('input', function() {
@@ -215,14 +186,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    if (confirmInput) {
-        confirmInput.addEventListener('input', checkPasswordMatch);
-    }
+    if (confirmInput) confirmInput.addEventListener('input', checkPasswordMatch);
 
     // ===== FORM SUBMISSION =====
-
     if (accountForm) {
-        accountForm.addEventListener('submit', function(e) {
+        accountForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const fullname = fullnameInput.value.trim();
@@ -231,9 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const password = passwordInput.value;
             const confirm = confirmInput.value;
 
-            // Validation
             let errors = [];
-
             if (!fullname) errors.push('Full name is required');
             if (!email) errors.push('Email address is required');
             if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Invalid email format');
@@ -241,8 +207,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!password) {
                 errors.push('Password is required');
-            } else if (password.length < 8) {
-                errors.push('Password must be at least 8 characters long');
+            } else if (password.length < 6) {
+                errors.push('Password must be at least 6 characters long');
             }
 
             if (password !== confirm) {
@@ -254,35 +220,66 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
+            // Split name into first and last name
+            const nameParts = fullname.split(' ');
+            const firstName = nameParts[0] || fullname;
+            const lastName = nameParts.slice(1).join(' ') || '';
             const generatedID = generateActualIDNumber(role);
 
-            // Save to localStorage
+            const submitBtn = accountForm.querySelector('button[type="submit"]');
             try {
-                let savedAccounts = JSON.parse(localStorage.getItem('plsnhs_accounts') || '[]');
-                const newAccount = {
-                    id: Date.now(),
-                    id_number: generatedID,
-                    fullname: fullname,
-                    email: email,
-                    role: role,
-                    status: 'approved',
-                    created_at: new Date().toISOString().replace('T', ' ').substring(0, 19),
-                    rejection_reason: null
-                };
-                savedAccounts.unshift(newAccount);
-                localStorage.setItem('plsnhs_accounts', JSON.stringify(savedAccounts));
+                if (submitBtn) submitBtn.disabled = true;
+
+                // 1. Check if email already exists
+                const { data: existingUser } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('email', email)
+                    .maybeSingle();
+
+                if (existingUser) {
+                    throw new Error('An account with this email address already exists.');
+                }
+
+                // 2. Insert into users table
+                const { data: newUser, error: userErr } = await supabase
+                    .from('users')
+                    .insert([{
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email,
+                        password: password,
+                        role: role.toLowerCase()
+                    }])
+                    .select()
+                    .single();
+
+                if (userErr) throw userErr;
+
+                // 3. If role is teacher, also create teacher record
+                if (role.toLowerCase() === 'teacher') {
+                    await supabase
+                        .from('teachers')
+                        .insert([{
+                            user_id: newUser.id,
+                            employee_id: generatedID,
+                            specialization: 'General'
+                        }]);
+                }
+
+                showAlert(`✅ Account created successfully!<br><strong>Assigned ID:</strong> ${generatedID}<br>Redirecting to Accounts list...`, 'success');
+
+                setTimeout(() => {
+                    window.location.href = 'manage_accounts.html';
+                }, 1500);
             } catch (err) {
-                console.error('Error saving account to localStorage:', err);
+                console.error('Error creating account:', err);
+                showAlert('Failed to create account: ' + err.message, 'error');
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
             }
-
-            showAlert(`✅ Account created successfully!<br><strong>Assigned ID:</strong> ${generatedID}<br>Redirecting to Accounts list...`, 'success');
-
-            setTimeout(() => {
-                window.location.href = 'manage_accounts.html';
-            }, 1800);
         });
     }
 
-    // Initial preview setup
     updatePreview();
 });

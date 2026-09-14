@@ -170,6 +170,29 @@ body {
     margin-right: 4px;
 }
 
+.parent-child-badge {
+    margin-top: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    color: #facc15;
+    font-weight: 600;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.parent-child-badge i {
+    color: #facc15;
+    font-size: 11px;
+}
+
 /* ===== NAVIGATION ===== */
 .nav-menu {
     flex: 1;

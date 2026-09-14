@@ -33,21 +33,23 @@
 
             <div class="parent-profile">
                 <div class="parent-avatar">
-                    <div class="avatar-initial">P</div>
+                    <div class="avatar-initial" id="parentInitial">P</div>
                     <div class="online-dot"></div>
                 </div>
-                <div class="parent-name">Mr. & Mrs. Dela Cruz</div>
+                <div class="parent-name" id="sidebarParentName">Parent</div>
                 <div class="parent-role"><i class="fas fa-user-friends"></i> Parent</div>
+                <div class="parent-child-badge" id="sidebarChildBadge" title="Linked Child">
+                    <i class="fas fa-child"></i> Student: <span id="sidebarChildName">Student</span>
+                </div>
             </div>
 
-            <div class="nav-menu">
+            <nav class="nav-menu">
                 <div class="nav-section">
                     <div class="nav-section-title">MAIN MENU</div>
                     <ul class="nav-items">
                         <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                         <li><a href="grades.html"><i class="fas fa-star"></i> Grades</a></li>
                         <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Attendance</a></li>
-                        <li><a href="enrollment.html"><i class="fas fa-file-signature"></i> Enrollment Status</a></li>
                     </ul>
                 </div>
 
@@ -55,10 +57,10 @@
                     <div class="nav-section-title">ACCOUNT</div>
                     <ul class="nav-items">
                         <li><a href="profile.html" class="active"><i class="fas fa-user"></i> Profile</a></li>
-                        <li><a href="../auth/logout.html"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        <li><a href="../auth/logout.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                     </ul>
                 </div>
-            </div>
+            </nav>
         </aside>
 
         <!-- Main Content -->
@@ -67,7 +69,10 @@
             <div class="page-header">
                 <div>
                     <h1>My Profile</h1>
-                    <p class="subtitle">View and manage your account information</p>
+                    <p class="subtitle">View and manage your account and family details</p>
+                </div>
+                <div class="date-badge" id="currentDateDisplay">
+                    <i class="fas fa-calendar-alt"></i> Loading date...
                 </div>
             </div>
 
@@ -79,20 +84,20 @@
                 <!-- Left Column - Profile Info -->
                 <div>
                     <div class="profile-card">
-                        <div class="profile-avatar-large" onclick="openImageModal()">
-                            <div class="avatar-initial">P</div>
+                        <div class="profile-avatar-large" id="avatarUploadTrigger">
+                            <div class="avatar-initial" id="profileLargeInitial">P</div>
                             <div class="avatar-overlay">
                                 <i class="fas fa-camera"></i>
                             </div>
                         </div>
-                        <h2 class="profile-name" id="profileName">Mr. & Mrs. Dela Cruz</h2>
+                        <h2 class="profile-name" id="profileName">Parent</h2>
                         <div style="text-align: center;">
-                            <span class="profile-role">Parent</span>
+                            <span class="profile-role">Parent Guardian</span>
                         </div>
 
                         <div class="profile-stats">
                             <div class="stat-item">
-                                <div class="stat-number" id="childrenCount">2</div>
+                                <div class="stat-number" id="childrenCount">0</div>
                                 <div class="stat-label">Children</div>
                             </div>
                             <div class="stat-item">
@@ -106,8 +111,7 @@
                             <div class="info-content">
                                 <div class="info-label">Email Address</div>
                                 <div class="info-value" id="profileEmail">
-                                    parent@plshs.edu.ph
-                                    <span class="verified-badge"><i class="fas fa-check-circle"></i> Verified</span>
+                                    parent@hiraya.edu.ph
                                 </div>
                             </div>
                         </div>
@@ -132,64 +136,18 @@
                             <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
                             <div class="info-content">
                                 <div class="info-label">Address</div>
-                                <div class="info-value" id="profileAddress">123 Main St., Brgy. San Juan, City of Naga, Cebu</div>
+                                <div class="info-value" id="profileAddress">Langtad, City of Naga, Cebu</div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Children Summary -->
                     <div class="children-summary-card">
-                        <h3><i class="fas fa-child"></i> Your Children</h3>
+                        <h3><i class="fas fa-child"></i> Registered Children</h3>
                         <div id="childrenSummary">
-                            <!-- Loaded by JavaScript -->
-                        </div>
-                    </div>
-
-                    <!-- Guardian Documents & Credentials Card -->
-                    <div class="doc-upload-card">
-                        <div class="doc-upload-header">
-                            <div class="doc-upload-header-left">
-                                <i class="fas fa-id-card-clip"></i>
-                                <h3>Guardian Identification</h3>
+                            <div class="no-data" style="padding: 20px; text-align: center; color: #94a3b8;">
+                                <i class="fas fa-circle-notch fa-spin"></i> Loading children...
                             </div>
-                            <span class="doc-upload-count" id="parentDocCount">0 Files</span>
-                        </div>
-
-                        <!-- Dropzone / Picker -->
-                        <div class="doc-drop-zone" id="parentDocDropZone">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <h4>Upload Verification Documents</h4>
-                            <p>Click or drag Government ID, Proof of Guardianship, Residency (PDF, PNG, JPG up to 10MB)</p>
-                            <input type="file" id="parentDocFileInput" accept=".pdf,image/png,image/jpeg,image/webp" style="display: none;">
-                        </div>
-
-                        <div id="parentDocUploadForm" style="display: none; margin-bottom: 16px; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #e2e8f0;">
-                            <div style="font-size: 13px; font-weight: 600; color: #0f172a; margin-bottom: 8px;">Selected: <span id="parentDocSelectedName" style="color: #1B2A4A;"></span></div>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                                <div>
-                                    <label style="font-size: 11px; font-weight: 600; color: #64748b; display: block; margin-bottom: 4px;">Document Type</label>
-                                    <select id="parentDocTypeSelect" style="width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12.5px;">
-                                        <option value="Valid ID">Government Issued ID</option>
-                                        <option value="Proof of Guardianship">Proof of Guardianship / Affidavit</option>
-                                        <option value="Proof of Residency">Barangay Certificate / Residency</option>
-                                        <option value="Signature Specimen">Specimen Signature</option>
-                                        <option value="Other">Other Document</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style="font-size: 11px; font-weight: 600; color: #64748b; display: block; margin-bottom: 4px;">Document Label</label>
-                                    <input type="text" id="parentDocCustomTitle" placeholder="e.g. UMID Card / Driver's License" style="width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12.5px;">
-                                </div>
-                            </div>
-                            <div style="display: flex; gap: 8px; justify-content: flex-end;">
-                                <button type="button" class="btn-secondary" id="parentDocCancelBtn" style="padding: 6px 14px; font-size: 12px; border-radius: 6px; cursor: pointer; background: #fff; border: 1px solid #cbd5e1;">Cancel</button>
-                                <button type="button" class="btn-primary" id="parentDocSaveBtn" style="padding: 6px 16px; font-size: 12px; border-radius: 6px; background: #1B2A4A; color: #fff; border: none; cursor: pointer;"><i class="fas fa-upload"></i> Upload</button>
-                            </div>
-                        </div>
-
-                        <!-- Document List -->
-                        <div class="doc-list" id="parentDocList">
-                            <!-- Populated by JS -->
                         </div>
                     </div>
                 </div>
@@ -199,35 +157,38 @@
                     <!-- Edit Profile Form -->
                     <div class="form-card">
                         <div class="form-header">
-                            <i class="fas fa-user-edit"></i>
-                            <h3>Edit Profile Information</h3>
+                            <h3><i class="fas fa-user-edit"></i> Edit Profile Information</h3>
                         </div>
                         <form id="profileForm">
-                            <div class="form-group">
-                                <label class="form-label">Full Name <span class="required">*</span></label>
-                                <input type="text" name="fullname" id="fullname" value="Mr. & Mrs. Dela Cruz" required>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="firstNameInput">First Name <span class="required">*</span></label>
+                                    <input type="text" id="firstNameInput" name="first_name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="lastNameInput">Last Name <span class="required">*</span></label>
+                                    <input type="text" id="lastNameInput" name="last_name" required>
+                                </div>
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">Email Address <span class="required">*</span></label>
-                                <input type="email" name="email" id="email" value="parent@plshs.edu.ph" required>
+                                <label for="emailInput">Email Address <span class="required">*</span></label>
+                                <input type="email" id="emailInput" name="email" required readonly style="background-color: #f8fafc; cursor: not-allowed;">
+                                <small style="color: #64748b; font-size: 0.78rem;">Email address is linked to your authentication account.</small>
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">Contact Number</label>
-                                <input type="tel" name="phone" id="phone" value="09123456789" placeholder="09XXXXXXXXX">
-                                <small style="color: #64748b; display: block; margin-top: 5px;">
-                                    <i class="fas fa-info-circle"></i> Philippine mobile number format: 09XXXXXXXXX (11 digits)
-                                </small>
+                                <label for="phoneInput">Contact Number</label>
+                                <input type="text" id="phoneInput" name="phone" placeholder="09xxxxxxxxx">
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">Address</label>
-                                <textarea name="address" id="address" rows="3">123 Main St., Brgy. San Juan, City of Naga, Cebu</textarea>
+                                <label for="addressInput">Residential Address</label>
+                                <textarea id="addressInput" name="address" rows="3" placeholder="Enter complete home address"></textarea>
                             </div>
 
-                            <button type="submit" class="btn-submit">
-                                <i class="fas fa-save"></i> Update Profile
+                            <button type="submit" class="btn-primary" id="saveProfileBtn">
+                                <i class="fas fa-save"></i> Save Changes
                             </button>
                         </form>
                     </div>
@@ -235,118 +196,28 @@
                     <!-- Change Password Form -->
                     <div class="form-card">
                         <div class="form-header">
-                            <i class="fas fa-lock"></i>
-                            <h3>Change Password</h3>
+                            <h3><i class="fas fa-lock"></i> Security & Password</h3>
                         </div>
-                        
-                        <div class="password-section">
-                            <div class="password-header">
-                                <input type="checkbox" id="changePasswordCheckbox">
-                                <label for="changePasswordCheckbox">I want to change my password</label>
+                        <form id="passwordForm">
+                            <div class="form-group">
+                                <label for="currentPassword">Current Password <span class="required">*</span></label>
+                                <input type="password" id="currentPassword" required placeholder="Enter current password">
                             </div>
 
-                            <form id="passwordForm">
-                                <div class="password-fields" id="passwordFields">
-                                    <div class="form-group">
-                                        <label class="form-label">Current Password <span class="required">*</span></label>
-                                        <input type="password" name="current_password" id="currentPassword" disabled>
-                                    </div>
-
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label class="form-label">New Password <span class="required">*</span></label>
-                                            <input type="password" name="new_password" id="newPassword" disabled>
-                                            
-                                            <div class="password-strength">
-                                                <div class="password-strength-bar">
-                                                    <div class="password-strength-fill" id="passwordStrengthFill"></div>
-                                                </div>
-                                                <div class="password-strength-text" id="passwordStrengthText">
-                                                    <i class="fas fa-info-circle"></i>
-                                                    <span>Enter new password</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="password-requirements" id="passwordRequirements">
-                                                <small><i class="fas fa-shield-alt"></i> Password must contain:</small>
-                                                <ul>
-                                                    <li id="req-length"><i class="fas fa-circle"></i> At least 8 characters</li>
-                                                    <li id="req-upper"><i class="fas fa-circle"></i> At least 1 uppercase letter (A-Z)</li>
-                                                    <li id="req-lower"><i class="fas fa-circle"></i> At least 1 lowercase letter (a-z)</li>
-                                                    <li id="req-number"><i class="fas fa-circle"></i> At least 1 number (0-9)</li>
-                                                    <li id="req-special"><i class="fas fa-circle"></i> At least 1 special character (!@#$%^&*)</li>
-                                                </ul>
-                                            </div>
-                                        </div>
-
-                                        <div class="form-group">
-                                            <label class="form-label">Confirm Password <span class="required">*</span></label>
-                                            <input type="password" name="confirm_password" id="confirmPassword" disabled>
-                                            <div class="password-strength-text" id="passwordMatchText">
-                                                <i class="fas fa-info-circle"></i> Re-enter new password
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <button type="submit" class="btn-submit" id="changePasswordBtn" disabled>
-                                        <i class="fas fa-key"></i> Change Password
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    <!-- Account Security -->
-                    <div class="form-card">
-                        <div class="form-header">
-                            <i class="fas fa-shield-alt"></i>
-                            <h3>Account Security</h3>
-                        </div>
-
-                        <div class="security-item">
-                            <div class="security-icon"><i class="fas fa-envelope"></i></div>
-                            <div class="security-content">
-                                <h4>Email Verification</h4>
-                                <p>Your email has been verified.</p>
-                                <span class="security-status verified">Verified</span>
+                            <div class="form-group">
+                                <label for="newPassword">New Password <span class="required">*</span></label>
+                                <input type="password" id="newPassword" required placeholder="Minimum 6 characters">
                             </div>
-                        </div>
 
-                        <div class="security-item">
-                            <div class="security-icon"><i class="fas fa-lock"></i></div>
-                            <div class="security-content">
-                                <h4>Two-Factor Authentication (2FA)</h4>
-                                <p>Add an extra layer of security to your account.</p>
-                                <label class="switch">
-                                    <input type="checkbox" id="twoFactorToggle">
-                                    <span class="slider"></span>
-                                </label>
-                                <span class="security-status" id="twoFactorStatus">Disabled</span>
+                            <div class="form-group">
+                                <label for="confirmPassword">Confirm New Password <span class="required">*</span></label>
+                                <input type="password" id="confirmPassword" required placeholder="Repeat new password">
                             </div>
-                        </div>
 
-                        <div class="security-item">
-                            <div class="security-icon"><i class="fas fa-clock"></i></div>
-                            <div class="security-content">
-                                <h4>Last Login</h4>
-                                <p id="lastLogin">June 23, 2026 10:30 AM</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Linked Children -->
-                    <div class="form-card">
-                        <div class="form-header">
-                            <i class="fas fa-users"></i>
-                            <h3>Linked Children</h3>
-                            <button class="btn-add-child" onclick="showAlert('Add child feature will be available soon.', 'success')">
-                                <i class="fas fa-plus-circle"></i> Add Child
+                            <button type="submit" class="btn-primary" id="changePasswordBtn">
+                                <i class="fas fa-key"></i> Update Password
                             </button>
-                        </div>
-
-                        <div id="linkedChildren">
-                            <!-- Loaded by JavaScript -->
-                        </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -358,56 +229,28 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-camera"></i> Update Profile Picture</h3>
-                <button class="close-modal" onclick="closeImageModal()">&times;</button>
+                <button class="close-modal" id="closeImageModalBtn">&times;</button>
             </div>
             <form id="uploadForm" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="image-preview" id="imagePreview">
-                        <div style="width: 150px; height: 150px; background: #1B2A4A; display: flex; align-items: center; justify-content: center; color: white; font-size: 56px; font-weight: bold; border-radius: 50%;">
+                        <div style="width: 120px; height: 120px; background: #0b2b4a; display: flex; align-items: center; justify-content: center; color: #FFD700; font-size: 48px; font-weight: bold; border-radius: 50%; margin: 0 auto;">
                             P
                         </div>
                     </div>
-                    <div class="file-input-wrapper">
-                        <input type="file" name="profile_picture" id="profilePicture" accept="image/jpeg,image/png,image/gif,image/webp" onchange="previewImage(this)">
-                        <label for="profilePicture" class="file-input-label">
-                            <i class="fas fa-upload"></i> Choose Image
-                        </label>
+                    <div class="file-input-wrapper" style="margin-top: 15px; text-align: center;">
+                        <input type="file" name="profile_picture" id="profilePicture" accept="image/jpeg,image/png,image/gif,image/webp">
                     </div>
-                    <p style="font-size: 12px; color: #94a3b8; margin-top: 10px;">
-                        <i class="fas fa-info-circle"></i> Allowed formats: JPG, PNG, GIF, WEBP. Max size: 5MB
-                    </p>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn-danger" onclick="removeProfilePic()" style="background: #ef4444; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-weight: 500;">
-                        <i class="fas fa-trash"></i> Remove
-                    </button>
-                    <button type="button" class="btn-secondary" onclick="closeImageModal()" style="background: #fff; color: #475569; border: 1.5px solid #e2e8f0; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-family: inherit; font-weight: 500;">Cancel</button>
-                    <button type="submit" class="btn-primary" style="background: #1B2A4A; color: #fff; border: none; padding: 10px 24px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: inherit; font-weight: 600;">Upload</button>
+                    <button type="button" class="btn-secondary" id="cancelImageBtn">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Picture</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Document Preview Modal -->
-    <div class="modal" id="docPreviewModal">
-        <div class="modal-content doc-preview-modal-content">
-            <div class="modal-header">
-                <h3 id="docPreviewTitle"><i class="fas fa-file-alt"></i> Document Preview</h3>
-                <button type="button" class="close-modal" id="closeDocPreviewBtn">&times;</button>
-            </div>
-            <div class="modal-body doc-preview-body" id="docPreviewContainer">
-                <!-- Preview loaded by JS -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" id="dismissDocPreviewBtn">Close</button>
-                <a href="#" id="docDownloadBtn" class="btn-primary" download style="background: #1B2A4A; color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-download"></i> Download
-                </a>
-            </div>
-        </div>
-    </div>
-
     <script src="js/parent_avatar_sync.js"></script>
-    <script src="js/profile.js"></script>
+    <script type="module" src="js/profile.js"></script>
 </body>
 </html>

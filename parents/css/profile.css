@@ -9,11 +9,12 @@
 
 /* Profile Card */
 .profile-card {
-    background: #ffffff;
+    background: #fff;
     border-radius: 16px;
     padding: 28px 24px;
     border: 1px solid #e9edf4;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    text-align: center;
 }
 
 .profile-avatar-large {
@@ -117,6 +118,7 @@
     gap: 14px;
     padding: 10px 0;
     border-bottom: 1px solid #f1f5f9;
+    text-align: left;
 }
 
 .profile-info-item:last-child {
@@ -132,6 +134,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 14px;
     flex-shrink: 0;
 }
 
@@ -145,6 +148,7 @@
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    margin-bottom: 2px;
 }
 
 .info-value {
@@ -933,7 +937,9 @@
     display: flex;
     align-items: center;
     gap: 14px;
+    flex: 1 1 0%;
     min-width: 0;
+    overflow: hidden;
 }
 
 .doc-item-icon {
@@ -952,7 +958,9 @@
 .doc-icon-doc { background: #fef3c7; color: #d97706; }
 
 .doc-item-info {
+    flex: 1 1 0%;
     min-width: 0;
+    overflow: hidden;
 }
 
 .doc-item-title {
@@ -962,6 +970,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
     margin-bottom: 2px;
 }
 
@@ -971,7 +980,9 @@
     gap: 8px;
     font-size: 11.5px;
     color: #64748b;
-    flex-wrap: wrap;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .doc-category-pill {
@@ -981,6 +992,7 @@
     border-radius: 10px;
     background: #e2e8f0;
     color: #475569;
+    flex-shrink: 0;
 }
 
 .doc-item-actions {
@@ -988,6 +1000,7 @@
     align-items: center;
     gap: 6px;
     flex-shrink: 0;
+    margin-left: 8px;
 }
 
 .doc-btn {

@@ -54,6 +54,18 @@
     margin-bottom: 4px;
 }
 
+.form-row-3 {
+    grid-template-columns: 2fr 1.2fr 2fr;
+}
+
+@media (max-width: 640px) {
+    .form-row,
+    .form-row-3 {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+}
+
 .form-group {
     margin-bottom: 18px;
 }

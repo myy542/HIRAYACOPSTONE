@@ -93,8 +93,7 @@ import { supabase } from '../../supabase/config.js';
     function getStudentInitials(name) {
         if (!name || typeof name !== 'string') return 'S';
         const cleanName = name.replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?)\s+/i, '').trim();
-        if (!cleanName || cleanName.toLowerCase() === 'student' || cleanName.toLowerCase().includes('mylene') || cleanName.toLowerCase().includes('raganas')) return 'S';
-        const words = cleanName.split(/[\s,&-]+/).filter(w => w.length > 0 && !['and', 'the', 'of', '&'].includes(w.toLowerCase()));
+        const words = cleanName.split(/[\s,&-]+/).filter(w => w.length > 0);
         if (words.length === 0) return 'S';
         if (words.length === 1) return words[0].charAt(0).toUpperCase();
         return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
@@ -102,19 +101,15 @@ import { supabase } from '../../supabase/config.js';
 
     function sanitizeStudentName(name, email) {
         if (!name && email) {
-            if (email.toLowerCase().includes('mylene') || email.toLowerCase().includes('student')) return 'Student';
-            name = email.split('@')[0];
+            return email.split('@')[0];
         }
-        if (!name || name.toLowerCase().includes('mylene') || name.toLowerCase().includes('raganas') || name.toLowerCase() === 'admin') {
-            return 'Student';
-        }
-        return name;
+        return (name || '').trim();
     }
 
     // Set initial display name from session
-    let initialDisplayName = sessionUser.firstName ?
-        `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim() :
-        (sessionUser.email ? sessionUser.email.split('@')[0] : 'Student');
+    let initialDisplayName = sessionUser.displayName || 
+        (sessionUser.firstName ? `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim() : 
+        (sessionUser.email ? sessionUser.email.split('@')[0] : 'Student'));
     initialDisplayName = sanitizeStudentName(initialDisplayName, sessionUser.email);
 
     if (studentName) studentName.textContent = initialDisplayName;
@@ -359,16 +354,19 @@ import { supabase } from '../../supabase/config.js';
             tr.className = 'history-table-row';
 
             // Status Badge Formatter
-            const statusLower = enrollment.status.toLowerCase();
+            const statusLower = (enrollment.status || 'pending').toLowerCase();
             let statusBadgeClass = 'status-pending';
             let statusIcon = '<i class="fas fa-hourglass-half"></i>';
+            let displayStatus = 'Pending';
 
             if (statusLower === 'approved' || statusLower === 'enrolled') {
                 statusBadgeClass = 'status-approved';
                 statusIcon = '<i class="fas fa-check-circle"></i>';
+                displayStatus = 'Enrolled';
             } else if (statusLower === 'rejected') {
                 statusBadgeClass = 'status-rejected';
                 statusIcon = '<i class="fas fa-times-circle"></i>';
+                displayStatus = 'Rejected';
             }
 
             // Formatted Date
@@ -407,7 +405,7 @@ import { supabase } from '../../supabase/config.js';
                 <td><span class="table-date">${formattedDate}</span></td>
                 <td>
                     <span class="status-badge ${statusBadgeClass}">
-                        ${statusIcon} ${enrollment.status}
+                        ${statusIcon} ${displayStatus}
                     </span>
                 </td>
                 <td style="text-align: center;">

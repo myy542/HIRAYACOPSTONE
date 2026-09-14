@@ -1,6 +1,7 @@
-// ===== EDIT ACCOUNT JAVASCRIPT =====
+// ===== EDIT ACCOUNT JAVASCRIPT (SUPABASE POWERED) =====
+import { supabase } from '../../supabase/config.js';
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // DOM Elements
     const fullnameInput = document.getElementById('fullname');
     const emailInput = document.getElementById('email');
@@ -23,52 +24,52 @@ document.addEventListener('DOMContentLoaded', function() {
     const passwordMatch = document.getElementById('passwordMatch');
     const passwordFields = document.getElementById('passwordFields');
 
-    // Account data from PHP
-    const accountData = {
-        id: 1,
-        name: 'Maria Santos',
-        email: 'maria.santos@plshs.edu.ph',
-        role: 'Teacher',
-        initial: 'M'
-    };
+    // State
+    let accountId = null;
+    let accountData = null;
 
-    // ===== FUNCTIONS =====
+    // Alert helper
+    function showAlert(message, type = 'error') {
+        if (!alertContainer) return;
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> <div>${message}</div>`;
+        alertContainer.appendChild(alertDiv);
 
-    // Update preview
-    function updatePreview() {
-        const fullname = fullnameInput.value.trim() || 'User Name';
-        previewName.textContent = fullname;
-        
-        const initial = fullname.charAt(0).toUpperCase() || 'U';
-        previewInitial.textContent = initial;
-
-        const email = emailInput.value.trim() || 'user@plshs.edu.ph';
-        previewEmail.innerHTML = `<i class="fas fa-envelope"></i> ${email}`;
-
-        const role = roleSelect.value || 'Student';
-        const roleDisplay = role;
-        previewRole.textContent = roleDisplay;
-        previewRole.className = `preview-role role-${role.toLowerCase()}`;
+        setTimeout(() => {
+            alertDiv.style.opacity = '0';
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 300);
+        }, 5000);
     }
 
-    // Toggle password visibility
-    window.togglePassword = function() {
-        const passwordInput = document.getElementById('newPassword');
-        const toggleBtn = document.querySelector('.toggle-password i');
+    function updatePreview() {
+        const fullname = (fullnameInput ? fullnameInput.value.trim() : '') || 'User Name';
+        if (previewName) previewName.textContent = fullname;
         
-        if (passwordInput && toggleBtn) {
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                toggleBtn.className = 'fas fa-eye-slash';
-            } else {
-                passwordInput.type = 'password';
-                toggleBtn.className = 'fas fa-eye';
-            }
+        const initial = fullname.charAt(0).toUpperCase() || 'U';
+        if (previewInitial) previewInitial.textContent = initial;
+
+        const email = (emailInput ? emailInput.value.trim() : '') || 'user@plshs.edu.ph';
+        if (previewEmail) previewEmail.innerHTML = `<i class="fas fa-envelope"></i> ${email}`;
+
+        const role = (roleSelect ? roleSelect.value : '') || 'Student';
+        if (previewRole) {
+            previewRole.textContent = role;
+            previewRole.className = `preview-role role-${role.toLowerCase()}`;
+        }
+    }
+
+    window.togglePassword = function() {
+        if (newPassword) {
+            newPassword.type = newPassword.type === 'password' ? 'text' : 'password';
         }
     };
 
-    // Check password strength
     function checkPasswordStrength() {
+        if (!newPassword || !strengthBar || !strengthText) return;
         const password = newPassword.value;
         let strength = 0;
         let strengthLabel = '';
@@ -106,8 +107,8 @@ document.addEventListener('DOMContentLoaded', function() {
         strengthText.innerHTML = `<i class="fas fa-shield-alt"></i> <span style="color: ${strengthColor};">Password strength: ${strengthLabel}</span>`;
     }
 
-    // Check password match
     function checkPasswordMatch() {
+        if (!newPassword || !confirmPassword || !passwordMatch) return;
         const password = newPassword.value;
         const confirm = confirmPassword.value;
 
@@ -120,108 +121,167 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Show alert
-    function showAlert(message, type = 'error') {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
-        alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
-        alertContainer.appendChild(alertDiv);
+    // ===== LOAD ACCOUNT DATA =====
+    async function loadAccount() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            accountId = urlParams.get('id');
 
-        setTimeout(() => {
-            alertDiv.style.opacity = '0';
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 300);
-        }, 5000);
+            if (!accountId) {
+                // Fallback to first user
+                const { data: firstUser } = await supabase.from('users').select('id').limit(1).maybeSingle();
+                if (firstUser) accountId = firstUser.id;
+            }
+
+            if (!accountId) {
+                showAlert('No account specified to edit.', 'error');
+                return;
+            }
+
+            // Fetch from Supabase
+            const { data: user, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', accountId)
+                .single();
+
+            if (error || !user) throw new Error('Account not found in database.');
+            accountData = user;
+
+            const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+            const roleFormatted = user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Student';
+
+            if (fullnameInput) fullnameInput.value = fullName;
+            if (emailInput) emailInput.value = user.email || '';
+            if (roleSelect) roleSelect.value = roleFormatted;
+
+            // Resolve ID number
+            let idNum = '';
+            if (user.role === 'teacher') {
+                const { data: t } = await supabase.from('teachers').select('employee_id').eq('user_id', user.id).maybeSingle();
+                idNum = t?.employee_id || '';
+            } else if (user.role === 'student' && user.email) {
+                const { data: s } = await supabase.from('students').select('lrn').eq('email', user.email).maybeSingle();
+                idNum = s?.lrn || '';
+            }
+            if (!idNum) idNum = `PLSNHS-${(user.role || 'USR').substring(0, 3).toUpperCase()}-${user.id.substring(0, 5).toUpperCase()}`;
+            if (idNumberInput) idNumberInput.value = idNum;
+
+            updatePreview();
+        } catch (err) {
+            console.error('Error loading account for edit:', err);
+            showAlert('Failed to load account details: ' + err.message, 'error');
+        }
     }
 
     // ===== EVENT LISTENERS =====
-
-    // Live preview
     if (fullnameInput) fullnameInput.addEventListener('input', updatePreview);
     if (emailInput) emailInput.addEventListener('input', updatePreview);
     if (roleSelect) roleSelect.addEventListener('change', updatePreview);
 
-    // Password reset checkbox
     if (resetCheckbox) {
         resetCheckbox.addEventListener('change', function() {
             const isChecked = this.checked;
-            newPassword.disabled = !isChecked;
-            confirmPassword.disabled = !isChecked;
-            resetBtn.disabled = !isChecked;
-            passwordFields.classList.toggle('active', isChecked);
+            if (newPassword) newPassword.disabled = !isChecked;
+            if (confirmPassword) confirmPassword.disabled = !isChecked;
+            if (resetBtn) resetBtn.disabled = !isChecked;
+            if (passwordFields) passwordFields.classList.toggle('active', isChecked);
             
             if (!isChecked) {
-                newPassword.value = '';
-                confirmPassword.value = '';
-                strengthBar.style.width = '0';
-                strengthText.innerHTML = '<i class="fas fa-info-circle"></i> <span>Minimum 6 characters</span>';
-                passwordMatch.innerHTML = '<i class="fas fa-info-circle"></i> <span>Re-enter new password</span>';
+                if (newPassword) newPassword.value = '';
+                if (confirmPassword) confirmPassword.value = '';
+                if (strengthBar) strengthBar.style.width = '0';
+                if (strengthText) strengthText.innerHTML = '<i class="fas fa-info-circle"></i> <span>Minimum 6 characters</span>';
+                if (passwordMatch) passwordMatch.innerHTML = '<i class="fas fa-info-circle"></i> <span>Re-enter new password</span>';
             }
         });
     }
 
-    // Password strength
     if (newPassword) {
         newPassword.addEventListener('input', function() {
-            if (resetCheckbox.checked) {
+            if (resetCheckbox && resetCheckbox.checked) {
                 checkPasswordStrength();
                 checkPasswordMatch();
             }
         });
     }
 
-    // Confirm password
     if (confirmPassword) {
         confirmPassword.addEventListener('input', function() {
-            if (resetCheckbox.checked) {
+            if (resetCheckbox && resetCheckbox.checked) {
                 checkPasswordMatch();
             }
         });
     }
 
-    // ===== FORM SUBMITS =====
-
-    // Edit account form
+    // ===== FORM SUBMISSION: UPDATE ACCOUNT =====
     if (editForm) {
-        editForm.addEventListener('submit', function(e) {
+        editForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const fullname = fullnameInput.value.trim();
             const email = emailInput.value.trim();
             const role = roleSelect.value;
-            const idNumber = idNumberInput.value.trim();
+            const idNumber = idNumberInput ? idNumberInput.value.trim() : '';
 
             let errors = [];
-
             if (!fullname) errors.push('Full name is required');
             if (!email) errors.push('Email address is required');
-            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                errors.push('Invalid email format');
-            }
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.push('Invalid email format');
             if (!role) errors.push('Role is required');
 
             if (errors.length > 0) {
                 showAlert(errors.join('<br>'), 'error');
-            } else {
+                return;
+            }
+
+            const nameParts = fullname.split(' ');
+            const firstName = nameParts[0] || fullname;
+            const lastName = nameParts.slice(1).join(' ') || '';
+
+            const submitBtn = editForm.querySelector('button[type="submit"]');
+            try {
+                if (submitBtn) submitBtn.disabled = true;
+
+                const { error } = await supabase
+                    .from('users')
+                    .update({
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email,
+                        role: role.toLowerCase(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', accountId);
+
+                if (error) throw error;
+
+                // Update teacher employee_id if teacher
+                if (role.toLowerCase() === 'teacher' && idNumber) {
+                    await supabase
+                        .from('teachers')
+                        .update({ employee_id: idNumber })
+                        .eq('user_id', accountId);
+                }
+
                 showAlert('✅ Account updated successfully!', 'success');
-                
-                // Update preview with new values
                 updatePreview();
-                
-                // Scroll to top
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (err) {
+                console.error('Error updating account:', err);
+                showAlert('Failed to update account: ' + err.message, 'error');
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
             }
         });
     }
 
-    // Password reset form
+    // ===== FORM SUBMISSION: RESET PASSWORD =====
     if (passwordForm) {
-        passwordForm.addEventListener('submit', function(e) {
+        passwordForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            if (!resetCheckbox.checked) {
+            if (!resetCheckbox || !resetCheckbox.checked) {
                 showAlert('Please check the "Reset user password" checkbox first.', 'error');
                 return;
             }
@@ -236,46 +296,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (errors.length > 0) {
                 showAlert(errors.join('<br>'), 'error');
-            } else {
-                showAlert('✅ Password reset successfully!', 'success');
+                return;
+            }
+
+            try {
+                if (resetBtn) resetBtn.disabled = true;
+
+                const { error } = await supabase
+                    .from('users')
+                    .update({
+                        password: password,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', accountId);
+
+                if (error) throw error;
+
+                showAlert('✅ Password reset successfully in database!', 'success');
                 
-                // Reset fields
                 newPassword.value = '';
                 confirmPassword.value = '';
-                strengthBar.style.width = '0';
-                strengthText.innerHTML = '<i class="fas fa-info-circle"></i> <span>Minimum 6 characters</span>';
-                passwordMatch.innerHTML = '<i class="fas fa-info-circle"></i> <span>Re-enter new password</span>';
+                if (strengthBar) strengthBar.style.width = '0';
                 resetCheckbox.checked = false;
                 newPassword.disabled = true;
                 confirmPassword.disabled = true;
-                resetBtn.disabled = true;
-                passwordFields.classList.remove('active');
+                if (passwordFields) passwordFields.classList.remove('active');
                 
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (err) {
+                console.error('Error resetting password:', err);
+                showAlert('Failed to reset password: ' + err.message, 'error');
+            } finally {
+                if (resetBtn) resetBtn.disabled = false;
             }
         });
     }
 
-    // ===== INITIAL PREVIEW =====
-
-    updatePreview();
-
-    // ===== MOBILE MENU =====
-
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('sidebar');
-
-    if (menuToggle) {
-        menuToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
-        });
-    }
-
-    document.addEventListener('click', function(e) {
-        if (window.innerWidth <= 768) {
-            if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-                sidebar.classList.remove('active');
-            }
-        }
-    });
+    // ===== INIT =====
+    await loadAccount();
 });

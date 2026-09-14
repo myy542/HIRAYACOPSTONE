@@ -1,172 +1,63 @@
-// ===== DASHBOARD JAVASCRIPT =====
+// ===== DASHBOARD JAVASCRIPT (SUPABASE POWERED) =====
+import { supabase } from '../../supabase/config.js';
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     'use strict';
 
     // ===== ROLE & SESSION GUARD =====
     const currentUserStr = localStorage.getItem('currentUser');
-    if (currentUserStr) {
-        try {
-            const user = JSON.parse(currentUserStr);
-            if (user && user.role && user.role !== 'admin') {
-                console.warn('⚠️ Non-admin session detected on admin dashboard. Redirecting...');
-                const routes = {
-                    'teacher': '../teacher/dashboard.html',
-                    'student': '../student/dashboard.html',
-                    'parent': '../parents/dashboard.html',
-                    'registrar': '../registrar/dashboard.html'
-                };
-                window.location.replace(routes[user.role] || '../auth/login.html');
-                return;
-            }
-        } catch(e) {}
+    if (!currentUserStr) {
+        window.location.replace('../auth/login.html');
+        return;
     }
 
-    // ===== DATA =====
-
-    // Default notifications template
-    const defaultNotifications = [
-        { 
-            id: 1, 
-            type: 'enrollment', 
-            title: 'New Student Enrollment', 
-            message: 'Juan Dela Cruz submitted an online enrollment form for Grade 10 - Section A. Academic credentials and birth certificate were attached for verification.', 
-            created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(), 
-            is_read: false,
-            sender: 'Registrar Portal',
-            actionType: 'Enrollment Approval',
-            priority: 'High',
-            actionUrl: 'enrollments.html',
-            actionLabel: 'View Enrollment'
-        },
-        { 
-            id: 2, 
-            type: 'account', 
-            title: 'New Faculty Account Request', 
-            message: 'A new faculty account for Teacher Maria Santos (Mathematics Dept) was created and is currently awaiting administrator activation.', 
-            created_at: new Date(Date.now() - 1000 * 60 * 65).toISOString(), 
-            is_read: false,
-            sender: 'Account Service',
-            actionType: 'Account Management',
-            priority: 'Medium',
-            actionUrl: 'manage_accounts.html',
-            actionLabel: 'Manage Accounts'
-        },
-        { 
-            id: 3, 
-            type: 'action', 
-            title: 'Class Schedule Updated', 
-            message: 'Class schedule for Grade 10 - Section A has been modified by the curriculum coordinator. 4 time slots were adjusted.', 
-            created_at: new Date(Date.now() - 1000 * 60 * 180).toISOString(), 
-            is_read: true,
-            sender: 'Curriculum Office',
-            actionType: 'Schedule Adjustment',
-            priority: 'Normal',
-            actionUrl: 'sections.html',
-            actionLabel: 'View Sections'
-        },
-        { 
-            id: 4, 
-            type: 'profile', 
-            title: 'Student Profile Updated', 
-            message: 'Student Ana Reyes (LRN: 109876543204) updated contact details and emergency guardian telephone numbers.', 
-            created_at: new Date(Date.now() - 1000 * 60 * 360).toISOString(), 
-            is_read: false,
-            sender: 'Student Portal',
-            actionType: 'Profile Change',
-            priority: 'Low',
-            actionUrl: 'student.html',
-            actionLabel: 'View Students'
-        },
-        { 
-            id: 5, 
-            type: 'message', 
-            title: 'Attendance Advisory', 
-            message: 'Daily attendance reports for Junior High School (Grades 7 to 10) have been compiled. Current school-wide attendance is 94.2%.', 
-            created_at: new Date(Date.now() - 1000 * 60 * 1440).toISOString(), 
-            is_read: true,
-            sender: 'Attendance System',
-            actionType: 'System Advisory',
-            priority: 'Normal',
-            actionUrl: 'attendance.html',
-            actionLabel: 'View Attendance'
-        }
-    ];
-
-    let initialNotifications = [...defaultNotifications];
+    let currentUser;
     try {
-        const storedNotifs = localStorage.getItem('plsnhs_admin_notifications');
-        if (storedNotifs) {
-            initialNotifications = JSON.parse(storedNotifs);
-        } else {
-            localStorage.setItem('plsnhs_admin_notifications', JSON.stringify(defaultNotifications));
+        currentUser = JSON.parse(currentUserStr);
+        if (currentUser && currentUser.role && currentUser.role !== 'admin') {
+            console.warn('⚠️ Non-admin session detected on admin dashboard. Redirecting...');
+            const routes = {
+                'teacher': '../teacher/dashboard.html',
+                'student': '../student/dashboard.html',
+                'parent': '../parents/dashboard.html',
+                'registrar': '../registrar/dashboard.html'
+            };
+            window.location.replace(routes[currentUser.role] || '../auth/login.html');
+            return;
         }
-    } catch (e) {
-        initialNotifications = [...defaultNotifications];
+    } catch(e) {
+        localStorage.removeItem('currentUser');
+        window.location.replace('../auth/login.html');
+        return;
     }
 
+    // ===== STATE STORE =====
     const dashboardData = {
         stats: {
-            totalStudents: 245,
-            totalTeachers: 32,
-            totalSections: 18,
-            totalSubjects: 45,
-            totalEnrollments: 189,
-            enrolledCount: 156,
-            pendingCount: 33,
-            profileUpdates: 27,
-            adminActions: 42,
-            accountApprovals: 19,
-            enrollmentActions: 24,
-            totalUsers: 278
+            totalStudents: 0,
+            totalTeachers: 0,
+            totalSections: 0,
+            totalSubjects: 0,
+            totalEnrollments: 0,
+            enrolledCount: 0,
+            pendingCount: 0,
+            profileUpdates: 0,
+            adminActions: 0,
+            accountApprovals: 0,
+            enrollmentActions: 0,
+            totalUsers: 0
         },
-        notifications: initialNotifications,
-        recentActivities: [
-            { type: 'enrollment', description: 'New enrollment: Juan Dela Cruz enrolled in Grade 10', date: '2026-06-23 10:30:00' },
-            { type: 'admin_action', description: 'Admin approved teacher account: Maria Santos', date: '2026-06-23 09:15:00' },
-            { type: 'profile', description: 'Student Ana Reyes updated their profile', date: '2026-06-22 14:20:00' },
-            { type: 'enrollment_approval', description: 'Enrollment approved: Carlos Mendoza', date: '2026-06-22 13:00:00' },
-            { type: 'account_approval', description: 'Account approved: Elena Garcia (Teacher)', date: '2026-06-22 11:30:00' }
-        ],
-        recentEnrollments: [
-            { fullname: 'Juan Dela Cruz', grade_name: 'Grade 10 - Section A', status: 'Enrolled', created_at: '2026-06-23 10:30:00' },
-            { fullname: 'Maria Santos', grade_name: 'Grade 11 - STEM A', status: 'Pending', created_at: '2026-06-23 09:15:00' },
-            { fullname: 'Carlos Mendoza', grade_name: 'Grade 12 - ABM A', status: 'Enrolled', created_at: '2026-06-22 13:00:00' },
-            { fullname: 'Elena Garcia', grade_name: 'Grade 10 - Section B', status: 'Enrolled', created_at: '2026-06-22 11:30:00' }
-        ],
-        adminActions: [
-            { fullname: 'Admin', role: 'Admin', profile_picture: null, title: 'Approved Teacher Account', message: 'Teacher account for Maria Santos has been approved', created_at: '2026-06-23 09:15:00' },
-            { fullname: 'Registrar', role: 'Registrar', profile_picture: null, title: 'Updated Schedule', message: 'Class schedule for Grade 10 has been updated', created_at: '2026-06-22 16:45:00' }
-        ],
-        accountApprovals: [
-            { fullname: 'Maria Santos', role: 'Teacher', profile_picture: null, title: 'Account Approved', message: 'Teacher account has been approved', created_at: '2026-06-23 09:15:00' },
-            { fullname: 'Elena Garcia', role: 'Teacher', profile_picture: null, title: 'Account Approved', message: 'Teacher account has been approved', created_at: '2026-06-22 11:30:00' }
-        ],
-        enrollmentApprovals: [
-            { fullname: 'Juan Dela Cruz', role: 'Student', profile_picture: null, title: 'Enrollment Approved', message: 'Student enrolled in Grade 10 - Section A', created_at: '2026-06-23 10:30:00' },
-            { fullname: 'Carlos Mendoza', role: 'Student', profile_picture: null, title: 'Enrollment Approved', message: 'Student enrolled in Grade 12 - ABM A', created_at: '2026-06-22 13:00:00' }
-        ],
-        profileUpdates: [
-            { fullname: 'Ana Reyes', role: 'Student', email: 'ana.reyes@plshs.edu.ph', profile_picture: null, title: 'Profile Picture Updated', message: 'Updated profile picture', created_at: '2026-06-22 14:20:00' },
-            { fullname: 'Juan Dela Cruz', role: 'Student', email: 'juan.dela@plshs.edu.ph', profile_picture: null, title: 'Email Changed', message: 'Updated email address', created_at: '2026-06-21 10:00:00' }
-        ],
-        allUsers: [
-            { fullname: 'Admin', email: 'admin@plshs.edu.ph', role: 'Admin', profile_picture: null, status: 'active', registered_date: '2026-01-01', notification_count: 45, last_activity: '2026-06-23 10:30:00' },
-            { fullname: 'Maria Santos', email: 'maria.santos@plshs.edu.ph', role: 'Teacher', profile_picture: null, status: 'active', registered_date: '2026-06-15', notification_count: 12, last_activity: '2026-06-23 09:15:00' },
-            { fullname: 'Juan Dela Cruz', email: 'juan.dela@plshs.edu.ph', role: 'Student', profile_picture: null, status: 'active', registered_date: '2026-06-10', notification_count: 8, last_activity: '2026-06-23 10:30:00' }
-        ]
+        notifications: [],
+        recentActivities: [],
+        recentEnrollments: [],
+        adminActions: [],
+        accountApprovals: [],
+        enrollmentApprovals: [],
+        profileUpdates: [],
+        allUsers: []
     };
 
-    function persistNotifications() {
-        try {
-            localStorage.setItem('plsnhs_admin_notifications', JSON.stringify(dashboardData.notifications));
-        } catch(e) {
-            console.error('Error saving notifications to localStorage:', e);
-        }
-    }
-
     // ===== DOM ELEMENTS =====
-
     const notificationBtn = document.getElementById('notificationBtn');
     const notificationDropdown = document.getElementById('notificationDropdown');
     const notificationList = document.getElementById('notificationList');
@@ -196,6 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Format relative time helper
     function getRelativeTimeString(dateString) {
+        if (!dateString) return 'Just now';
         const date = new Date(dateString);
         const now = new Date();
         const diffMs = now - date;
@@ -211,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
 
-    // Update stats
+    // Update stats counters
     function updateStats() {
         const stats = dashboardData.stats;
         const setTxt = (id, val) => {
@@ -232,14 +124,14 @@ document.addEventListener('DOMContentLoaded', function() {
         setTxt('enrollmentActions', stats.enrollmentActions);
         setTxt('totalUsers', stats.totalUsers);
         
-        setTxt('adminActionsCount', stats.adminActions + ' actions');
-        setTxt('accountApprovalsCount', stats.accountApprovals + ' approvals');
-        setTxt('enrollmentActionsCount', stats.enrollmentActions + ' actions');
-        setTxt('profileUpdatesCount', stats.profileUpdates + ' updates');
-        setTxt('usersCount', dashboardData.allUsers.length + ' users');
+        setTxt('adminActionsCount', `${stats.adminActions} actions`);
+        setTxt('accountApprovalsCount', `${stats.accountApprovals} approvals`);
+        setTxt('enrollmentActionsCount', `${stats.enrollmentActions} actions`);
+        setTxt('profileUpdatesCount', `${stats.profileUpdates} updates`);
+        setTxt('usersCount', `${dashboardData.allUsers.length} users`);
     }
 
-    // Render notifications
+    // Render notifications dropdown
     function renderNotifications() {
         if (!notificationList) return;
 
@@ -272,10 +164,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const icons = {
-            update: 'fa-megaphone',
+            update: 'fa-bullhorn',
             action: 'fa-check-circle',
             reminder: 'fa-clock',
             alert: 'fa-exclamation-triangle',
+            warning: 'fa-exclamation-triangle',
             message: 'fa-envelope',
             grade: 'fa-star',
             requirement: 'fa-file-upload',
@@ -299,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <span>${notif.title}</span>
                             <span class="notif-time">${timeAgo}</span>
                         </div>
-                        <div class="notif-message">${notif.message}</div>
+                        <div class="notif-message">${notif.message || ''}</div>
                     </div>
                     <div class="notif-item-actions">
                         ${!notif.is_read ? `
@@ -334,24 +227,31 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Open Notification Detail Modal
-    function openNotificationDetailModal(id) {
-        const notif = dashboardData.notifications.find(n => n.id == id);
+    async function openNotificationDetailModal(id) {
+        const notif = dashboardData.notifications.find(n => String(n.id) === String(id));
         if (!notif) return;
 
-        // Mark as read automatically when opened
-        notif.is_read = true;
-        persistNotifications();
-        renderNotifications();
+        // Mark as read in state and database
+        if (!notif.is_read) {
+            notif.is_read = true;
+            try {
+                await supabase.from('notifications').update({ read: true }).eq('id', notif.id);
+            } catch(e) {
+                console.warn('Could not update notification read status:', e);
+            }
+            renderNotifications();
+        }
 
         // Close dropdown
         if (notificationDropdown) notificationDropdown.classList.remove('show');
 
         // Populate modal
         const icons = {
-            update: 'fa-megaphone',
+            update: 'fa-bullhorn',
             action: 'fa-check-circle',
             reminder: 'fa-clock',
             alert: 'fa-exclamation-triangle',
+            warning: 'fa-exclamation-triangle',
             message: 'fa-envelope',
             grade: 'fa-star',
             requirement: 'fa-file-upload',
@@ -363,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const iconClass = icons[notif.type] || 'fa-bell';
         if (modalNotifIcon) modalNotifIcon.innerHTML = `<i class="fas ${iconClass}"></i>`;
         if (modalNotifCategory) modalNotifCategory.textContent = (notif.type || 'System').toUpperCase();
-        if (modalNotifTitle) modalNotifTitle.textContent = notif.title;
+        if (modalNotifTitle) modalNotifTitle.textContent = notif.title || 'Notification';
         
         const fullDate = new Date(notif.created_at).toLocaleString('en-US', {
             month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
@@ -375,11 +275,11 @@ document.addEventListener('DOMContentLoaded', function() {
             modalNotifStatusBadge.className = 'notif-read-status';
         }
 
-        if (modalNotifMessage) modalNotifMessage.textContent = notif.message;
+        if (modalNotifMessage) modalNotifMessage.textContent = notif.message || 'No description provided.';
         if (modalNotifSender) modalNotifSender.textContent = notif.sender || 'Placido L. Señor NHS System';
-        if (modalNotifActionType) modalNotifActionType.textContent = notif.actionType || notif.type || 'General Advisory';
+        if (modalNotifActionType) modalNotifActionType.textContent = notif.actionType || notif.type || 'System Notification';
         if (modalNotifPriority) modalNotifPriority.textContent = notif.priority || 'Normal';
-        if (modalNotifSystemId) modalNotifSystemId.textContent = `NOTIF-${String(notif.id).padStart(4, '0')}`;
+        if (modalNotifSystemId) modalNotifSystemId.textContent = `NOTIF-${String(notif.id).substring(0, 8)}`;
 
         // Link
         if (modalNotifActionLink) {
@@ -390,7 +290,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (notif.type === 'account') { url = 'manage_accounts.html'; label = 'Go to Accounts'; }
                 else if (notif.type === 'action') { url = 'sections.html'; label = 'Go to Sections'; }
                 else if (notif.type === 'profile') { url = 'student.html'; label = 'Go to Students'; }
-                else { url = 'dashboard.html'; label = 'Back to Dashboard'; }
+                else if (notif.type === 'attendance') { url = 'attendance.html'; label = 'Go to Attendance'; }
+                else { url = 'dashboard.html'; label = 'Dashboard'; }
             }
             modalNotifActionLink.href = url;
             modalNotifActionLink.innerHTML = `<span>${label || 'Go to Related Page'}</span> <i class="fas fa-arrow-right"></i>`;
@@ -403,92 +304,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Mark single notification as read
-    function markNotificationRead(id) {
-        const notif = dashboardData.notifications.find(n => n.id == id);
+    async function markNotificationRead(id) {
+        const notif = dashboardData.notifications.find(n => String(n.id) === String(id));
         if (notif) {
             notif.is_read = true;
-            persistNotifications();
+            try {
+                await supabase.from('notifications').update({ read: true }).eq('id', notif.id);
+            } catch (e) {
+                console.warn('Error marking notification read in DB:', e);
+            }
             renderNotifications();
         }
     }
 
     // Mark all notifications as read
-    function markAllRead() {
+    async function markAllRead() {
         dashboardData.notifications.forEach(n => n.is_read = true);
-        persistNotifications();
         renderNotifications();
-    }
-
-    // Trigger simulated notification for live user interaction
-    function triggerSimulatedNotification() {
-        const sampleAlerts = [
-            {
-                type: 'enrollment',
-                title: 'New Online Enrollment Form',
-                message: 'A new student submitted Grade 11 - STEM enrollment documents for initial registrar evaluation.',
-                sender: 'Online Enrollment Form',
-                actionType: 'Enrollment Request',
-                priority: 'High',
-                actionUrl: 'enrollments.html',
-                actionLabel: 'Review Enrollment'
-            },
-            {
-                type: 'account',
-                title: 'Staff Registration Received',
-                message: 'New registrar staff account was registered and requires verification approval.',
-                sender: 'Authentication Gateway',
-                actionType: 'User Authorization',
-                priority: 'Medium',
-                actionUrl: 'manage_accounts.html',
-                actionLabel: 'Review Account'
-            },
-            {
-                type: 'alert',
-                title: 'Attendance Cutoff Reached',
-                message: 'Morning cutoff (8:00 AM) completed. 12 late student check-ins were registered for today.',
-                sender: 'Attendance QR System',
-                actionType: 'Attendance Notice',
-                priority: 'Normal',
-                actionUrl: 'attendance.html',
-                actionLabel: 'Open Attendance'
-            },
-            {
-                type: 'action',
-                title: 'Section Roster Updated',
-                message: 'Grade 10 - Section A assigned 2 new continuing students from transferee pool.',
-                sender: 'Section Management',
-                actionType: 'Roster Update',
-                priority: 'Normal',
-                actionUrl: 'sections.html',
-                actionLabel: 'View Sections'
-            }
-        ];
-
-        const randomAlert = sampleAlerts[Math.floor(Math.random() * sampleAlerts.length)];
-        const newNotif = {
-            id: Date.now(),
-            type: randomAlert.type,
-            title: randomAlert.title,
-            message: randomAlert.message,
-            created_at: new Date().toISOString(),
-            is_read: false,
-            sender: randomAlert.sender,
-            actionType: randomAlert.actionType,
-            priority: randomAlert.priority,
-            actionUrl: randomAlert.actionUrl,
-            actionLabel: randomAlert.actionLabel
-        };
-
-        dashboardData.notifications.unshift(newNotif);
-        persistNotifications();
-        renderNotifications();
-
-        // Brief bell animation
-        if (notificationBtn) {
-            notificationBtn.style.transform = 'scale(1.18) rotate(12deg)';
-            setTimeout(() => {
-                notificationBtn.style.transform = 'scale(1) rotate(0deg)';
-            }, 250);
+        try {
+            await supabase.from('notifications').update({ read: true }).eq('read', false);
+        } catch(e) {
+            console.warn('Error batch updating read status in DB:', e);
         }
     }
 
@@ -522,16 +358,74 @@ document.addEventListener('DOMContentLoaded', function() {
         clearAllNotifsBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             dashboardData.notifications = dashboardData.notifications.filter(n => !n.is_read);
-            persistNotifications();
             renderNotifications();
         });
     }
 
     // Trigger test notification
     if (triggerSimulatedNotifBtn) {
-        triggerSimulatedNotifBtn.addEventListener('click', function(e) {
+        triggerSimulatedNotifBtn.addEventListener('click', async function(e) {
             e.stopPropagation();
-            triggerSimulatedNotification();
+            const sampleAlerts = [
+                {
+                    type: 'enrollment',
+                    title: 'New Online Enrollment Form',
+                    message: 'A student submitted enrollment documents for initial verification review.',
+                    actionType: 'Enrollment Request',
+                    priority: 'High'
+                },
+                {
+                    type: 'account',
+                    title: 'Account Verification Pending',
+                    message: 'New faculty or registrar staff registration requires admin review.',
+                    actionType: 'User Authorization',
+                    priority: 'Medium'
+                },
+                {
+                    type: 'alert',
+                    title: 'Attendance Report Update',
+                    message: 'Daily attendance logs compiled for today across junior and senior high school.',
+                    actionType: 'Attendance Notice',
+                    priority: 'Normal'
+                }
+            ];
+
+            const alert = sampleAlerts[Math.floor(Math.random() * sampleAlerts.length)];
+            try {
+                const { data, error } = await supabase.from('notifications').insert([{
+                    user_id: currentUser?.id,
+                    role: 'admin',
+                    title: alert.title,
+                    message: alert.message,
+                    type: alert.type,
+                    read: false
+                }]).select();
+
+                if (!error && data && data.length > 0) {
+                    const inserted = data[0];
+                    dashboardData.notifications.unshift({
+                        id: inserted.id,
+                        type: inserted.type || 'message',
+                        title: inserted.title,
+                        message: inserted.message,
+                        created_at: inserted.created_at || new Date().toISOString(),
+                        is_read: false,
+                        sender: 'System Admin',
+                        actionType: alert.actionType,
+                        priority: alert.priority
+                    });
+                    renderNotifications();
+                }
+            } catch (err) {
+                console.warn('Error inserting test notification into Supabase:', err);
+            }
+
+            if (notificationBtn) {
+                notificationBtn.style.transform = 'scale(1.18) rotate(12deg)';
+                setTimeout(() => {
+                    notificationBtn.style.transform = 'scale(1) rotate(0deg)';
+                }, 250);
+            }
         });
     }
 
@@ -562,7 +456,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Support Escape key to close modal or dropdown
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeDetailModal();
@@ -583,7 +476,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <li class="activity-item">
                     <div class="activity-icon"><i class="fas fa-bell"></i></div>
                     <div class="activity-content">
-                        <div class="activity-text">No recent activities</div>
+                        <div class="activity-text">No recent activities recorded</div>
                     </div>
                 </li>
             `;
@@ -631,7 +524,7 @@ document.addEventListener('DOMContentLoaded', function() {
             list.innerHTML = `
                 <li class="enrollment-item">
                     <div class="enrollment-info">
-                        <p>No recent enrollments</p>
+                        <p>No recent enrollments recorded</p>
                     </div>
                 </li>
             `;
@@ -670,7 +563,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const actions = dashboardData.adminActions;
 
         if (actions.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="empty-state"><p>No admin actions recorded</p></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="empty-state" style="text-align: center; padding: 24px; color: #64748b;"><p>No administrator actions logged yet</p></td></tr>`;
             return;
         }
 
@@ -709,7 +602,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const approvals = dashboardData.accountApprovals;
 
         if (approvals.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="empty-state"><p>No account approvals recorded</p></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="empty-state" style="text-align: center; padding: 24px; color: #64748b;"><p>No account activity recorded</p></td></tr>`;
             return;
         }
 
@@ -719,7 +612,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const time = new Date(approval.created_at).toLocaleString('en-US', {
                 month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
             });
-            const isApproved = approval.title.includes('Approved');
+            const isApproved = approval.title.includes('Approved') || approval.title.includes('Active');
 
             html += `
                 <tr>
@@ -754,7 +647,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const approvals = dashboardData.enrollmentApprovals;
 
         if (approvals.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="empty-state"><p>No enrollment approvals recorded</p></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="empty-state" style="text-align: center; padding: 24px; color: #64748b;"><p>No approved enrollments recorded</p></td></tr>`;
             return;
         }
 
@@ -799,7 +692,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const updates = dashboardData.profileUpdates;
 
         if (updates.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="empty-state"><p>No profile updates recorded</p></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="empty-state" style="text-align: center; padding: 24px; color: #64748b;"><p>No profile changes logged yet</p></td></tr>`;
             return;
         }
 
@@ -839,7 +732,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const users = dashboardData.allUsers;
 
         if (users.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><p>No users found</p></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="empty-state" style="text-align: center; padding: 24px; color: #64748b;"><p>No user accounts found in database</p></td></tr>`;
             return;
         }
 
@@ -864,7 +757,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                     </td>
-                    <td><span class="role-badge ${user.role.toLowerCase()}">${user.role}</span></td>
+                    <td><span class="role-badge ${(user.role || '').toLowerCase()}">${user.role}</span></td>
                     <td><span class="status-badge status-${user.status}">${user.status}</span></td>
                     <td>${registeredDate}</td>
                     <td><span class="notif-count-badge">${user.notification_count} notifications</span></td>
@@ -877,18 +770,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initialize enrollment chart
-    function initChart() {
-        const ctx = document.getElementById('enrollmentChart');
-        if (!ctx) return;
+    let enrollmentChartInstance = null;
 
-        new Chart(ctx.getContext('2d'), {
+    function initChart(enrolledData = null, pendingData = null) {
+        const ctx = document.getElementById('enrollmentChart');
+        if (!ctx || typeof Chart === 'undefined') return;
+
+        const defaultEnrolled = enrolledData || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        const defaultPending = pendingData || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+        if (enrollmentChartInstance) {
+            enrollmentChartInstance.data.datasets[0].data = defaultEnrolled;
+            enrollmentChartInstance.data.datasets[1].data = defaultPending;
+            enrollmentChartInstance.update();
+            return;
+        }
+
+        enrollmentChartInstance = new Chart(ctx.getContext('2d'), {
             type: 'line',
             data: {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
                 datasets: [
                     {
                         label: 'Enrolled Students',
-                        data: [12, 19, 25, 45, 60, 85, 120, 156, 170, 180, 185, 189],
+                        data: defaultEnrolled,
                         borderColor: '#1B2A4A',
                         backgroundColor: 'rgba(27, 42, 74, 0.05)',
                         tension: 0.4,
@@ -901,7 +806,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     {
                         label: 'Pending Approvals',
-                        data: [5, 8, 12, 15, 20, 28, 35, 33, 25, 18, 10, 5],
+                        data: defaultPending,
                         borderColor: '#f59e0b',
                         backgroundColor: 'rgba(245, 158, 11, 0.05)',
                         tension: 0.4,
@@ -946,7 +851,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         },
                         ticks: {
                             font: { family: "'Inter', sans-serif", size: 11 },
-                            color: '#94a3b8'
+                            color: '#94a3b8',
+                            precision: 0
                         }
                     },
                     x: {
@@ -963,8 +869,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ===== NOTIFICATION BUTTON EVENT LISTENERS =====
-
+    // ===== NOTIFICATION DROPDOWN TOGGLE =====
     function toggleNotificationDropdown(e) {
         if (e) {
             e.stopPropagation();
@@ -975,7 +880,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Toggle notification dropdown on bell button or badge click
     if (notificationBtn) {
         notificationBtn.addEventListener('click', toggleNotificationDropdown);
     }
@@ -983,14 +887,12 @@ document.addEventListener('DOMContentLoaded', function() {
         notifCount.addEventListener('click', toggleNotificationDropdown);
     }
 
-    // Keep dropdown open when interacting inside it
     if (notificationDropdown) {
         notificationDropdown.addEventListener('click', function(e) {
             e.stopPropagation();
         });
     }
 
-    // Close dropdown when clicking outside
     document.addEventListener('click', function(e) {
         if (notificationDropdown && notificationDropdown.classList.contains('show')) {
             const isClickInsideBtn = notificationBtn && notificationBtn.contains(e.target);
@@ -1001,7 +903,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Mark all as read
     if (markAllReadBtn) {
         markAllReadBtn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -1009,30 +910,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Table notification count badges click handler
-    document.addEventListener('click', function(e) {
-        const notifBadge = e.target.closest('.notif-count-badge');
-        if (notifBadge) {
-            e.stopPropagation();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            setTimeout(() => {
-                if (notificationDropdown) {
-                    notificationDropdown.classList.add('show');
-                }
-            }, 250);
-        }
-    });
-
-    // Chart period change
-    const chartPeriod = document.getElementById('chartPeriod');
-    if (chartPeriod) {
-        chartPeriod.addEventListener('change', function() {
-            console.log('Period changed to:', this.value);
-        });
-    }
-
     // ===== MOBILE MENU =====
-
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
 
@@ -1050,8 +928,211 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ===== INIT =====
+    // ===== LIVE SUPABASE SYNC =====
+    async function syncLiveDashboardData() {
+        try {
+            // Fetch live counts & records concurrently from Supabase
+            const [
+                { count: studentCount },
+                { count: teacherCount },
+                { count: sectionCount },
+                { count: subjectCount },
+                { count: userCount },
+                { data: enrData },
+                { data: sData },
+                { data: uData },
+                { data: actData },
+                { data: notifsData }
+            ] = await Promise.all([
+                supabase.from('students').select('*', { count: 'exact', head: true }),
+                supabase.from('teachers').select('*', { count: 'exact', head: true }),
+                supabase.from('sections').select('*', { count: 'exact', head: true }),
+                supabase.from('subjects').select('*', { count: 'exact', head: true }),
+                supabase.from('users').select('*', { count: 'exact', head: true }),
+                supabase.from('enrollments').select('*').order('created_at', { ascending: false }),
+                supabase.from('students').select('*'),
+                supabase.from('users').select('*').order('created_at', { ascending: false }),
+                supabase.from('activity_logs').select('*').order('timestamp', { ascending: false }).limit(20),
+                supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(30)
+            ]);
 
+            dashboardData.stats.totalStudents = studentCount ?? (sData ? sData.length : 0);
+            dashboardData.stats.totalTeachers = teacherCount ?? 0;
+            dashboardData.stats.totalSections = sectionCount ?? 0;
+            dashboardData.stats.totalSubjects = subjectCount ?? 0;
+            dashboardData.stats.totalUsers = userCount ?? (uData ? uData.length : 0);
+
+            // Populate live notifications from Supabase
+            if (notifsData && notifsData.length > 0) {
+                dashboardData.notifications = notifsData.map(n => ({
+                    id: n.id,
+                    type: n.type || 'message',
+                    title: n.title || 'Notification',
+                    message: n.message || '',
+                    created_at: n.created_at || new Date().toISOString(),
+                    is_read: n.read === true || n.is_read === true,
+                    sender: n.sender || 'Placido L. Señor NHS',
+                    actionType: n.action_type || n.type || 'System Advisory',
+                    priority: n.priority || 'Normal'
+                }));
+            } else {
+                dashboardData.notifications = [];
+            }
+
+            // Populate allUsers dynamically
+            if (uData && uData.length > 0) {
+                dashboardData.allUsers = uData.map(u => {
+                    const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || (u.email ? u.email.split('@')[0] : 'User');
+                    return {
+                        fullname: fullName,
+                        email: u.email || '—',
+                        role: (u.role || 'user').charAt(0).toUpperCase() + (u.role || 'user').slice(1),
+                        profile_picture: null,
+                        status: 'active',
+                        registered_date: u.created_at || new Date().toISOString(),
+                        notification_count: (notifsData || []).filter(n => n.user_id === u.id).length,
+                        last_activity: u.updated_at || u.created_at || new Date().toISOString()
+                    };
+                });
+            }
+
+            // Populate enrollments and monthly distribution for chart
+            const enrolledMonthly = new Array(12).fill(0);
+            const pendingMonthly = new Array(12).fill(0);
+
+            if (enrData && enrData.length > 0) {
+                dashboardData.stats.totalEnrollments = enrData.length;
+                const approvedList = enrData.filter(e => (e.status || '').toLowerCase() === 'approved' || (e.status || '').toLowerCase() === 'enrolled');
+                const pendingList = enrData.filter(e => (e.status || '').toLowerCase() === 'pending');
+
+                dashboardData.stats.enrolledCount = approvedList.length;
+                dashboardData.stats.pendingCount = pendingList.length;
+
+                // Tally months for Chart.js
+                enrData.forEach(e => {
+                    const d = new Date(e.created_at || Date.now());
+                    const m = d.getMonth();
+                    if (m >= 0 && m < 12) {
+                        const st = (e.status || '').toLowerCase();
+                        if (st === 'approved' || st === 'enrolled') {
+                            enrolledMonthly[m]++;
+                        } else if (st === 'pending') {
+                            pendingMonthly[m]++;
+                        }
+                    }
+                });
+
+                dashboardData.recentEnrollments = enrData.slice(0, 6).map(e => {
+                    const matchedStudent = (sData || []).find(s => s.id === e.student_id || s.email === e.email);
+                    const fullName = `${e.first_name || matchedStudent?.first_name || ''} ${e.last_name || matchedStudent?.last_name || ''}`.trim() || 'Student';
+                    const gradeName = `${e.grade_level || 'Grade 11'} ${e.strand ? '• ' + e.strand : ''}`;
+                    const rawSt = (e.status || '').toLowerCase();
+                    const status = (rawSt === 'approved' || rawSt === 'enrolled') ? 'Enrolled' : (rawSt === 'rejected' ? 'Rejected' : 'Pending');
+
+                    return {
+                        fullname: fullName,
+                        grade_name: gradeName,
+                        status: status,
+                        created_at: e.created_at || new Date().toISOString()
+                    };
+                });
+
+                // Populate enrollment approvals
+                dashboardData.enrollmentApprovals = approvedList.slice(0, 5).map(e => {
+                    const matchedStudent = (sData || []).find(s => s.id === e.student_id || s.email === e.email);
+                    const fullName = `${e.first_name || matchedStudent?.first_name || ''} ${e.last_name || matchedStudent?.last_name || ''}`.trim() || 'Student';
+                    return {
+                        fullname: fullName,
+                        role: 'Student',
+                        profile_picture: null,
+                        title: 'Enrollment Approved',
+                        message: `Student enrolled in ${e.grade_level || 'Senior High'} ${e.strand ? '• ' + e.strand : ''}`,
+                        created_at: e.updated_at || e.created_at || new Date().toISOString()
+                    };
+                });
+                dashboardData.stats.enrollmentActions = approvedList.length;
+            }
+
+            // Populate account approvals from users table
+            if (uData && uData.length > 0) {
+                const teachersAndStaff = uData.filter(u => u.role === 'teacher' || u.role === 'registrar');
+                dashboardData.accountApprovals = teachersAndStaff.slice(0, 5).map(u => {
+                    const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email;
+                    const roleLabel = (u.role || 'Staff').charAt(0).toUpperCase() + (u.role || 'Staff').slice(1);
+                    return {
+                        fullname: fullName,
+                        role: roleLabel,
+                        profile_picture: null,
+                        title: 'Account Active',
+                        message: `${roleLabel} account is verified and active in the system`,
+                        created_at: u.created_at || new Date().toISOString()
+                    };
+                });
+                dashboardData.stats.accountApprovals = teachersAndStaff.length;
+
+                // Populate admin actions summary
+                const adminUsers = uData.filter(u => u.role === 'admin' || u.role === 'registrar');
+                dashboardData.adminActions = adminUsers.slice(0, 5).map(a => {
+                    const fullName = `${a.first_name || ''} ${a.last_name || ''}`.trim() || 'Administrator';
+                    const roleLabel = (a.role || 'Admin').charAt(0).toUpperCase() + (a.role || 'Admin').slice(1);
+                    return {
+                        fullname: fullName,
+                        role: roleLabel,
+                        profile_picture: null,
+                        title: 'System Activity',
+                        message: `Verified and authenticated ${roleLabel} session on the portal`,
+                        created_at: a.updated_at || a.created_at || new Date().toISOString()
+                    };
+                });
+                dashboardData.stats.adminActions = adminUsers.length + (enrData?.length || 0);
+            }
+
+            // Populate recent activities from activity_logs or live enrollments/accounts
+            if (actData && actData.length > 0) {
+                dashboardData.recentActivities = actData.map(log => ({
+                    type: log.action ? log.action.toLowerCase().includes('enroll') ? 'enrollment' : 'admin_action' : 'admin_action',
+                    description: log.details || log.action || 'System event recorded',
+                    date: log.timestamp || new Date().toISOString()
+                }));
+            } else {
+                const events = [];
+                (enrData || []).slice(0, 4).forEach(e => {
+                    const name = `${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Student';
+                    events.push({
+                        type: 'enrollment',
+                        description: `Enrollment application (${e.status || 'Pending'}): ${name} (${e.grade_level || 'Grade 11'})`,
+                        date: e.created_at || new Date().toISOString()
+                    });
+                });
+                (uData || []).slice(0, 3).forEach(u => {
+                    const name = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email;
+                    events.push({
+                        type: 'account_approval',
+                        description: `Account registered: ${name} (${u.role || 'User'})`,
+                        date: u.created_at || new Date().toISOString()
+                    });
+                });
+                events.sort((a, b) => new Date(b.date) - new Date(a.date));
+                dashboardData.recentActivities = events;
+            }
+
+            // Render all UI components with live data
+            updateStats();
+            renderNotifications();
+            renderActivities();
+            renderEnrollments();
+            renderAdminActions();
+            renderAccountApprovals();
+            renderEnrollmentApprovals();
+            renderProfileUpdates();
+            renderUsers();
+            initChart(enrolledMonthly, pendingMonthly);
+        } catch (err) {
+            console.warn('Dashboard live sync warning:', err);
+        }
+    }
+
+    // ===== INIT =====
     updateStats();
     renderNotifications();
     renderActivities();
@@ -1062,4 +1143,5 @@ document.addEventListener('DOMContentLoaded', function() {
     renderProfileUpdates();
     renderUsers();
     initChart();
+    await syncLiveDashboardData();
 });

@@ -1,158 +1,462 @@
-// ===== VIEW ENROLLMENT JAVASCRIPT =====
+/**
+ * PLSNHS Admin - View Enrollment Details (Supabase Dynamic Integration)
+ */
 
-document.addEventListener('DOMContentLoaded', function() {
-    // DOM Elements
-    const alertContainer = document.getElementById('alertContainer');
+import { supabase } from '../../supabase/config.js';
 
-    // ===== ENROLLMENT DATA =====
+(function() {
+    'use strict';
 
-    const enrollmentData = {
-        id: 1,
-        studentName: 'Juan Dela Cruz',
-        studentEmail: 'juan.dela@plshs.edu.ph',
-        studentId: 1,
-        studentIdNumber: 'PLSNHS-STU-000001',
-        studentCreatedAt: '2026-06-15 10:30:00',
-        studentType: 'New',
-        gradeLevel: 'Grade 11',
-        strand: 'STEM',
-        schoolYear: '2026-2027',
-        status: 'Enrolled',
-        created_at: '2026-06-20 14:30:00',
-        totalEnrollments: 2,
-        sinceYear: 2026
-    };
+    console.log('📄 Admin View Enrollment Details (Supabase) ready');
 
-    // Requirements data
-    const requirementsData = {
-        gradeLevel: 'Grade 11',
-        studentType: 'New',
-        submitted: [
-            { id: 1, name: 'Form 138 (Report Card)', is_required: true, can_be_followed: false, file_path: null },
-            { id: 2, name: 'PSA Birth Certificate', is_required: true, can_be_followed: false, file_path: null },
-            { id: 3, name: '2x2 ID Pictures', is_required: true, can_be_followed: false, file_path: null }
-        ],
-        missing: [
-            { id: 4, name: 'Good Moral Certificate', is_required: true, can_be_followed: false, file_path: null },
-            { id: 5, name: 'Medical Certificate', is_required: false, can_be_followed: true, file_path: null }
-        ],
-        totalRequirements: 5,
-        submittedCount: 3,
-        missingCount: 2,
-        completionPercentage: 60
-    };
+    // ============================================
+    // ROLE & SESSION GUARD
+    // ============================================
 
-    // Enrollment history
-    const historyData = [
-        { school_year: '2025-2026', grade_name: 'Grade 10', strand: null, status: 'Enrolled', created_at: '2025-06-15 10:30:00' },
-        { school_year: '2026-2027', grade_name: 'Grade 11', strand: 'STEM', status: 'Enrolled', created_at: '2026-06-20 14:30:00' }
-    ];
-
-    // ===== FUNCTIONS =====
-
-    // Format date
-    function formatDate(dateString) {
-        if (!dateString) return '—';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            year: 'numeric'
-        });
+    const currentUserStr = localStorage.getItem('currentUser');
+    if (!currentUserStr) {
+        window.location.replace('../auth/login.html');
+        return;
     }
 
-    // Show alert
+    let currentUser;
+    try {
+        currentUser = JSON.parse(currentUserStr);
+    } catch (e) {
+        localStorage.removeItem('currentUser');
+        window.location.replace('../auth/login.html');
+        return;
+    }
+
+    if (currentUser.role !== 'admin') {
+        const routes = {
+            'teacher': '../teacher/dashboard.html',
+            'student': '../student/dashboard.html',
+            'parent': '../parents/dashboard.html',
+            'registrar': '../registrar/dashboard.html'
+        };
+        window.location.replace(routes[currentUser.role] || '../auth/login.html');
+        return;
+    }
+
+    // ============================================
+    // DOM ELEMENTS
+    // ============================================
+
+    const alertContainer = document.getElementById('alertContainer');
+    const viewFullProfileLink = document.getElementById('viewFullProfileLink');
+    const studentName = document.getElementById('studentName');
+    const studentEmail = document.getElementById('studentEmail');
+    const studentIdNumber = document.getElementById('studentIdNumber');
+    const totalEnrollmentsEl = document.getElementById('totalEnrollments');
+    const sinceYearEl = document.getElementById('sinceYear');
+    const avatarEl = document.querySelector('.student-avatar-large');
+    const enrollmentInfoGrid = document.getElementById('enrollmentInfoGrid');
+    const requirementsContainer = document.getElementById('requirementsContainer');
+    const historyBody = document.getElementById('historyBody');
+    const historyCount = document.getElementById('historyCount');
+
+    // File Preview Modal Elements
+    const filePreviewModal = document.getElementById('filePreviewModal');
+    const modalFileName = document.getElementById('modalFileName');
+    const modalBody = document.getElementById('modalBody');
+    const downloadFileBtn = document.getElementById('downloadFileBtn');
+
+    // Mobile Menu
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+
+    // ============================================
+    // STATE
+    // ============================================
+
+    let currentEnrollment = null;
+    let currentStudent = null;
+    let enrollmentHistory = [];
+    let submittedRequirements = [];
+    let missingRequirements = [];
+
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+
     function showAlert(message, type = 'error') {
+        if (!alertContainer) return;
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type}`;
         const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
-        alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
         alertContainer.appendChild(alertDiv);
 
         setTimeout(() => {
             alertDiv.style.opacity = '0';
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 300);
+            setTimeout(() => alertDiv.remove(), 300);
         }, 5000);
     }
 
-    // Render student info
-    function renderStudentInfo() {
-        document.getElementById('studentName').textContent = enrollmentData.studentName;
-        document.getElementById('studentEmail').textContent = enrollmentData.studentEmail;
-        document.getElementById('studentIdNumber').textContent = enrollmentData.studentIdNumber;
-        document.getElementById('totalEnrollments').textContent = enrollmentData.totalEnrollments;
-        document.getElementById('sinceYear').textContent = enrollmentData.sinceYear;
-
-        // Avatar initial
-        const initial = enrollmentData.studentName.charAt(0).toUpperCase();
-        const avatarEl = document.querySelector('.student-avatar-large');
-        if (avatarEl) {
-            avatarEl.textContent = initial;
+    function formatDate(dateString) {
+        if (!dateString) return '—';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        } catch {
+            return dateString;
         }
     }
 
-    // Render enrollment info
-    function renderEnrollmentInfo() {
-        const grid = document.getElementById('enrollmentInfoGrid');
-        if (!grid) return;
-        
-        const statusClass = enrollmentData.status.toLowerCase();
+    // ============================================
+    // LOAD ENROLLMENT DATA FROM SUPABASE
+    // ============================================
 
-        grid.innerHTML = `
+    async function loadEnrollmentDetails() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetId = urlParams.get('id') || urlParams.get('enrollment_id') || '';
+
+            // 1. Query Enrollments
+            let enr = null;
+            if (targetId) {
+                try {
+                    const { data: eData } = await supabase
+                        .from('enrollments')
+                        .select('*')
+                        .eq('id', targetId)
+                        .maybeSingle();
+                    if (eData) enr = eData;
+                } catch(e) {}
+            }
+
+            // Fallback: If not found by ID or no ID provided, fetch first available enrollment
+            if (!enr) {
+                try {
+                    let query = supabase.from('enrollments').select('*').order('created_at', { ascending: false }).limit(1);
+                    if (targetId) {
+                        query = supabase.from('enrollments').select('*').or(`id.eq.${targetId},student_id.eq.${targetId}`).limit(1);
+                    }
+                    const { data: fallbackList } = await query;
+                    if (fallbackList && fallbackList.length > 0) {
+                        enr = fallbackList[0];
+                    }
+                } catch(e) {}
+            }
+
+            // Fallback: If no enrollments exist at all, query from students table
+            let student = null;
+            if (enr && enr.student_id) {
+                try {
+                    const { data: sData } = await supabase
+                        .from('students')
+                        .select('*')
+                        .eq('id', enr.student_id)
+                        .maybeSingle();
+                    if (sData) student = sData;
+                } catch(e) {}
+            }
+
+            if (!student && enr && enr.email) {
+                try {
+                    const { data: sData } = await supabase
+                        .from('students')
+                        .select('*')
+                        .ilike('email', enr.email)
+                        .maybeSingle();
+                    if (sData) student = sData;
+                } catch(e) {}
+            }
+
+            if (!student) {
+                try {
+                    const { data: sList } = await supabase.from('students').select('*').limit(1);
+                    if (sList && sList.length > 0) student = sList[0];
+                } catch(e) {}
+            }
+
+            // If enrollment is still null, synthesize from student
+            if (!enr && student) {
+                enr = {
+                    id: student.id,
+                    student_id: student.id,
+                    first_name: student.first_name,
+                    last_name: student.last_name,
+                    email: student.email,
+                    grade_level: student.grade_level || 'Grade 11',
+                    strand: student.strand || 'TVL-ICT',
+                    school_year: '2025-2026',
+                    status: student.documents_status === 'complete' ? 'approved' : 'pending',
+                    created_at: student.created_at || new Date().toISOString()
+                };
+            }
+
+            if (!enr) {
+                showAlert('No enrollment application found in the database.', 'error');
+                return;
+            }
+
+            currentEnrollment = enr;
+            currentStudent = student;
+
+            // 2. Fetch all enrollment history for this student
+            try {
+                let hQuery = supabase.from('enrollments').select('*');
+                if (student && student.id) {
+                    hQuery = hQuery.or(`student_id.eq.${student.id},email.eq.${student.email || enr.email}`);
+                } else if (enr.email) {
+                    hQuery = hQuery.eq('email', enr.email);
+                }
+                const { data: hList } = await hQuery.order('created_at', { ascending: false });
+                if (hList && hList.length > 0) {
+                    enrollmentHistory = hList;
+                } else {
+                    enrollmentHistory = [enr];
+                }
+            } catch(e) {
+                enrollmentHistory = [enr];
+            }
+
+            // 3. Fetch Documents attached
+            let docRecord = null;
+            try {
+                const { data: dData } = await supabase
+                    .from('documents')
+                    .select('*')
+                    .eq('enrollment_id', enr.id)
+                    .maybeSingle();
+                if (dData) docRecord = dData;
+            } catch(e) {}
+
+            let sDocs = [];
+            try {
+                if (student && student.id) {
+                    const { data: sdData } = await supabase
+                        .from('student_documents')
+                        .select('*')
+                        .eq('student_id', student.id);
+                    if (sdData) sDocs = sdData;
+                }
+            } catch(e) {}
+
+            // Compute Requirements
+            buildRequirementsList(student, enr, docRecord, sDocs);
+
+            // Render all UI components
+            renderStudentInfo();
+            renderEnrollmentInfo();
+            renderRequirements();
+            renderHistory();
+
+        } catch (error) {
+            console.error('❌ Error loading enrollment details:', error);
+            showAlert('Failed to load enrollment details: ' + error.message, 'error');
+        }
+    }
+
+    // ============================================
+    // BUILD REQUIREMENTS DATA
+    // ============================================
+
+    function buildRequirementsList(student, enr, doc, sDocs) {
+        submittedRequirements = [];
+        missingRequirements = [];
+
+        // Check Form 138
+        const form138Url = student?.form_138_url || doc?.report_card || sDocs.find(d => d.document_type === 'form_138' || d.document_type === 'report_card')?.file_url;
+        if (form138Url) {
+            submittedRequirements.push({
+                name: 'Form 138 (Report Card)',
+                is_required: true,
+                can_be_followed: false,
+                file_path: form138Url
+            });
+        } else {
+            missingRequirements.push({
+                name: 'Form 138 (Report Card)',
+                is_required: true,
+                can_be_followed: false,
+                file_path: null
+            });
+        }
+
+        // Check PSA Birth Certificate
+        const psaUrl = student?.psa_birth_url || doc?.birth_certificate || sDocs.find(d => d.document_type === 'psa' || d.document_type === 'birth_certificate')?.file_url;
+        if (psaUrl) {
+            submittedRequirements.push({
+                name: 'PSA Birth Certificate',
+                is_required: true,
+                can_be_followed: false,
+                file_path: psaUrl
+            });
+        } else {
+            missingRequirements.push({
+                name: 'PSA Birth Certificate',
+                is_required: true,
+                can_be_followed: false,
+                file_path: null
+            });
+        }
+
+        // Check Good Moral Certificate
+        const goodMoralUrl = student?.good_moral_url || doc?.good_moral || sDocs.find(d => d.document_type === 'good_moral')?.file_url;
+        if (goodMoralUrl) {
+            submittedRequirements.push({
+                name: 'Good Moral Certificate',
+                is_required: true,
+                can_be_followed: false,
+                file_path: goodMoralUrl
+            });
+        } else {
+            missingRequirements.push({
+                name: 'Good Moral Certificate',
+                is_required: true,
+                can_be_followed: false,
+                file_path: null
+            });
+        }
+
+        // Check 2x2 ID Photo
+        const photoUrl = doc?.photo || sDocs.find(d => d.document_type === 'photo')?.file_url;
+        if (photoUrl) {
+            submittedRequirements.push({
+                name: '2x2 ID Pictures',
+                is_required: false,
+                can_be_followed: true,
+                file_path: photoUrl
+            });
+        } else {
+            missingRequirements.push({
+                name: '2x2 ID Pictures',
+                is_required: false,
+                can_be_followed: true,
+                file_path: null
+            });
+        }
+    }
+
+    // ============================================
+    // RENDER STUDENT INFO CARD
+    // ============================================
+
+    function renderStudentInfo() {
+        const enr = currentEnrollment;
+        const student = currentStudent;
+
+        const fName = (student?.first_name || enr?.first_name || '').trim();
+        const lName = (student?.last_name || enr?.last_name || '').trim();
+        const fullName = `${fName} ${lName}`.trim() || 'Student Applicant';
+        const email = student?.email || enr?.email || '—';
+        const lrn = student?.lrn || enr?.lrn || 'Not assigned';
+
+        if (studentName) studentName.textContent = fullName;
+        if (studentEmail) studentEmail.textContent = email;
+        if (studentIdNumber) studentIdNumber.textContent = lrn;
+        if (totalEnrollmentsEl) totalEnrollmentsEl.textContent = enrollmentHistory.length;
+
+        const createdAt = student?.created_at || enr?.created_at;
+        const sinceYear = createdAt ? new Date(createdAt).getFullYear() : 2026;
+        if (sinceYearEl) sinceYearEl.textContent = sinceYear;
+
+        if (avatarEl) {
+            avatarEl.textContent = fullName.charAt(0).toUpperCase() || 'S';
+        }
+
+        if (viewFullProfileLink && student?.id) {
+            viewFullProfileLink.href = `view_student.html?id=${encodeURIComponent(student.id)}`;
+        }
+    }
+
+    // ============================================
+    // RENDER ENROLLMENT INFO GRID
+    // ============================================
+
+    function renderEnrollmentInfo() {
+        if (!enrollmentInfoGrid || !currentEnrollment) return;
+
+        const enr = currentEnrollment;
+        const student = currentStudent;
+
+        const gradeLevel = enr.grade_level || student?.grade_level || 'Grade 11';
+        const strand = enr.strand || student?.strand || 'Not Applicable';
+        const schoolYear = enr.school_year || enr.last_school_year || '2025-2026';
+        const rawStatus = (enr.status || '').toLowerCase();
+        let status = 'Pending';
+        let statusClass = 'pending';
+
+        if (rawStatus === 'approved' || rawStatus === 'enrolled') {
+            status = 'Enrolled';
+            statusClass = 'enrolled';
+        } else if (rawStatus === 'rejected') {
+            status = 'Rejected';
+            statusClass = 'rejected';
+        }
+
+        const studentType = enr.previous_school ? 'Transferee' : 'Regular / Continuing';
+
+        enrollmentInfoGrid.innerHTML = `
             <div class="info-item">
                 <div class="info-label">Student Type</div>
                 <div class="info-value">
                     <i class="fas fa-user-tag"></i>
-                    ${enrollmentData.studentType || 'N/A'}
+                    ${studentType}
                 </div>
             </div>
             <div class="info-item">
                 <div class="info-label">Grade Level</div>
                 <div class="info-value">
                     <i class="fas fa-layer-group"></i>
-                    ${enrollmentData.gradeLevel || 'N/A'}
+                    ${gradeLevel}
                 </div>
             </div>
             <div class="info-item">
-                <div class="info-label">Strand</div>
+                <div class="info-label">Strand / Track</div>
                 <div class="info-value">
                     <i class="fas fa-tag"></i>
-                    ${enrollmentData.strand || 'Not Applicable'}
+                    ${strand}
                 </div>
             </div>
             <div class="info-item">
                 <div class="info-label">School Year</div>
                 <div class="info-value">
                     <i class="fas fa-calendar-alt"></i>
-                    ${enrollmentData.schoolYear || 'N/A'}
+                    ${schoolYear}
                 </div>
             </div>
             <div class="info-item">
                 <div class="info-label">Application Date</div>
                 <div class="info-value">
                     <i class="fas fa-clock"></i>
-                    ${formatDate(enrollmentData.created_at)}
+                    ${formatDate(enr.created_at)}
                 </div>
             </div>
             <div class="info-item">
-                <div class="info-label">Status</div>
+                <div class="info-label">Enrollment Status</div>
                 <div class="info-value">
-                    <span class="status-badge-small status-${statusClass}">
-                        ${enrollmentData.status || 'Pending'}
+                    <span class="status-badge-small status-${statusClass}" style="padding: 4px 12px; border-radius: 20px; font-weight: 600;">
+                        ${status}
                     </span>
                 </div>
             </div>
         `;
     }
 
-    // Render requirements
+    // ============================================
+    // RENDER REQUIREMENTS SECTION
+    // ============================================
+
     function renderRequirements() {
-        const container = document.getElementById('requirementsContainer');
-        if (!container) return;
-        
-        // Update header info - check if elements exist first
+        if (!requirementsContainer) return;
+
+        const enr = currentEnrollment;
+        const student = currentStudent;
+
+        const totalReq = submittedRequirements.length + missingRequirements.length;
+        const submittedCount = submittedRequirements.length;
+        const missingCount = missingRequirements.length;
+        const percentage = totalReq > 0 ? Math.round((submittedCount / totalReq) * 100) : 100;
+
         const reqGradeLevel = document.getElementById('reqGradeLevel');
         const reqStudentType = document.getElementById('reqStudentType');
         const requirementsCount = document.getElementById('requirementsCount');
@@ -161,54 +465,46 @@ document.addEventListener('DOMContentLoaded', function() {
         const summarySubmitted = document.getElementById('summarySubmitted');
         const summaryMissing = document.getElementById('summaryMissing');
         const summaryComplete = document.getElementById('summaryComplete');
-        
-        if (reqGradeLevel) reqGradeLevel.textContent = requirementsData.gradeLevel || 'N/A';
-        if (reqStudentType) reqStudentType.textContent = requirementsData.studentType || 'N/A';
-        if (requirementsCount) {
-            requirementsCount.textContent = 
-                `${requirementsData.submittedCount || 0}/${requirementsData.totalRequirements || 0} Requirements`;
-        }
-        if (progressPercentage) {
-            progressPercentage.textContent = `${requirementsData.completionPercentage || 0}%`;
-        }
-        if (progressFill) {
-            progressFill.style.width = `${requirementsData.completionPercentage || 0}%`;
-        }
-        
-        // Update summary
-        if (summarySubmitted) summarySubmitted.textContent = requirementsData.submittedCount || 0;
-        if (summaryMissing) summaryMissing.textContent = requirementsData.missingCount || 0;
-        if (summaryComplete) summaryComplete.textContent = `${requirementsData.completionPercentage || 0}%`;
+
+        if (reqGradeLevel) reqGradeLevel.textContent = enr?.grade_level || student?.grade_level || 'Grade 11';
+        if (reqStudentType) reqStudentType.textContent = enr?.previous_school ? 'Transferee' : 'Regular';
+        if (requirementsCount) requirementsCount.textContent = `${submittedCount}/${totalReq} Requirements`;
+        if (progressPercentage) progressPercentage.textContent = `${percentage}%`;
+        if (progressFill) progressFill.style.width = `${percentage}%`;
+
+        if (summarySubmitted) summarySubmitted.textContent = submittedCount;
+        if (summaryMissing) summaryMissing.textContent = missingCount;
+        if (summaryComplete) summaryComplete.textContent = `${percentage}%`;
 
         let html = '';
 
         // Submitted Requirements
-        if (requirementsData.submitted && requirementsData.submitted.length > 0) {
+        if (submittedRequirements.length > 0) {
             html += `
                 <div class="requirements-grid submitted-grid">
                     <h4><i class="fas fa-check-circle" style="color: #10b981;"></i> Submitted Requirements</h4>
                     <div class="requirements-list">
-                        ${requirementsData.submitted.map(req => `
+                        ${submittedRequirements.map(req => `
                             <div class="requirement-item submitted">
                                 <div class="requirement-icon" style="background: #10b98120;">
                                     <i class="fas fa-check-circle" style="color: #10b981;"></i>
                                 </div>
                                 <div class="requirement-info">
-                                    <div class="requirement-name">${req.name || 'Unnamed'}</div>
+                                    <div class="requirement-name" style="font-weight: 600; color: #1e293b;">${req.name}</div>
                                     <div class="requirement-status">
-                                        <span class="status-badge-submitted">
+                                        <span class="status-badge-submitted" style="color: #065f46; font-weight: 600; font-size: 0.8rem;">
                                             <i class="fas fa-check-circle"></i> Submitted
                                         </span>
                                         ${req.is_required ? 
-                                            '<span class="requirement-badge badge-required">Required</span>' : 
-                                            '<span class="requirement-badge badge-optional">Optional</span>'
+                                            '<span class="requirement-badge badge-required" style="margin-left: 6px; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; background: #fee2e2; color: #dc2626;">Required</span>' : 
+                                            '<span class="requirement-badge badge-optional" style="margin-left: 6px; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; background: #f1f5f9; color: #64748b;">Optional</span>'
                                         }
                                     </div>
                                 </div>
                                 ${req.file_path ? `
                                     <div class="requirement-actions">
-                                        <button class="btn-view-file" onclick="viewFile('${req.file_path}')">
-                                            <i class="fas fa-eye"></i> View
+                                        <button class="btn-view-file" onclick="window.viewFile('${encodeURI(req.file_path)}', '${encodeURIComponent(req.name)}')" style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border-radius: 6px; background: #0b2b4a; color: #FFD700; border: none; cursor: pointer; font-size: 0.82rem; font-weight: 600;">
+                                            <i class="fas fa-eye"></i> View File
                                         </button>
                                     </div>
                                 ` : ''}
@@ -220,33 +516,30 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Missing Requirements
-        if (requirementsData.missing && requirementsData.missing.length > 0) {
+        if (missingRequirements.length > 0) {
             html += `
-                <div class="requirements-grid missing-grid">
+                <div class="requirements-grid missing-grid" style="margin-top: 15px;">
                     <h4><i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i> Missing Requirements</h4>
                     <div class="requirements-list">
-                        ${requirementsData.missing.map(req => `
+                        ${missingRequirements.map(req => `
                             <div class="requirement-item missing">
                                 <div class="requirement-icon" style="background: #fee2e2;">
                                     <i class="fas fa-times-circle" style="color: #dc2626;"></i>
                                 </div>
                                 <div class="requirement-info">
-                                    <div class="requirement-name">${req.name || 'Unnamed'}</div>
+                                    <div class="requirement-name" style="font-weight: 600; color: #1e293b;">${req.name}</div>
                                     <div class="requirement-status">
-                                        <span class="status-badge-missing">
+                                        <span class="status-badge-missing" style="color: #991b1b; font-weight: 600; font-size: 0.8rem;">
                                             <i class="fas fa-times-circle"></i> Not Submitted
                                         </span>
                                         ${req.is_required ? 
-                                            '<span class="requirement-badge badge-required">Required</span>' : 
-                                            '<span class="requirement-badge badge-optional">Optional</span>'
-                                        }
-                                        ${req.can_be_followed ? 
-                                            '<span class="requirement-badge badge-follow">Can be followed</span>' : ''
+                                            '<span class="requirement-badge badge-required" style="margin-left: 6px; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; background: #fee2e2; color: #dc2626;">Required</span>' : 
+                                            '<span class="requirement-badge badge-follow" style="margin-left: 6px; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; background: #fef3c7; color: #92400e;">Can be followed</span>'
                                         }
                                     </div>
                                 </div>
                                 <div class="requirement-actions">
-                                    <button class="btn-notify" onclick="notifyRequirement('${req.name || 'Requirement'}')">
+                                    <button class="btn-notify" onclick="window.notifyRequirement('${req.name.replace(/'/g, "\\'")}')" style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; border-radius: 6px; background: #fff; color: #0b2b4a; border: 1px solid #0b2b4a; cursor: pointer; font-size: 0.82rem; font-weight: 600;">
                                         <i class="fas fa-bell"></i> Notify
                                     </button>
                                 </div>
@@ -257,168 +550,163 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
 
-        // No requirements
-        if (!requirementsData.totalRequirements || requirementsData.totalRequirements === 0) {
-            html = `
-                <div class="no-requirements">
-                    <i class="fas fa-clipboard-list"></i>
-                    <p>No specific requirements found for ${requirementsData.gradeLevel || 'N/A'} - ${requirementsData.studentType || 'N/A'}</p>
-                </div>
-            `;
-        }
-
-        container.innerHTML = html;
+        requirementsContainer.innerHTML = html;
     }
 
-    // Render history
+    // ============================================
+    // RENDER ENROLLMENT HISTORY
+    // ============================================
+
     function renderHistory() {
-        const tbody = document.getElementById('historyBody');
-        const historyCount = document.getElementById('historyCount');
-        
-        if (!tbody) return;
-        
+        if (!historyBody) return;
+
         if (historyCount) {
-            historyCount.textContent = `${historyData.length} records`;
+            historyCount.textContent = `${enrollmentHistory.length} records`;
         }
 
-        if (historyData.length === 0) {
-            tbody.innerHTML = `
+        if (enrollmentHistory.length === 0) {
+            historyBody.innerHTML = `
                 <tr>
-                    <td colspan="5">
-                        <div class="no-data">
-                            <i class="fas fa-history"></i>
-                            <p>No previous enrollment records found.</p>
-                        </div>
+                    <td colspan="5" style="text-align: center; padding: 25px; color: #94a3b8;">
+                        <i class="fas fa-history" style="font-size: 24px; margin-bottom: 6px;"></i>
+                        <p style="margin: 0;">No previous enrollment history recorded.</p>
                     </td>
                 </tr>
             `;
             return;
         }
 
-        let html = '';
-        historyData.forEach(record => {
-            const statusClass = record.status ? record.status.toLowerCase() : 'pending';
-            html += `
+        historyBody.innerHTML = enrollmentHistory.map(record => {
+            const statusRaw = (record.status || '').toLowerCase();
+            let stText = 'Pending';
+            let stClass = 'badge-pending';
+            if (statusRaw === 'approved' || statusRaw === 'enrolled') {
+                stText = 'Enrolled';
+                stClass = 'badge-enrolled';
+            } else if (statusRaw === 'rejected') {
+                stText = 'Rejected';
+                stClass = 'badge-rejected';
+            }
+
+            return `
                 <tr>
-                    <td>${record.school_year || 'N/A'}</td>
-                    <td>${record.grade_name || 'N/A'}</td>
+                    <td style="font-weight: 600;">${record.school_year || record.last_school_year || '2025-2026'}</td>
+                    <td>${record.grade_level || 'Grade 11'}</td>
                     <td>${record.strand || '—'}</td>
                     <td>
-                        <span class="badge badge-${statusClass}">
-                            ${record.status || 'Pending'}
+                        <span class="badge ${stClass}">
+                            ${stText}
                         </span>
                     </td>
                     <td>${formatDate(record.created_at)}</td>
                 </tr>
             `;
-        });
-
-        tbody.innerHTML = html;
+        }).join('');
     }
 
-    // Notify requirement
-    window.notifyRequirement = function(requirementName) {
-        if (!requirementName) return;
-        
-        if (confirm(`Send notification to ${enrollmentData.studentName} about missing requirement: "${requirementName}"?`)) {
-            showAlert(`✅ Notification sent to ${enrollmentData.studentName}`, 'success');
-        }
-    };
+    // ============================================
+    // FILE PREVIEW MODAL
+    // ============================================
 
-    // View file (modal)
-    window.viewFile = function(filePath) {
+    window.viewFile = function(filePath, reqName) {
         if (!filePath) {
-            showAlert('No file available to view.', 'error');
+            showAlert('No file URL available.', 'error');
             return;
         }
-        
-        const modal = document.getElementById('filePreviewModal');
-        const modalBody = document.getElementById('modalBody');
-        const downloadBtn = document.getElementById('downloadFileBtn');
-        
-        if (!modal || !modalBody) {
-            showAlert('File preview is not available.', 'error');
-            return;
+
+        const decodedPath = decodeURI(filePath);
+        const name = reqName ? decodeURIComponent(reqName) : 'Document';
+
+        if (modalFileName) modalFileName.textContent = name;
+        if (downloadFileBtn) {
+            downloadFileBtn.href = decodedPath;
+            downloadFileBtn.target = '_blank';
         }
-        
-        // Show loading
-        modalBody.innerHTML = `
-            <div class="file-loading">
-                <i class="fas fa-spinner fa-spin"></i>
-                <p>Loading file...</p>
-            </div>
-        `;
-        
-        modal.classList.add('show');
-        
-        // Simulate file load
-        setTimeout(() => {
-            const fileName = filePath.split('/').pop() || 'file';
-            const fileNameEl = document.getElementById('modalFileName');
-            if (fileNameEl) {
-                fileNameEl.textContent = fileName;
-            }
-            if (downloadBtn) {
-                downloadBtn.href = filePath;
-            }
-            
-            modalBody.innerHTML = `
-                <div style="text-align: center; padding: 20px;">
-                    <i class="fas fa-file-alt" style="font-size: 48px; color: #1B2A4A; margin-bottom: 12px;"></i>
-                    <p style="color: #64748b; font-size: 14px;">File: <strong>${fileName}</strong></p>
-                    <p style="color: #94a3b8; font-size: 13px;">Click "Download" to view or save the file.</p>
-                    <div style="margin-top: 16px; background: #f1f5f9; padding: 16px; border-radius: 8px;">
-                        <i class="fas fa-info-circle" style="color: #1B2A4A;"></i>
-                        <span style="color: #475569; font-size: 13px;">File preview will be available in the full version.</span>
+
+        if (modalBody) {
+            const isImage = /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(decodedPath);
+            if (isImage) {
+                modalBody.innerHTML = `
+                    <div style="text-align: center; padding: 10px;">
+                        <img src="${decodedPath}" alt="${name}" style="max-width: 100%; max-height: 450px; border-radius: 8px; object-fit: contain; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                     </div>
-                </div>
-            `;
-        }, 800);
+                `;
+            } else {
+                modalBody.innerHTML = `
+                    <div style="text-align: center; padding: 30px;">
+                        <i class="fas fa-file-pdf" style="font-size: 54px; color: #dc2626; margin-bottom: 12px;"></i>
+                        <p style="font-size: 15px; font-weight: 600; color: #1e293b;">${name}</p>
+                        <a href="${decodedPath}" target="_blank" style="display: inline-block; margin-top: 10px; padding: 8px 18px; border-radius: 8px; background: #0b2b4a; color: #FFD700; text-decoration: none; font-weight: 600;">
+                            <i class="fas fa-external-link-alt"></i> Open Document in New Tab
+                        </a>
+                    </div>
+                `;
+            }
+        }
+
+        if (filePreviewModal) filePreviewModal.classList.add('show');
     };
 
-    // Close file modal
     window.closeFileModal = function() {
-        const modal = document.getElementById('filePreviewModal');
-        if (modal) {
-            modal.classList.remove('show');
+        if (filePreviewModal) filePreviewModal.classList.remove('show');
+    };
+
+    // Notify Missing Requirement
+    window.notifyRequirement = async function(requirementName) {
+        const student = currentStudent;
+        const enr = currentEnrollment;
+        const sName = student ? `${student.first_name || ''} ${student.last_name || ''}`.trim() : (enr ? `${enr.first_name || ''} ${enr.last_name || ''}`.trim() : 'Student');
+
+        if (!confirm(`Send notification to ${sName} regarding missing requirement "${requirementName}"?`)) {
+            return;
+        }
+
+        try {
+            await supabase.from('notifications').insert([{
+                user_id: student?.user_id || null,
+                role: 'student',
+                title: 'Missing Requirement Notice',
+                message: `Notice for ${sName}: Please submit your "${requirementName}" to finalize your enrollment application.`,
+                type: 'document_reminder',
+                read: false,
+                created_at: new Date().toISOString()
+            }]);
+
+            showAlert(`✅ Notification for "${requirementName}" sent successfully to ${sName}!`, 'success');
+        } catch (error) {
+            console.error('❌ Error notifying requirement:', error);
+            showAlert('Failed to send notification: ' + error.message, 'error');
         }
     };
 
-    // Close modal on outside click
+    // Close modal on background click
     document.addEventListener('click', function(e) {
-        const modal = document.getElementById('filePreviewModal');
-        if (modal && e.target === modal) {
-            closeFileModal();
+        if (e.target === filePreviewModal) {
+            window.closeFileModal();
         }
     });
 
-    // ===== MOBILE MENU =====
+    // ============================================
+    // MOBILE MENU
+    // ============================================
 
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('sidebar');
-
-    if (menuToggle) {
-        menuToggle.addEventListener('click', function() {
-            if (sidebar) {
-                sidebar.classList.toggle('active');
-            }
+    if (menuToggle && sidebar) {
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            sidebar.classList.toggle('active');
         });
     }
 
     document.addEventListener('click', function(e) {
-        if (window.innerWidth <= 768) {
-            if (sidebar && menuToggle) {
-                if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-                    sidebar.classList.remove('active');
-                }
-            }
+        if (sidebar && sidebar.classList.contains('active') && !sidebar.contains(e.target) && (!menuToggle || !menuToggle.contains(e.target))) {
+            sidebar.classList.remove('active');
         }
     });
 
-    // ===== INIT =====
+    // ============================================
+    // INIT
+    // ============================================
 
-    renderStudentInfo();
-    renderEnrollmentInfo();
-    renderRequirements();
-    renderHistory();
-});
+    loadEnrollmentDetails();
+
+})();

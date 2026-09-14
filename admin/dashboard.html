@@ -88,13 +88,13 @@
                 <div class="notification-wrapper">
                     <button class="notification-btn" id="notificationBtn" title="View Notifications">
                         <i class="fas fa-bell"></i>
-                        <span class="notif-count" id="notifCount">3</span>
+                        <span class="notif-count empty" id="notifCount">0</span>
                     </button>
                     <div class="notification-dropdown" id="notificationDropdown">
                         <div class="dropdown-header">
                             <div class="dropdown-title-group">
                                 <h4>Notifications</h4>
-                                <span class="dropdown-unread-pill" id="unreadPill">3 New</span>
+                                <span class="dropdown-unread-pill" id="unreadPill" style="display: none;">0 New</span>
                             </div>
                             <button id="markAllReadBtn" class="mark-all-read" title="Mark all notifications as read">
                                 <i class="fas fa-check-double"></i> Mark all read
@@ -510,7 +510,7 @@
         </div>
     </div>
 
-    <script src="js/dashboard.js"></script>
+    <script type="module" src="js/dashboard.js"></script>
     <script src="js/admin_avatar_sync.js"></script>
 </body>
 

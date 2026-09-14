@@ -1,6 +1,7 @@
-// ===== SEND NOTIFICATION REQUIREMENTS JAVASCRIPT =====
+// ===== SEND NOTIFICATION REQUIREMENTS JAVASCRIPT (SUPABASE POWERED) =====
+import { supabase } from '../../supabase/config.js';
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // DOM Elements
     const alertContainer = document.getElementById('alertContainer');
     const form = document.getElementById('notificationForm');
@@ -16,71 +17,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const logBody = document.getElementById('logBody');
     const logCount = document.getElementById('logCount');
 
-    // ===== DATA =====
-
-    // Student data
-    const students = {
-        1: { name: 'Juan Dela Cruz', email: 'juan.dela@plshs.edu.ph' },
-        2: { name: 'Maria Santos', email: 'maria.santos@plshs.edu.ph' },
-        3: { name: 'Carlos Mendoza', email: 'carlos.m@plshs.edu.ph' },
-        4: { name: 'Elena Garcia', email: 'elena.g@plshs.edu.ph' },
-        5: { name: 'Ana Reyes', email: 'ana.reyes@plshs.edu.ph' }
-    };
-
-    // Notification log
+    // State
+    let students = [];
     let notificationLog = [];
-
-    // Statistics
     let stats = {
-        totalStudents: 5,
-        missingReqs: 3,
+        totalStudents: 0,
+        missingReqs: 0,
         notifSent: 0
     };
 
-    // ===== FUNCTIONS =====
-
-    // Update stats
-    function updateStats() {
-        document.getElementById('totalStudents').textContent = stats.totalStudents;
-        document.getElementById('missingReqs').textContent = stats.missingReqs;
-        document.getElementById('notifSent').textContent = stats.notifSent;
-    }
-
-    // Update preview
-    function updatePreview() {
-        const studentId = studentSelect.value;
-        const requirement = requirementSelect.value;
-        const message = additionalMessage.value.trim();
-
-        const student = studentId ? students[studentId] : null;
-        const studentNameText = student ? student.name : '[Select student]';
-
-        // Update title
-        previewTitle.textContent = requirement ? 
-            `⚠️ Missing Requirement: ${requirement}` : 
-            '⚠️ Missing Requirement: [Select requirement]';
-
-        // Update message
-        let msg = requirement ? 
-            `The school administration has notified you about the missing requirement: ${requirement}. ` :
-            'The school administration has notified you about a missing requirement. ';
-        msg += 'Please submit this requirement as soon as possible to complete your enrollment process.';
-        
-        if (message) {
-            msg += `\n\nAdditional Instructions: ${message}`;
-        }
-        previewMessage.textContent = msg;
-
-        // Update student
-        previewStudent.innerHTML = `<i class="fas fa-user"></i> Student: ${studentNameText}`;
-    }
-
-    // Show alert
+    // Alert helper
     function showAlert(message, type = 'error') {
+        if (!alertContainer) return;
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type}`;
         const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
-        alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> <div>${message}</div>`;
         alertContainer.appendChild(alertDiv);
 
         setTimeout(() => {
@@ -91,15 +43,94 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
 
-    // Add log entry
-    function addLogEntry(student, requirement, status) {
+    // ===== DATA FETCHING =====
+    async function loadStudents() {
+        try {
+            const { data, error } = await supabase
+                .from('students')
+                .select('*')
+                .order('last_name', { ascending: true });
+
+            if (error) throw error;
+
+            students = (data || []).map(s => {
+                const name = `${s.last_name || ''}, ${s.first_name || ''} ${s.middle_name || ''}`.trim() || 'Student';
+                return {
+                    id: s.id,
+                    name: name,
+                    email: s.email || 'student@plshs.edu.ph',
+                    lrn: s.lrn || '—',
+                    documents_status: s.documents_status || 'Pending'
+                };
+            });
+
+            stats.totalStudents = students.length;
+            stats.missingReqs = students.filter(s => s.documents_status !== 'Complete' && s.documents_status !== 'Verified').length;
+            updateStats();
+
+            // Populate select
+            if (studentSelect) {
+                let html = '<option value="">Select Student</option>';
+                students.forEach(s => {
+                    html += `<option value="${s.id}">${s.name} (${s.lrn})</option>`;
+                });
+                studentSelect.innerHTML = html;
+            }
+        } catch (err) {
+            console.error('Error loading students:', err);
+        }
+    }
+
+    function updateStats() {
+        const totalEl = document.getElementById('totalStudents');
+        const missingEl = document.getElementById('missingReqs');
+        const notifEl = document.getElementById('notifSent');
+
+        if (totalEl) totalEl.textContent = stats.totalStudents;
+        if (missingEl) missingEl.textContent = stats.missingReqs;
+        if (notifEl) notifEl.textContent = stats.notifSent;
+    }
+
+    function updatePreview() {
+        if (!studentSelect || !requirementSelect) return;
+        const studentId = studentSelect.value;
+        const requirement = requirementSelect.value;
+        const message = additionalMessage ? additionalMessage.value.trim() : '';
+
+        const student = students.find(s => s.id === studentId);
+        const studentNameText = student ? student.name : '[Select student]';
+
+        if (previewTitle) {
+            previewTitle.textContent = requirement ? 
+                `⚠️ Missing Requirement: ${requirement}` : 
+                '⚠️ Missing Requirement: [Select requirement]';
+        }
+
+        if (previewMessage) {
+            let msg = requirement ? 
+                `The school administration has notified you about the missing requirement: ${requirement}. ` :
+                'The school administration has notified you about a missing requirement. ';
+            msg += 'Please submit this requirement as soon as possible to complete your enrollment process.';
+            
+            if (message) {
+                msg += `\n\nAdditional Instructions: ${message}`;
+            }
+            previewMessage.textContent = msg;
+        }
+
+        if (previewStudent) {
+            previewStudent.innerHTML = `<i class="fas fa-user"></i> Student: ${studentNameText}`;
+        }
+    }
+
+    function addLogEntry(studentName, requirement, status) {
         const now = new Date();
         const time = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
         const date = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
         notificationLog.unshift({
             time: `${date} ${time}`,
-            student: student,
+            student: studentName,
             requirement: requirement,
             status: status
         });
@@ -107,20 +138,21 @@ document.addEventListener('DOMContentLoaded', function() {
         renderLog();
     }
 
-    // Render log
     function renderLog() {
+        if (!logBody) return;
+
         if (notificationLog.length === 0) {
             logBody.innerHTML = `
                 <tr>
                     <td colspan="4">
-                        <div class="no-data">
+                        <div class="no-data" style="text-align: center; padding: 24px; color: #64748b;">
                             <i class="fas fa-bell-slash"></i>
-                            <p>No notifications sent yet</p>
+                            <p style="margin-top: 8px;">No notifications sent yet</p>
                         </div>
                     </td>
                 </tr>
             `;
-            logCount.textContent = '0 entries';
+            if (logCount) logCount.textContent = '0 entries';
             return;
         }
 
@@ -138,75 +170,46 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         logBody.innerHTML = html;
-        logCount.textContent = `${notificationLog.length} entries`;
+        if (logCount) logCount.textContent = `${notificationLog.length} entries`;
     }
 
-    // Reset form
     window.resetForm = function() {
-        studentSelect.value = '';
-        requirementSelect.value = '';
-        additionalMessage.value = '';
-        studentEmail.value = '';
-        studentName.value = '';
+        if (studentSelect) studentSelect.value = '';
+        if (requirementSelect) requirementSelect.value = '';
+        if (additionalMessage) additionalMessage.value = '';
+        if (studentEmail) studentEmail.value = '';
+        if (studentName) studentName.value = '';
         updatePreview();
     };
 
-    // ===== SIMULATE API CALL =====
-
-    function sendNotification(data) {
-        return new Promise((resolve) => {
-            // Simulate API delay
-            setTimeout(() => {
-                // Random success/failure (90% success rate)
-                const success = Math.random() < 0.9;
-                resolve({
-                    success: success,
-                    message: success ? 
-                        'Notification sent successfully to student dashboard and email' :
-                        'Failed to send notification. Please try again.'
-                });
-            }, 1500);
-        });
-    }
-
     // ===== EVENT LISTENERS =====
-
-    // Student select change
     if (studentSelect) {
         studentSelect.addEventListener('change', function() {
             const studentId = this.value;
-            if (studentId && students[studentId]) {
-                studentEmail.value = students[studentId].email;
-                studentName.value = students[studentId].name;
+            const stu = students.find(s => s.id === studentId);
+            if (stu) {
+                if (studentEmail) studentEmail.value = stu.email;
+                if (studentName) studentName.value = stu.name;
             } else {
-                studentEmail.value = '';
-                studentName.value = '';
+                if (studentEmail) studentEmail.value = '';
+                if (studentName) studentName.value = '';
             }
             updatePreview();
         });
     }
 
-    // Requirement select change
-    if (requirementSelect) {
-        requirementSelect.addEventListener('change', updatePreview);
-    }
+    if (requirementSelect) requirementSelect.addEventListener('change', updatePreview);
+    if (additionalMessage) additionalMessage.addEventListener('input', updatePreview);
 
-    // Additional message input
-    if (additionalMessage) {
-        additionalMessage.addEventListener('input', updatePreview);
-    }
-
-    // ===== FORM SUBMIT =====
-
+    // ===== FORM SUBMISSION =====
     if (form) {
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const studentId = studentSelect.value;
             const requirement = requirementSelect.value;
-            const message = additionalMessage.value.trim();
+            const message = additionalMessage ? additionalMessage.value.trim() : '';
 
-            // Validate
             if (!studentId) {
                 showAlert('Please select a student.', 'error');
                 return;
@@ -217,84 +220,63 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const student = students[studentId];
+            const student = students.find(s => s.id === studentId);
             if (!student) {
                 showAlert('Student not found.', 'error');
                 return;
             }
 
-            // Disable button and show loading
-            sendBtn.disabled = true;
-            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            if (sendBtn) {
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+            }
 
             try {
-                // Prepare data
-                const data = {
-                    student_id: studentId,
-                    student_email: student.email,
-                    student_name: student.name,
-                    requirement: requirement,
-                    requirement_key: requirement.toLowerCase().replace(/\s+/g, '_'),
-                    additional_message: message
-                };
+                // Insert real notification in Supabase
+                const notificationTitle = `⚠️ Missing Requirement: ${requirement}`;
+                const notificationMsg = `Please submit your ${requirement} to complete your enrollment. ${message ? 'Note: ' + message : ''}`;
 
-                // Send notification (simulated API call)
-                const result = await sendNotification(data);
+                await supabase
+                    .from('notifications')
+                    .insert([{
+                        user_id: student.id,
+                        role: 'student',
+                        title: notificationTitle,
+                        message: notificationMsg,
+                        type: 'warning',
+                        read: false
+                    }]);
 
-                if (result.success) {
-                    showAlert('✅ ' + result.message, 'success');
-                    addLogEntry(student.name, requirement, 'Sent');
-                    stats.notifSent++;
-                    updateStats();
-                    
-                    // Reset form after successful send
-                    setTimeout(() => {
-                        resetForm();
-                    }, 1000);
-                } else {
-                    showAlert('❌ ' + result.message, 'error');
-                    addLogEntry(student.name, requirement, 'Failed');
-                }
+                showAlert(`✅ Notification sent to ${student.name}!`, 'success');
+                addLogEntry(student.name, requirement, 'Sent');
+                stats.notifSent++;
+                updateStats();
+
+                window.resetForm();
             } catch (error) {
-                showAlert('❌ Error sending notification: ' + error.message, 'error');
+                console.error('Error sending notification:', error);
+                showAlert('Failed to send notification: ' + error.message, 'error');
                 addLogEntry(student.name, requirement, 'Failed');
             } finally {
-                // Re-enable button
-                sendBtn.disabled = false;
-                sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Notification';
+                if (sendBtn) {
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Notification';
+                }
             }
         });
     }
 
-    // ===== MOBILE MENU =====
-
+    // Mobile Menu
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
 
-    if (menuToggle) {
+    if (menuToggle && sidebar) {
         menuToggle.addEventListener('click', function() {
             sidebar.classList.toggle('active');
         });
     }
 
-    document.addEventListener('click', function(e) {
-        if (window.innerWidth <= 768) {
-            if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-                sidebar.classList.remove('active');
-            }
-        }
-    });
-
-    // ===== INIT =====
-
-    updateStats();
+    // Init
+    await loadStudents();
     updatePreview();
-
-    // Auto-dismiss alerts
-    setTimeout(() => {
-        document.querySelectorAll('.alert').forEach(alert => {
-            alert.style.opacity = '0';
-            setTimeout(() => alert.remove(), 300);
-        });
-    }, 5000);
 });

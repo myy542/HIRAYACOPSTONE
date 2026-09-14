@@ -1,219 +1,345 @@
-// ===== VIEW STUDENT JAVASCRIPT =====
+/**
+ * PLSNHS Admin - View Student Profile (Supabase Dynamic Integration)
+ */
 
-document.addEventListener('DOMContentLoaded', function() {
-    // DOM Elements
+import { supabase } from '../../supabase/config.js';
+
+(function() {
+    'use strict';
+
+    console.log('👤 Admin View Student Profile (Supabase) ready');
+
+    // ============================================
+    // ROLE & SESSION GUARD
+    // ============================================
+
+    const currentUserStr = localStorage.getItem('currentUser');
+    if (!currentUserStr) {
+        window.location.replace('../auth/login.html');
+        return;
+    }
+
+    let currentUser;
+    try {
+        currentUser = JSON.parse(currentUserStr);
+    } catch (e) {
+        localStorage.removeItem('currentUser');
+        window.location.replace('../auth/login.html');
+        return;
+    }
+
+    if (currentUser.role !== 'admin') {
+        const routes = {
+            'teacher': '../teacher/dashboard.html',
+            'student': '../student/dashboard.html',
+            'parent': '../parents/dashboard.html',
+            'registrar': '../registrar/dashboard.html'
+        };
+        window.location.replace(routes[currentUser.role] || '../auth/login.html');
+        return;
+    }
+
+    // ============================================
+    // DOM ELEMENTS
+    // ============================================
+
     const alertContainer = document.getElementById('alertContainer');
+    const avatarInitial = document.getElementById('avatarInitial');
+    const studentName = document.getElementById('studentName');
+    const studentEmail = document.getElementById('studentEmail');
+    const studentIdNumber = document.getElementById('studentIdNumber');
+    const studentRegistered = document.getElementById('studentRegistered');
+    const studentDaysActive = document.getElementById('studentDaysActive');
+    const statusBadge = document.getElementById('statusBadge');
+    const personalInfoGrid = document.getElementById('personalInfoGrid');
+    const currentEnrollmentCard = document.getElementById('currentEnrollmentCard');
+    const enrollmentInfoGrid = document.getElementById('enrollmentInfoGrid');
+    const historyContainer = document.getElementById('historyContainer');
 
-    // ===== STUDENT DATA =====
+    // Mobile Menu
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
 
-    const studentData = {
-        id: 1,
-        fullname: 'Juan Dela Cruz',
-        email: 'juan.dela@plshs.edu.ph',
-        id_number: 'PLSNHS-STU-000001',
-        created_at: '2026-06-15 10:30:00',
-        firstname: 'Juan',
-        middlename: 'D.',
-        lastname: 'Dela Cruz',
-        birthdate: '2008-06-15',
-        gender: 'Male',
-        status: 'Enrolled',
-        profile_picture: null
-    };
+    // ============================================
+    // STATE
+    // ============================================
 
-    // Current enrollment
-    const currentEnrollment = {
-        id: 1,
-        grade_name: 'Grade 11',
-        strand: 'STEM',
-        school_year: '2026-2027',
-        created_at: '2026-06-20 14:30:00',
-        form_138: null
-    };
+    let currentStudent = null;
+    let currentEnrollment = null;
+    let enrollmentHistory = [];
 
-    // Enrollment history
-    const historyData = [
-        { id: 1, school_year: '2025-2026', grade_name: 'Grade 10', strand: null, status: 'Enrolled', created_at: '2025-06-15 10:30:00' },
-        { id: 2, school_year: '2026-2027', grade_name: 'Grade 11', strand: 'STEM', status: 'Enrolled', created_at: '2026-06-20 14:30:00' }
-    ];
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
 
-    // ===== FUNCTIONS =====
-
-    // Format date
-    function formatDate(dateString) {
-        if (!dateString) return 'Not specified';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-            month: 'long', 
-            day: 'numeric', 
-            year: 'numeric'
-        });
-    }
-
-    // Calculate age
-    function calculateAge(birthdate) {
-        if (!birthdate) return null;
-        const birth = new Date(birthdate);
-        const today = new Date();
-        let age = today.getFullYear() - birth.getFullYear();
-        const m = today.getMonth() - birth.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-            age--;
-        }
-        return age;
-    }
-
-    // Calculate days active
-    function calculateDaysActive(createdAt) {
-        const created = new Date(createdAt);
-        const today = new Date();
-        const diffTime = Math.abs(today - created);
-        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    }
-
-    // Show alert
     function showAlert(message, type = 'error') {
+        if (!alertContainer) return;
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type}`;
         const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
-        alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
         alertContainer.appendChild(alertDiv);
 
         setTimeout(() => {
             alertDiv.style.opacity = '0';
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 300);
+            setTimeout(() => alertDiv.remove(), 300);
         }, 5000);
     }
 
-    // Check if strand should be shown
-    function shouldShowStrand(gradeName) {
-        return ['Grade 11', 'Grade 12'].includes(gradeName);
+    function formatDate(dateString) {
+        if (!dateString) return 'Not specified';
+        try {
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return dateString;
+            return date.toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        } catch {
+            return dateString;
+        }
     }
 
-    // Render profile
+    function calculateAge(birthdate) {
+        if (!birthdate) return null;
+        try {
+            const birth = new Date(birthdate);
+            if (isNaN(birth.getTime())) return null;
+            const today = new Date();
+            let age = today.getFullYear() - birth.getFullYear();
+            const m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            return age >= 0 ? age : null;
+        } catch {
+            return null;
+        }
+    }
+
+    function calculateDaysActive(createdAt) {
+        if (!createdAt) return 1;
+        try {
+            const created = new Date(createdAt);
+            if (isNaN(created.getTime())) return 1;
+            const today = new Date();
+            const diffTime = Math.abs(today - created);
+            return Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+        } catch {
+            return 1;
+        }
+    }
+
+    // ============================================
+    // LOAD STUDENT DETAILS FROM SUPABASE
+    // ============================================
+
+    async function loadStudentDetails() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetId = urlParams.get('id') || urlParams.get('student_id') || '';
+
+            // 1. Fetch Student from Supabase
+            let student = null;
+            if (targetId) {
+                try {
+                    const { data: sData } = await supabase
+                        .from('students')
+                        .select('*')
+                        .or(`id.eq.${targetId},lrn.eq.${targetId}`)
+                        .maybeSingle();
+                    if (sData) student = sData;
+                } catch(e) {}
+            }
+
+            if (!student) {
+                try {
+                    const { data: sList } = await supabase
+                        .from('students')
+                        .select('*')
+                        .limit(1);
+                    if (sList && sList.length > 0) student = sList[0];
+                } catch(e) {}
+            }
+
+            if (!student) {
+                showAlert('No student profile found in database.', 'error');
+                return;
+            }
+
+            currentStudent = student;
+
+            // 2. Fetch Enrollments for this student
+            let enrollments = [];
+            try {
+                const { data: eData } = await supabase
+                    .from('enrollments')
+                    .select('*')
+                    .or(`student_id.eq.${student.id},email.eq.${student.email}`)
+                    .order('created_at', { ascending: false });
+                if (eData) enrollments = eData;
+            } catch(e) {}
+
+            enrollmentHistory = enrollments;
+            currentEnrollment = enrollments.length > 0 ? enrollments[0] : null;
+
+            // Render all UI components
+            renderProfile();
+            renderPersonalInfo();
+            renderCurrentEnrollment();
+            renderHistory();
+
+        } catch (error) {
+            console.error('❌ Error loading student details:', error);
+            showAlert('Failed to load student details: ' + error.message, 'error');
+        }
+    }
+
+    // ============================================
+    // RENDER PROFILE CARD
+    // ============================================
+
     function renderProfile() {
-        const initial = studentData.fullname.charAt(0).toUpperCase();
-        const daysActive = calculateDaysActive(studentData.created_at);
+        const student = currentStudent;
+        if (!student) return;
 
-        document.getElementById('avatarInitial').textContent = initial;
-        document.getElementById('studentName').textContent = studentData.fullname;
-        document.getElementById('studentEmail').textContent = studentData.email;
-        document.getElementById('studentIdNumber').textContent = studentData.id_number || 'Not assigned';
-        document.getElementById('studentRegistered').textContent = formatDate(studentData.created_at);
-        document.getElementById('studentDaysActive').textContent = daysActive;
+        const fName = (student.first_name || '').trim();
+        const lName = (student.last_name || '').trim();
+        const fullName = `${fName} ${lName}`.trim() || 'Student';
+        const initial = fullName.charAt(0).toUpperCase() || 'S';
+        const daysActive = calculateDaysActive(student.created_at);
 
-        // Status badge
-        const statusClass = studentData.status.toLowerCase();
-        const badge = document.getElementById('statusBadge');
-        badge.className = `profile-badge badge-${statusClass}`;
-        badge.innerHTML = `
-            <i class="fas fa-${studentData.status === 'Enrolled' ? 'check-circle' : 'clock'}"></i>
-            Current Status: ${studentData.status}
-        `;
+        if (avatarInitial) avatarInitial.textContent = initial;
+        if (studentName) studentName.textContent = fullName;
+        if (studentEmail) studentEmail.textContent = student.email || '—';
+        if (studentIdNumber) studentIdNumber.textContent = student.lrn || 'Not assigned';
+        if (studentRegistered) studentRegistered.textContent = formatDate(student.created_at);
+        if (studentDaysActive) studentDaysActive.textContent = daysActive;
+
+        const statusRaw = (currentEnrollment?.status || '').toLowerCase();
+        const isApproved = currentEnrollment ? (statusRaw === 'approved' || statusRaw === 'enrolled') : student.documents_status === 'complete';
+        const statusText = isApproved ? 'Enrolled' : 'Pending Verification';
+        const statusClass = isApproved ? 'badge-enrolled' : 'badge-pending';
+
+        if (statusBadge) {
+            statusBadge.className = `profile-badge ${statusClass}`;
+            statusBadge.innerHTML = `
+                <i class="fas fa-${isApproved ? 'check-circle' : 'clock'}"></i>
+                Current Status: ${statusText}
+            `;
+        }
     }
 
-    // Render personal info
-    function renderPersonalInfo() {
-        const grid = document.getElementById('personalInfoGrid');
-        const age = calculateAge(studentData.birthdate);
-        const genderIcon = studentData.gender === 'Male' ? 'mars' : 
-                          studentData.gender === 'Female' ? 'venus' : 'genderless';
+    // ============================================
+    // RENDER PERSONAL INFO
+    // ============================================
 
-        grid.innerHTML = `
+    function renderPersonalInfo() {
+        if (!personalInfoGrid || !currentStudent) return;
+        const student = currentStudent;
+
+        const bDate = student.date_of_birth || student.birth_date;
+        const age = calculateAge(bDate);
+        const gender = student.gender || 'Not specified';
+        const genderIcon = gender.toLowerCase() === 'male' ? 'mars' : (gender.toLowerCase() === 'female' ? 'venus' : 'user');
+
+        personalInfoGrid.innerHTML = `
             <div class="info-item">
                 <div class="info-label">First Name</div>
                 <div class="info-value">
                     <i class="fas fa-user"></i>
-                    ${studentData.firstname || 'Not specified'}
+                    ${student.first_name || 'Not specified'}
                 </div>
             </div>
             <div class="info-item">
                 <div class="info-label">Middle Name</div>
                 <div class="info-value">
                     <i class="fas fa-user"></i>
-                    ${studentData.middlename || 'Not specified'}
+                    ${student.middle_name || '—'}
                 </div>
             </div>
             <div class="info-item">
                 <div class="info-label">Last Name</div>
                 <div class="info-value">
                     <i class="fas fa-user"></i>
-                    ${studentData.lastname || 'Not specified'}
+                    ${student.last_name || 'Not specified'}
                 </div>
             </div>
             <div class="info-item">
                 <div class="info-label">Birthdate</div>
                 <div class="info-value">
                     <i class="fas fa-cake-candles"></i>
-                    ${studentData.birthdate ? formatDate(studentData.birthdate) : 'Not specified'}
-                    ${age !== null ? `<span class="age-text">(Age: ${age} years)</span>` : ''}
+                    ${bDate ? formatDate(bDate) : 'Not specified'}
+                    ${age !== null ? `<span class="age-text" style="color: #64748b; font-size: 13px; margin-left: 6px;">(Age: ${age} years)</span>` : ''}
                 </div>
             </div>
             <div class="info-item">
                 <div class="info-label">Gender</div>
                 <div class="info-value">
                     <i class="fas fa-${genderIcon}"></i>
-                    ${studentData.gender || 'Not specified'}
+                    ${gender}
                 </div>
             </div>
             <div class="info-item">
-                <div class="info-label">Student ID Number</div>
+                <div class="info-label">Student LRN / ID Number</div>
                 <div class="info-value">
                     <i class="fas fa-qrcode"></i>
-                    ${studentData.id_number || 'Not assigned'}
+                    ${student.lrn || 'Not assigned'}
                 </div>
             </div>
         `;
     }
 
-    // Render current enrollment
+    // ============================================
+    // RENDER CURRENT ENROLLMENT
+    // ============================================
+
     function renderCurrentEnrollment() {
-        const grid = document.getElementById('enrollmentInfoGrid');
-        const card = document.getElementById('currentEnrollmentCard');
+        if (!enrollmentInfoGrid) return;
 
-        if (!currentEnrollment) {
-            card.style.display = 'none';
-            return;
-        }
+        const student = currentStudent;
+        const enr = currentEnrollment;
 
-        card.style.display = 'block';
-        
+        const gradeName = enr?.grade_level || student?.grade_level || 'Grade 11';
+        const strand = enr?.strand || student?.strand || (gradeName.includes('11') || gradeName.includes('12') ? 'TVL-ICT' : '');
+        const schoolYear = enr?.school_year || enr?.last_school_year || '2025-2026';
+        const form138 = student?.form_138_url;
+
         let strandHtml = '';
-        if (shouldShowStrand(currentEnrollment.grade_name) && currentEnrollment.strand) {
+        if (strand) {
             strandHtml = `
                 <div class="info-item">
                     <div class="info-label">Strand</div>
                     <div class="info-value">
                         <i class="fas fa-tag"></i>
-                        ${currentEnrollment.strand}
+                        ${strand}
                     </div>
                 </div>
             `;
         }
 
         let form138Html = '';
-        if (currentEnrollment.form_138) {
+        if (form138) {
             form138Html = `
                 <div class="info-item" style="grid-column: 1 / -1; border-bottom: none;">
-                    <div class="info-label">Form 138</div>
+                    <div class="info-label">Form 138 (Report Card)</div>
                     <div class="info-value">
-                        <i class="fas fa-file-pdf"></i>
-                        <a href="../${currentEnrollment.form_138}" target="_blank" class="document-link">
-                            View Document
+                        <i class="fas fa-file-pdf" style="color: #dc2626;"></i>
+                        <a href="${form138}" target="_blank" class="document-link" style="color: #0b2b4a; font-weight: 600; text-decoration: underline;">
+                            View Submitted Document
                         </a>
                     </div>
                 </div>
             `;
         }
 
-        grid.innerHTML = `
+        enrollmentInfoGrid.innerHTML = `
             <div class="info-item">
                 <div class="info-label">Grade Level</div>
                 <div class="info-value">
                     <i class="fas fa-layer-group"></i>
-                    ${currentEnrollment.grade_name}
+                    ${gradeName}
                 </div>
             </div>
             ${strandHtml}
@@ -221,43 +347,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="info-label">School Year</div>
                 <div class="info-value">
                     <i class="fas fa-calendar"></i>
-                    ${currentEnrollment.school_year}
+                    ${schoolYear}
                 </div>
             </div>
             <div class="info-item">
                 <div class="info-label">Enrollment Date</div>
                 <div class="info-value">
                     <i class="fas fa-clock"></i>
-                    ${formatDate(currentEnrollment.created_at)}
+                    ${formatDate(enr?.created_at || student?.created_at)}
                 </div>
             </div>
             ${form138Html}
         `;
 
-        // Update view link
-        const viewLink = card.querySelector('.view-link');
-        if (viewLink) {
-            viewLink.href = `view_enrollment.html?id=${currentEnrollment.id}`;
+        // Update view link in card header
+        if (currentEnrollmentCard) {
+            const viewLink = currentEnrollmentCard.querySelector('.view-link');
+            if (viewLink) {
+                viewLink.href = `view_enrollment.html?id=${encodeURIComponent(enr?.id || student?.id)}`;
+            }
         }
     }
 
-    // Render history
-    function renderHistory() {
-        const container = document.getElementById('historyContainer');
+    // ============================================
+    // RENDER ENROLLMENT HISTORY
+    // ============================================
 
-        if (historyData.length === 0) {
-            container.innerHTML = `
-                <div class="no-data">
-                    <i class="fas fa-file-signature"></i>
-                    <h3>No Enrollment Records</h3>
-                    <p>This student has no enrollment history.</p>
+    function renderHistory() {
+        if (!historyContainer) return;
+
+        if (enrollmentHistory.length === 0) {
+            historyContainer.innerHTML = `
+                <div class="no-data" style="text-align: center; padding: 30px; color: #94a3b8;">
+                    <i class="fas fa-file-signature" style="font-size: 32px; margin-bottom: 8px; color: #cbd5e1;"></i>
+                    <h3 style="color: #64748b; font-size: 15px;">No Enrollment Records</h3>
+                    <p style="margin: 0; font-size: 13px;">This student has no prior enrollment history recorded.</p>
                 </div>
             `;
             return;
         }
 
         let html = `
-            <table class="enrollments-table">
+            <table class="enrollments-table" style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr>
                         <th>School Year</th>
@@ -271,26 +402,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tbody>
         `;
 
-        historyData.forEach(record => {
-            const statusClass = record.status.toLowerCase();
-            let strandHtml = '—';
-            if (shouldShowStrand(record.grade_name) && record.strand) {
-                strandHtml = `<span class="strand-tag">${record.strand}</span>`;
+        enrollmentHistory.forEach(record => {
+            const rawStatus = (record.status || '').toLowerCase();
+            let statusText = 'Pending';
+            let statusClass = 'badge-pending';
+            if (rawStatus === 'approved' || rawStatus === 'enrolled') {
+                statusText = 'Enrolled';
+                statusClass = 'badge-enrolled';
+            } else if (rawStatus === 'rejected') {
+                statusText = 'Rejected';
+                statusClass = 'badge-rejected';
             }
 
             html += `
                 <tr>
-                    <td>${record.school_year}</td>
-                    <td>${record.grade_name}</td>
-                    <td>${strandHtml}</td>
+                    <td style="font-weight: 600;">${record.school_year || record.last_school_year || '2025-2026'}</td>
+                    <td>${record.grade_level || 'Grade 11'}</td>
+                    <td>${record.strand ? `<span class="strand-tag">${record.strand}</span>` : '—'}</td>
                     <td>
-                        <span class="badge badge-${statusClass}">
-                            ${record.status}
+                        <span class="badge ${statusClass}">
+                            ${statusText}
                         </span>
                     </td>
                     <td>${formatDate(record.created_at)}</td>
                     <td>
-                        <a href="view_enrollment.html?id=${record.id}" class="view-link">
+                        <a href="view_enrollment.html?id=${encodeURIComponent(record.id)}" class="view-link" style="color: #0b2b4a; font-weight: 600;">
                             View <i class="fas fa-eye"></i>
                         </a>
                     </td>
@@ -303,42 +439,60 @@ document.addEventListener('DOMContentLoaded', function() {
             </table>
         `;
 
-        container.innerHTML = html;
+        historyContainer.innerHTML = html;
     }
 
-    // Delete student
-    window.deleteStudent = function() {
-        if (confirm('Are you sure you want to delete this student? This action cannot be undone and will remove all associated data.')) {
+    // ============================================
+    // DELETE STUDENT
+    // ============================================
+
+    window.deleteStudent = async function() {
+        if (!currentStudent) return;
+        const sName = `${currentStudent.first_name || ''} ${currentStudent.last_name || ''}`.trim() || 'this student';
+
+        if (!confirm(`Are you sure you want to delete ${sName}? This action cannot be undone and will remove associated records.`)) {
+            return;
+        }
+
+        try {
+            showAlert('Deleting student record...', 'info');
+
+            await supabase
+                .from('students')
+                .delete()
+                .eq('id', currentStudent.id);
+
             showAlert('✅ Student deleted successfully!', 'success');
             setTimeout(() => {
                 window.location.href = 'student.html';
-            }, 1500);
+            }, 1200);
+        } catch (error) {
+            console.error('❌ Error deleting student:', error);
+            showAlert('Failed to delete student: ' + error.message, 'error');
         }
     };
 
-    // ===== MOBILE MENU =====
+    // ============================================
+    // MOBILE MENU
+    // ============================================
 
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('sidebar');
-
-    if (menuToggle) {
-        menuToggle.addEventListener('click', function() {
+    if (menuToggle && sidebar) {
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
             sidebar.classList.toggle('active');
         });
     }
 
     document.addEventListener('click', function(e) {
-        if (window.innerWidth <= 768) {
-            if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-                sidebar.classList.remove('active');
-            }
+        if (sidebar && sidebar.classList.contains('active') && !sidebar.contains(e.target) && (!menuToggle || !menuToggle.contains(e.target))) {
+            sidebar.classList.remove('active');
         }
     });
 
-    // ===== INIT =====
+    // ============================================
+    // INIT
+    // ============================================
 
-    renderProfile();
-    renderPersonalInfo();
-    renderCurrentEnrollment();
-    renderHistory();
-});
+    loadStudentDetails();
+
+})();

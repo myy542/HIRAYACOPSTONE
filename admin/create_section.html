@@ -28,10 +28,10 @@
 
             <div class="admin-profile">
                 <div class="admin-avatar">
-                    <div class="avatar-initial" id="adminAvatar">J</div>
+                    <div class="avatar-initial" id="adminAvatar">A</div>
                     <div class="online-dot"></div>
                 </div>
-                <div class="admin-name" id="adminName">Justine</div>
+                <div class="admin-name" id="adminName">Admin</div>
                 <div class="admin-role"><i class="fas fa-shield-alt"></i> Administrator</div>
             </div>
 
@@ -114,17 +114,15 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="form-label">Class Adviser</label>
-                            <select name="adviser_id" id="adviser_id">
-                                <option value="">Select Adviser (Optional)</option>
-                                <option value="1">Maria Santos</option>
-                                <option value="2">Juan Dela Cruz</option>
-                                <option value="3">Ana Reyes</option>
-                                <option value="4">Carlos Mendoza</option>
-                            </select>
+                            <label class="form-label">Class Adviser <span class="required">*</span></label>
+                            <input type="text" 
+                                   name="adviser_name" 
+                                   id="adviser_name"
+                                   placeholder="e.g., Maria Santos" 
+                                   required>
                             <div class="form-hint">
                                 <i class="fas fa-info-circle"></i>
-                                You can assign an adviser now or later
+                                Type the full name of the class adviser
                             </div>
                         </div>
 
@@ -136,7 +134,7 @@
                                 <button type="button" class="quick-btn" data-section="Section B" data-grade="7">Grade 7 - Section B</button>
                                 <button type="button" class="quick-btn" data-section="STEM A" data-grade="11">Grade 11 - STEM A</button>
                                 <button type="button" class="quick-btn" data-section="STEM B" data-grade="11">Grade 11 - STEM B</button>
-                                <button type="button" class="quick-btn" data-section="ABM A" data-grade="11">Grade 11 - ABM A</button>
+                                <button type="button" class="quick-btn" data-section="TVL A" data-grade="11">Grade 11 - TVL A</button>
                                 <button type="button" class="quick-btn" data-section="HUMSS A" data-grade="11">Grade 11 - HUMSS A</button>
                             </div>
                             <div class="form-hint" style="margin-top: 8px;">
@@ -176,6 +174,7 @@
         </main>
     </div>
 
-    <script src="js/create_section.js"></script>
+    <script src="js/admin_avatar_sync.js"></script>
+    <script type="module" src="js/create_section.js"></script>
 </body>
 </html>

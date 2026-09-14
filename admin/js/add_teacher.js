@@ -1,6 +1,10 @@
-// ===== ADD TEACHER JAVASCRIPT =====
+// ===== ADD TEACHER JAVASCRIPT (Supabase Integration) =====
+
+import { supabase } from '../../supabase/config.js';
 
 document.addEventListener('DOMContentLoaded', function() {
+    'use strict';
+
     // DOM Elements
     const fullnameInput = document.getElementById('fullname');
     const emailInput = document.getElementById('email');
@@ -21,30 +25,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update live preview
     function updatePreview() {
-        const fullname = fullnameInput.value.trim() || 'New Teacher';
-        previewName.textContent = fullname;
+        const fullname = (fullnameInput?.value.trim()) || 'New Teacher';
+        if (previewName) previewName.textContent = fullname;
         
         const initial = fullname.charAt(0).toUpperCase() || 'T';
-        previewInitial.textContent = initial;
+        if (previewInitial) previewInitial.textContent = initial;
 
-        const email = emailInput.value.trim() || 'teacher@plshs.edu.ph';
-        previewEmail.innerHTML = `<i class="fas fa-envelope"></i> ${email}`;
+        const email = (emailInput?.value.trim()) || 'teacher@hiraya.edu.ph';
+        if (previewEmail) previewEmail.innerHTML = `<i class="fas fa-envelope"></i> ${email}`;
 
-        const specialization = specializationInput.value.trim() || 'Specialization not set';
-        previewSpecialization.innerHTML = `<i class="fas fa-book"></i> ${specialization}`;
+        const specialization = (specializationInput?.value.trim()) || 'Specialization not set';
+        if (previewSpecialization) previewSpecialization.innerHTML = `<i class="fas fa-book"></i> ${specialization}`;
     }
 
     // Toggle password visibility
     window.togglePassword = function() {
-        const passwordInput = document.getElementById('password');
+        const passInput = document.getElementById('password');
         const toggleBtn = document.querySelector('.toggle-password i');
         
-        if (passwordInput && toggleBtn) {
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
+        if (passInput && toggleBtn) {
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
                 toggleBtn.className = 'fas fa-eye-slash';
             } else {
-                passwordInput.type = 'password';
+                passInput.type = 'password';
                 toggleBtn.className = 'fas fa-eye';
             }
         }
@@ -121,10 +125,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Show alert messages
     function showAlert(message, type = 'error') {
+        if (!alertContainer) return;
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type}`;
         const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
-        alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
         alertContainer.appendChild(alertDiv);
 
         setTimeout(function() {
@@ -137,12 +142,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ===== EVENT LISTENERS =====
 
-    // Live preview
     if (fullnameInput) fullnameInput.addEventListener('input', updatePreview);
     if (emailInput) emailInput.addEventListener('input', updatePreview);
     if (specializationInput) specializationInput.addEventListener('input', updatePreview);
 
-    // Password strength
     if (passwordInput) {
         passwordInput.addEventListener('input', function() {
             checkPasswordStrength();
@@ -150,7 +153,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Confirm password
     if (confirmInput) {
         confirmInput.addEventListener('input', checkPasswordMatch);
     }
@@ -158,86 +160,111 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===== FORM SUBMIT =====
 
     if (teacherForm) {
-        teacherForm.addEventListener('submit', function(e) {
+        teacherForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const fullname = fullnameInput.value.trim();
-            const email = emailInput.value.trim();
+            const email = emailInput.value.trim().toLowerCase();
             const password = passwordInput.value;
             const confirm = confirmInput.value;
-            const phone = document.getElementById('phone').value.trim();
-            const specialization = specializationInput.value.trim();
+            const phone = document.getElementById('phone')?.value.trim() || '';
+            const specialization = specializationInput?.value.trim() || 'General';
 
             let errors = [];
 
-            // Validate fullname
             if (!fullname) errors.push('Full name is required');
-
-            // Validate email
             if (!email) errors.push('Email address is required');
             if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 errors.push('Invalid email format');
             }
 
-            // Validate password strength
             if (!password) {
                 errors.push('Password is required');
-            } else {
-                let passwordErrors = [];
-                if (password.length < 8) passwordErrors.push('at least 8 characters');
-                if (!/[A-Z]/.test(password)) passwordErrors.push('at least one uppercase letter');
-                if (!/[a-z]/.test(password)) passwordErrors.push('at least one lowercase letter');
-                if (!/[0-9]/.test(password)) passwordErrors.push('at least one number');
-                if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) passwordErrors.push('at least one special character');
-
-                if (passwordErrors.length > 0) {
-                    errors.push('Password must contain: ' + passwordErrors.join(', '));
-                }
+            } else if (password.length < 6) {
+                errors.push('Password must be at least 6 characters');
             }
 
-            // Check password match
             if (password !== confirm) {
                 errors.push('Passwords do not match');
             }
 
-            // Show errors or success
             if (errors.length > 0) {
                 showAlert(errors.join('<br>'), 'error');
-            } else {
-                const idNumber = 'PLSNHS-TCH-000001';
-                showAlert('✅ Teacher added successfully! ID Number: ' + idNumber, 'success');
-                
-                // Reset form after success
+                return;
+            }
+
+            const submitBtn = teacherForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding Teacher...';
+            }
+
+            try {
+                // Check if user already exists
+                const { data: existingUsers, error: checkErr } = await supabase
+                    .from('users')
+                    .select('id, email')
+                    .ilike('email', email);
+
+                if (checkErr) throw checkErr;
+
+                if (existingUsers && existingUsers.length > 0) {
+                    throw new Error('An account with this email address already exists.');
+                }
+
+                // Split name
+                const nameParts = fullname.split(' ');
+                const firstName = nameParts[0] || fullname;
+                const lastName = nameParts.slice(1).join(' ') || '';
+
+                // Insert into users table
+                const { data: newUser, error: userErr } = await supabase
+                    .from('users')
+                    .insert([{
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email,
+                        password: password,
+                        role: 'teacher'
+                    }])
+                    .select()
+                    .single();
+
+                if (userErr) throw userErr;
+
+                // Generate random unique employee ID
+                const randomNum = Math.floor(100000 + Math.random() * 900000);
+                const employeeId = `PLSNHS-TCH-${randomNum}`;
+
+                // Insert into teachers table
+                const { error: teacherErr } = await supabase
+                    .from('teachers')
+                    .insert([{
+                        user_id: newUser.id,
+                        employee_id: employeeId,
+                        specialization: specialization,
+                        phone: phone,
+                        address: null
+                    }]);
+
+                if (teacherErr) throw teacherErr;
+
+                showAlert(`✅ Teacher "${fullname}" added successfully!<br><strong>Assigned ID:</strong> ${employeeId}<br>Redirecting to Teachers list...`, 'success');
+
                 setTimeout(() => {
-                    teacherForm.reset();
-                    previewName.textContent = 'New Teacher';
-                    previewInitial.textContent = 'T';
-                    previewEmail.innerHTML = `<i class="fas fa-envelope"></i> teacher@plshs.edu.ph`;
-                    previewSpecialization.innerHTML = `<i class="fas fa-book"></i> Specialization not set`;
-                    if (strengthBar) strengthBar.style.width = '0';
-                    if (strengthText) {
-                        strengthText.innerHTML = `<i class="fas fa-info-circle"></i> <span>Minimum 8 characters with uppercase, lowercase, number & special character</span>`;
-                    }
-                    if (passwordMatch) {
-                        passwordMatch.innerHTML = `<i class="fas fa-info-circle"></i> <span>Re-enter your password</span>`;
-                    }
+                    window.location.href = 'teachers.html';
                 }, 1500);
+
+            } catch (err) {
+                console.error('Error adding teacher:', err);
+                showAlert('❌ ' + (err.message || 'Failed to add teacher.'), 'error');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-save"></i> Add Teacher';
+                }
             }
         });
     }
 
-    // ===== INITIAL PREVIEW =====
-
     updatePreview();
-
-    // Auto-hide alerts after 5 seconds
-    setTimeout(function() {
-        const alerts = document.querySelectorAll('.alert');
-        alerts.forEach(alert => {
-            alert.style.opacity = '0';
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 300);
-        });
-    }, 5000);
 });

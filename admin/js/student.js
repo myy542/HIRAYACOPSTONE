@@ -80,10 +80,7 @@ import { supabase } from '../../supabase/config.js';
     // DISPLAY ADMIN INFO
     // ============================================
 
-    let adminFirstName = currentUser.firstName || currentUser.first_name || 'Justine';
-    if (adminFirstName.toLowerCase().includes('mylene') || adminFirstName.toLowerCase() === 'student' || adminFirstName.toLowerCase() === 'admin') {
-        adminFirstName = 'Justine';
-    }
+    let adminFirstName = currentUser.firstName || currentUser.first_name || currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Admin');
     if (adminAvatar) adminAvatar.textContent = adminFirstName.charAt(0).toUpperCase();
     if (adminName) adminName.textContent = adminFirstName;
 

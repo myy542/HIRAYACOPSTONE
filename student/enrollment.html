@@ -64,6 +64,13 @@
                         </div>
                     </div>
 
+                    <div class="form-group">
+                        <label>Email Address <span>*</span></label>
+                        <div class="input-wrapper">
+                            <input type="email" id="email" placeholder="e.g., student@gmail.com" required>
+                        </div>
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group">
                             <label>Date of Birth <span>*</span></label>
@@ -251,10 +258,10 @@
                         <label>Select Strand <span>*</span></label>
                         <div class="strand-options">
                             <div class="strand-option">
-                                <input type="radio" name="strand" value="TVL-Cookery" id="tvl">
+                                <input type="radio" name="strand" value="TVL" id="tvl">
                                 <label for="tvl">
                                     <span class="strand-name">TVL</span>
-                                    <span class="strand-desc">Technical Vocational Livelihood - Cookery</span>
+                                    <span class="strand-desc">Technical-Vocational-Livelihood Track</span>
                                 </label>
                             </div>
                             <div class="strand-option">
@@ -278,12 +285,28 @@
                                     <span class="strand-desc">Science, Technology, Engineering, Math</span>
                                 </label>
                             </div>
-                            <div class="strand-option">
-                                <input type="radio" name="strand" value="ABM" id="abm">
-                                <label for="abm">
-                                    <span class="strand-name">ABM</span>
-                                    <span class="strand-desc">Accountancy, Business, Management</span>
-                                </label>
+                        </div>
+
+                        <!-- TVL SPECIALIZATION SUB-OPTIONS -->
+                        <div id="tvlSpecializationDiv" class="tvl-specialization-container" style="display:none;">
+                            <label class="tvl-spec-title">
+                                <i class="fas fa-layer-group"></i> Select TVL Specialization <span>*</span>
+                            </label>
+                            <div class="strand-options tvl-spec-options">
+                                <div class="strand-option spec-option">
+                                    <input type="radio" name="tvl_specialization" value="TVL-Cookery" id="tvlCookery">
+                                    <label for="tvlCookery">
+                                        <span class="strand-name"><i class="fas fa-utensils"></i> Cookery</span>
+                                        <span class="strand-desc">Food Preparation & Culinary Arts</span>
+                                    </label>
+                                </div>
+                                <div class="strand-option spec-option">
+                                    <input type="radio" name="tvl_specialization" value="TVL-ICT" id="tvlICT">
+                                    <label for="tvlICT">
+                                        <span class="strand-name"><i class="fas fa-laptop-code"></i> ICT</span>
+                                        <span class="strand-desc">Information & Communications Technology</span>
+                                    </label>
+                                </div>
                             </div>
                         </div>
                     </div>

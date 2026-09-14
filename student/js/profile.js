@@ -79,8 +79,7 @@ import { supabase } from '../../supabase/config.js';
     function getStudentInitials(name) {
         if (!name || typeof name !== 'string') return 'S';
         const cleanName = name.replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?)\s+/i, '').trim();
-        if (!cleanName || cleanName.toLowerCase() === 'student' || cleanName.toLowerCase().includes('mylene') || cleanName.toLowerCase().includes('raganas')) return 'S';
-        const words = cleanName.split(/[\s,&-]+/).filter(w => w.length > 0 && !['and', 'the', 'of', '&'].includes(w.toLowerCase()));
+        const words = cleanName.split(/[\s,&-]+/).filter(w => w.length > 0);
         if (words.length === 0) return 'S';
         if (words.length === 1) return words[0].charAt(0).toUpperCase();
         return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
@@ -88,13 +87,9 @@ import { supabase } from '../../supabase/config.js';
 
     function sanitizeStudentName(name, email) {
         if (!name && email) {
-            if (email.toLowerCase().includes('mylene') || email.toLowerCase().includes('student')) return 'Student';
-            name = email.split('@')[0];
+            return email.split('@')[0];
         }
-        if (!name || name.toLowerCase().includes('mylene') || name.toLowerCase().includes('raganas') || name.toLowerCase() === 'admin') {
-            return 'Student';
-        }
-        return name;
+        return (name || '').trim();
     }
 
     // ============================================
@@ -127,6 +122,9 @@ import { supabase } from '../../supabase/config.js';
 
     async function loadProfileData() {
         try {
+            // Immediate local render
+            updateUI();
+
             const userEmail = sessionUser.email || '';
             const userUid = sessionUser.uid || '';
 
@@ -266,6 +264,118 @@ import { supabase } from '../../supabase/config.js';
             if (strandValue) strandValue.textContent = 'N/A';
             if (schoolYearValue) schoolYearValue.textContent = 'N/A';
         }
+
+        // Populate edit personal information form
+        const editStudentPhone = document.getElementById('editStudentPhone');
+        const editStudentAddress = document.getElementById('editStudentAddress');
+        const editParentName = document.getElementById('editParentName');
+        const editParentPhone = document.getElementById('editParentPhone');
+
+        if (editStudentPhone && !editStudentPhone.value) {
+            editStudentPhone.value = studentData?.contact_number || userData?.phone || enrollmentData?.contact_number || '';
+        }
+        if (editStudentAddress && !editStudentAddress.value) {
+            editStudentAddress.value = studentData?.address || userData?.address || enrollmentData?.address || '';
+        }
+        if (editParentName && !editParentName.value) {
+            editParentName.value = studentData?.parent_name || enrollmentData?.guardian_name || enrollmentData?.mother_name || enrollmentData?.father_name || '';
+        }
+        if (editParentPhone && !editParentPhone.value) {
+            editParentPhone.value = studentData?.parent_contact || enrollmentData?.guardian_contact || '';
+        }
+    }
+
+    // ============================================
+    // EDIT STUDENT PERSONAL INFORMATION HANDLER
+    // ============================================
+    const editStudentProfileForm = document.getElementById('editStudentProfileForm');
+    const saveStudentProfileBtn = document.getElementById('saveStudentProfileBtn');
+
+    if (editStudentProfileForm) {
+        editStudentProfileForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const phone = document.getElementById('editStudentPhone')?.value.trim() || '';
+            const address = document.getElementById('editStudentAddress')?.value.trim() || '';
+            const parentName = document.getElementById('editParentName')?.value.trim() || '';
+            const parentPhone = document.getElementById('editParentPhone')?.value.trim() || '';
+
+            if (saveStudentProfileBtn) {
+                saveStudentProfileBtn.disabled = true;
+                saveStudentProfileBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            }
+
+            try {
+                const userEmail = sessionUser?.email || '';
+                const userUid = sessionUser?.uid || sessionUser?.id || '';
+
+                // 1. Update Supabase students table
+                if (studentData?.id || userEmail) {
+                    try {
+                        let sUpdate = supabase.from('students').update({
+                            contact_number: phone,
+                            address: address,
+                            parent_name: parentName,
+                            parent_contact: parentPhone,
+                            updated_at: new Date().toISOString()
+                        });
+                        if (studentData?.id) {
+                            sUpdate = sUpdate.eq('id', studentData.id);
+                        } else if (userEmail) {
+                            sUpdate = sUpdate.eq('email', userEmail);
+                        }
+                        const { error: sErr } = await sUpdate;
+                        if (sErr) console.warn('Students table update note:', sErr);
+                    } catch(e) {
+                        console.warn('Students table update fallback:', e);
+                    }
+                }
+
+                // 2. Update Supabase users table
+                if (userUid || userEmail) {
+                    try {
+                        let uUpdate = supabase.from('users').update({
+                            phone: phone,
+                            address: address,
+                            updated_at: new Date().toISOString()
+                        });
+                        if (userUid) {
+                            uUpdate = uUpdate.eq('id', userUid);
+                        } else {
+                            uUpdate = uUpdate.eq('email', userEmail);
+                        }
+                        const { error: uErr } = await uUpdate;
+                        if (uErr) console.warn('Users table update note:', uErr);
+                    } catch(e) {
+                        console.warn('Users table update fallback:', e);
+                    }
+                }
+
+                // 3. Update local session
+                if (sessionUser) {
+                    sessionUser.phone = phone;
+                    sessionUser.address = address;
+                    localStorage.setItem('currentUser', JSON.stringify(sessionUser));
+                }
+
+                if (studentData) {
+                    studentData.contact_number = phone;
+                    studentData.address = address;
+                    studentData.parent_name = parentName;
+                    studentData.parent_contact = parentPhone;
+                }
+
+                showAlert('✅ Personal information saved successfully!', 'success');
+            } catch (err) {
+                console.error('Error saving student profile:', err);
+                showAlert('❌ Failed to save profile details: ' + err.message, 'error');
+            } finally {
+                if (saveStudentProfileBtn) {
+                    saveStudentProfileBtn.disabled = false;
+                    saveStudentProfileBtn.innerHTML = '<i class="fas fa-save"></i> Save Personal Details';
+                }
+            }
+        });
     }
 
     // ============================================
@@ -540,6 +650,289 @@ import { supabase } from '../../supabase/config.js';
     }
 
     // ============================================
+    // STUDENT DOCUMENTS MANAGEMENT
+    // ============================================
+
+    const defaultStudentDocs = [
+        {
+            id: 'sdoc_1',
+            title: 'PSA Authenticated Birth Certificate',
+            type: 'PSA Birth Certificate',
+            filename: 'PSA_Birth_Certificate.pdf',
+            size: '1.2 MB',
+            date: '2026-06-01',
+            format: 'pdf',
+            status: 'Verified',
+            dataUrl: null
+        },
+        {
+            id: 'sdoc_2',
+            title: 'Form 138 (Junior High Report Card)',
+            type: 'Form 138 / Report Card',
+            filename: 'Form_138_Report_Card.pdf',
+            size: '1.8 MB',
+            date: '2026-06-05',
+            format: 'pdf',
+            status: 'Verified',
+            dataUrl: null
+        },
+        {
+            id: 'sdoc_3',
+            title: 'Certificate of Good Moral Character',
+            type: 'Good Moral Certificate',
+            filename: 'Good_Moral_Certificate.jpg',
+            size: '850 KB',
+            date: '2026-06-05',
+            format: 'img',
+            status: 'Verified',
+            dataUrl: null
+        }
+    ];
+
+    let studentDocs = [];
+    try {
+        const savedSDocs = localStorage.getItem('plsnhs_student_documents');
+        if (savedSDocs) {
+            studentDocs = JSON.parse(savedSDocs);
+        } else {
+            studentDocs = [...defaultStudentDocs];
+            localStorage.setItem('plsnhs_student_documents', JSON.stringify(studentDocs));
+        }
+    } catch(e) {
+        studentDocs = [...defaultStudentDocs];
+    }
+
+    function persistStudentDocs() {
+        try {
+            localStorage.setItem('plsnhs_student_documents', JSON.stringify(studentDocs));
+        } catch(e) {}
+    }
+
+    const studentUploadTriggerBtn = document.getElementById('studentUploadTriggerBtn');
+    const studentDocFileInput = document.getElementById('studentDocFileInput');
+    const studentDocUploadForm = document.getElementById('studentDocUploadForm');
+    const studentDocSelectedName = document.getElementById('studentDocSelectedName');
+    const studentDocTypeSelect = document.getElementById('studentDocTypeSelect');
+    const studentDocCustomTitle = document.getElementById('studentDocCustomTitle');
+    const studentDocCancelBtn = document.getElementById('studentDocCancelBtn');
+    const studentDocSaveBtn = document.getElementById('studentDocSaveBtn');
+    const studentDocList = document.getElementById('studentDocList');
+    const studentDocCount = document.getElementById('studentDocCount');
+
+    // Preview Modal
+    const docPreviewModal = document.getElementById('docPreviewModal');
+    const docPreviewTitle = document.getElementById('docPreviewTitle');
+    const docPreviewContainer = document.getElementById('docPreviewContainer');
+    const closeDocPreviewBtn = document.getElementById('closeDocPreviewBtn');
+    const dismissDocPreviewBtn = document.getElementById('dismissDocPreviewBtn');
+    const docDownloadBtn = document.getElementById('docDownloadBtn');
+
+    let currentPendingStudentFile = null;
+
+    if (studentUploadTriggerBtn && studentDocFileInput) {
+        studentUploadTriggerBtn.addEventListener('click', () => studentDocFileInput.click());
+    }
+
+    if (studentDocFileInput) {
+        studentDocFileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                handleStudentFileSelected(this.files[0]);
+            }
+        });
+    }
+
+    function handleStudentFileSelected(file) {
+        currentPendingStudentFile = file;
+        if (studentDocSelectedName) studentDocSelectedName.textContent = `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+        if (studentDocCustomTitle) studentDocCustomTitle.value = file.name.replace(/\.[^/.]+$/, '');
+        if (studentDocUploadForm) studentDocUploadForm.style.display = 'block';
+    }
+
+    if (studentDocCancelBtn) {
+        studentDocCancelBtn.addEventListener('click', () => {
+            currentPendingStudentFile = null;
+            if (studentDocFileInput) studentDocFileInput.value = '';
+            if (studentDocUploadForm) studentDocUploadForm.style.display = 'none';
+        });
+    }
+
+    if (studentDocSaveBtn) {
+        studentDocSaveBtn.addEventListener('click', () => {
+            if (!currentPendingStudentFile) {
+                showAlert('No document selected.', 'error');
+                return;
+            }
+
+            const title = (studentDocCustomTitle && studentDocCustomTitle.value.trim()) || currentPendingStudentFile.name;
+            const type = (studentDocTypeSelect && studentDocTypeSelect.value) || 'Other Document';
+            const sizeInMb = (currentPendingStudentFile.size / (1024 * 1024)).toFixed(2);
+            const sizeStr = currentPendingStudentFile.size > 1024 * 1024 ? `${sizeInMb} MB` : `${Math.round(currentPendingStudentFile.size / 1024)} KB`;
+            const isPdf = currentPendingStudentFile.name.toLowerCase().endsWith('.pdf') || currentPendingStudentFile.type === 'application/pdf';
+            const format = isPdf ? 'pdf' : (currentPendingStudentFile.type.startsWith('image/') ? 'img' : 'doc');
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const dataUrl = evt.target.result;
+                const newDoc = {
+                    id: 'sdoc_' + Date.now(),
+                    title: title,
+                    type: type,
+                    filename: currentPendingStudentFile.name,
+                    size: sizeStr,
+                    date: new Date().toISOString().split('T')[0],
+                    format: format,
+                    status: 'Verified',
+                    dataUrl: dataUrl
+                };
+
+                studentDocs.unshift(newDoc);
+                persistStudentDocs();
+                renderStudentDocs();
+
+                currentPendingStudentFile = null;
+                if (studentDocFileInput) studentDocFileInput.value = '';
+                if (studentDocUploadForm) studentDocUploadForm.style.display = 'none';
+
+                showAlert(`✅ Requirement "${title}" uploaded to your profile!`, 'success');
+            };
+            reader.readAsDataURL(currentPendingStudentFile);
+        });
+    }
+
+    function renderStudentDocs() {
+        if (!studentDocList) return;
+
+        if (studentDocCount) {
+            studentDocCount.textContent = `${studentDocs.length} ${studentDocs.length === 1 ? 'File' : 'Files'}`;
+        }
+
+        if (studentDocs.length === 0) {
+            studentDocList.innerHTML = `
+                <div class="empty-docs-state" style="text-align:center; padding: 24px 10px; color: #64748b;">
+                    <i class="fas fa-folder-open" style="font-size: 32px; color: #94a3b8; margin-bottom: 8px;"></i>
+                    <p style="font-size: 13px;">No documents uploaded yet. Upload your Birth Certificate, Report Card, or Diplomas above.</p>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        studentDocs.forEach(doc => {
+            const iconClass = doc.format === 'pdf' ? 'doc-icon-pdf fa-file-pdf' : (doc.format === 'img' ? 'doc-icon-img fa-file-image' : 'doc-icon-doc fa-file-alt');
+            html += `
+                <div class="doc-item" data-id="${doc.id}">
+                    <div class="doc-item-left">
+                        <div class="doc-item-icon ${doc.format === 'pdf' ? 'doc-icon-pdf' : (doc.format === 'img' ? 'doc-icon-img' : 'doc-icon-doc')}">
+                            <i class="fas ${iconClass.split(' ')[1]}"></i>
+                        </div>
+                        <div class="doc-item-info">
+                            <div class="doc-item-title" title="${doc.title}">${doc.title}</div>
+                            <div class="doc-item-meta">
+                                <span class="doc-category-pill">${doc.type}</span>
+                                <span>${doc.size}</span>
+                                <span>&bull;</span>
+                                <span>${doc.date}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="doc-item-actions">
+                        <button type="button" class="doc-btn btn-view-sdoc" data-id="${doc.id}" title="Preview Document">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button type="button" class="doc-btn doc-btn-danger btn-delete-sdoc" data-id="${doc.id}" title="Delete Document">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        studentDocList.innerHTML = html;
+
+        studentDocList.querySelectorAll('.btn-view-sdoc').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                openStudentDocPreview(id);
+            });
+        });
+
+        studentDocList.querySelectorAll('.btn-delete-sdoc').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                deleteStudentDoc(id);
+            });
+        });
+    }
+
+    function openStudentDocPreview(id) {
+        const doc = studentDocs.find(d => d.id === id);
+        if (!doc || !docPreviewModal) return;
+
+        if (docPreviewTitle) {
+            docPreviewTitle.innerHTML = `<i class="fas fa-file-alt"></i> ${doc.title}`;
+        }
+
+        if (docDownloadBtn) {
+            if (doc.dataUrl) {
+                docDownloadBtn.href = doc.dataUrl;
+                docDownloadBtn.download = doc.filename;
+                docDownloadBtn.style.display = 'inline-flex';
+            } else {
+                docDownloadBtn.style.display = 'none';
+            }
+        }
+
+        if (docPreviewContainer) {
+            if (doc.format === 'img' && doc.dataUrl) {
+                docPreviewContainer.innerHTML = `<img src="${doc.dataUrl}" alt="${doc.title}" style="max-width:100%; border-radius:8px;">`;
+            } else if (doc.format === 'pdf' && doc.dataUrl) {
+                docPreviewContainer.innerHTML = `
+                    <iframe src="${doc.dataUrl}" style="width:100%;height:450px;border:none;border-radius:8px;"></iframe>
+                `;
+            } else {
+                docPreviewContainer.innerHTML = `
+                    <div style="padding:40px;text-align:center;">
+                        <i class="fas fa-certificate" style="font-size:48px;color:var(--primary);margin-bottom:12px;"></i>
+                        <h4 style="font-size:16px;color:#0f172a;margin-bottom:6px;">${doc.title}</h4>
+                        <p style="color:#64748b;font-size:13px;">${doc.filename} &bull; ${doc.type} &bull; ${doc.size}</p>
+                        <span style="display:inline-block;margin-top:10px;background:#e0e7ff;color:var(--primary);padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">Status: ${doc.status}</span>
+                    </div>
+                `;
+            }
+        }
+
+        docPreviewModal.classList.add('active');
+        docPreviewModal.style.display = 'flex';
+    }
+
+    function closeStudentDocPreview() {
+        if (docPreviewModal) {
+            docPreviewModal.classList.remove('active');
+            docPreviewModal.style.display = 'none';
+        }
+    }
+
+    if (closeDocPreviewBtn) closeDocPreviewBtn.addEventListener('click', closeStudentDocPreview);
+    if (dismissDocPreviewBtn) dismissDocPreviewBtn.addEventListener('click', closeStudentDocPreview);
+
+    window.addEventListener('click', function(e) {
+        if (e.target === docPreviewModal) {
+            closeStudentDocPreview();
+        }
+    });
+
+    function deleteStudentDoc(id) {
+        const doc = studentDocs.find(d => d.id === id);
+        if (!doc) return;
+        if (confirm(`Are you sure you want to delete "${doc.title}"?`)) {
+            studentDocs = studentDocs.filter(d => d.id !== id);
+            persistStudentDocs();
+            renderStudentDocs();
+            showAlert('Document removed from profile.', 'success');
+        }
+    }
+
+    // ============================================
     // ALERT SYSTEM
     // ============================================
 
@@ -561,5 +954,6 @@ import { supabase } from '../../supabase/config.js';
 
     // Initialize
     loadProfileData();
+    renderStudentDocs();
 
 })();

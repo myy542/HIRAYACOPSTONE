@@ -32,10 +32,10 @@
 
         <div class="admin-profile">
             <div class="admin-avatar">
-                <div class="avatar-initial" id="adminAvatar">J</div>
+                <div class="avatar-initial" id="adminAvatar">A</div>
                 <div class="online-dot"></div>
             </div>
-            <div class="admin-name" id="adminName">Justine</div>
+            <div class="admin-name" id="adminName">Admin</div>
             <div class="admin-role"><i class="fas fa-shield-alt"></i> Administrator</div>
         </div>
 
@@ -90,21 +90,21 @@
             </div>
             
             <form id="editStudentForm">
-                <div class="form-row">
+                <div class="form-row form-row-3">
                     <div class="form-group">
                         <label class="form-label">First Name <span class="required">*</span></label>
                         <input type="text" name="firstname" id="firstname" value="Juan" required>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Middle Initial</label>
-                        <input type="text" name="middlename" id="middlename" maxlength="2" value="D" placeholder="M.I.">
+                        <label class="form-label">Middle Name / M.I.</label>
+                        <input type="text" name="middlename" id="middlename" value="D" placeholder="e.g. D.">
                     </div>
-                </div>
 
-                <div class="form-group">
-                    <label class="form-label">Last Name <span class="required">*</span></label>
-                    <input type="text" name="lastname" id="lastname" value="Dela Cruz" required>
+                    <div class="form-group">
+                        <label class="form-label">Last Name <span class="required">*</span></label>
+                        <input type="text" name="lastname" id="lastname" value="Dela Cruz" required>
+                    </div>
                 </div>
 
                 <div class="form-row">
@@ -226,6 +226,7 @@
         </div>
     </main>
 
-    <script src="js/edit_student.js"></script>
+    <script src="js/admin_avatar_sync.js"></script>
+    <script type="module" src="js/edit_student.js"></script>
 </body>
 </html>

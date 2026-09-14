@@ -1,6 +1,7 @@
-// ===== ACCOUNTS JAVASCRIPT =====
+// ===== ACCOUNTS JAVASCRIPT (SUPABASE POWERED) =====
+import { supabase } from '../../supabase/config.js';
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // DOM Elements
     const alertContainer = document.getElementById('alertContainer');
     const filterForm = document.getElementById('filterForm');
@@ -17,84 +18,172 @@ document.addEventListener('DOMContentLoaded', function() {
     const rejectUserName = document.getElementById('rejectUserName');
     const rejectionReason = document.getElementById('rejectionReason');
 
-    // ===== DATA =====
-
-    // Default sample user data
-    const defaultUsers = [
-        { id: 1, id_number: 'PLSNHS-ADM-00001', fullname: 'Admin User', email: 'admin@plshs.edu.ph', role: 'Admin', status: 'approved', created_at: '2026-01-01 08:00:00', rejection_reason: null },
-        { id: 2, id_number: 'PLSNHS-TCH-000001', fullname: 'Maria Santos', email: 'maria.santos@plshs.edu.ph', role: 'Teacher', status: 'pending', created_at: '2026-06-20 10:30:00', rejection_reason: null },
-        { id: 3, id_number: 'PLSNHS-STU-000001', fullname: 'Juan Dela Cruz', email: 'juan.dela@plshs.edu.ph', role: 'Student', status: 'approved', created_at: '2026-06-15 14:20:00', rejection_reason: null },
-        { id: 4, id_number: null, fullname: 'Ana Reyes', email: 'ana.reyes@plshs.edu.ph', role: 'Teacher', status: 'pending', created_at: '2026-06-22 09:00:00', rejection_reason: null },
-        { id: 5, id_number: 'PLSNHS-RGR-00001', fullname: 'Registrar User', email: 'registrar@plshs.edu.ph', role: 'Registrar', status: 'approved', created_at: '2026-06-10 11:00:00', rejection_reason: null },
-        { id: 6, id_number: 'PLSNHS-STU-000002', fullname: 'Carlos Mendoza', email: 'carlos.m@plshs.edu.ph', role: 'Student', status: 'rejected', created_at: '2026-06-18 16:00:00', rejection_reason: 'Incomplete requirements' },
-        { id: 7, id_number: null, fullname: 'Elena Garcia', email: 'elena.g@plshs.edu.ph', role: 'Teacher', status: 'pending', created_at: '2026-06-23 08:30:00', rejection_reason: null }
-    ];
-
+    // State
     let users = [];
+    let currentUserSession = null;
+
     try {
-        const stored = localStorage.getItem('plsnhs_accounts');
-        if (stored) {
-            const parsed = JSON.parse(stored);
-            // Deduplicate with defaultUsers
-            const storedIds = new Set(parsed.map(p => p.id));
-            const extraDefaults = defaultUsers.filter(d => !storedIds.has(d.id));
-            users = [...parsed, ...extraDefaults];
-        } else {
-            users = [...defaultUsers];
-            localStorage.setItem('plsnhs_accounts', JSON.stringify(users));
-        }
-    } catch(e) {
-        users = [...defaultUsers];
+        const stored = localStorage.getItem('currentUser');
+        if (stored) currentUserSession = JSON.parse(stored);
+    } catch(e) {}
+
+    // Alert helper
+    function showAlert(message, type = 'error') {
+        if (!alertContainer) return;
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> <div>${message}</div>`;
+        alertContainer.appendChild(alertDiv);
+
+        setTimeout(() => {
+            alertDiv.style.opacity = '0';
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 300);
+        }, 5000);
     }
 
-    function persistUsers() {
-        try {
-            localStorage.setItem('plsnhs_accounts', JSON.stringify(users));
-        } catch(e) {}
+    function formatDate(dateString) {
+        if (!dateString) return '—';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
 
-    // Current user ID (logged in)
-    const currentUserId = 1;
-
-    // ===== FUNCTIONS =====
-
-    // Update statistics
-    function updateStats() {
-        const total = users.filter(u => u.status === 'approved').length;
-        const pending = users.filter(u => u.status === 'pending').length;
-        const approved = users.filter(u => u.status === 'approved').length;
-        const rejected = users.filter(u => u.status === 'rejected').length;
-
-        document.getElementById('totalUsers').textContent = total;
-        document.getElementById('pendingCount').textContent = pending;
-        document.getElementById('approvedCount').textContent = approved;
-        document.getElementById('rejectedCount').textContent = rejected;
-        document.getElementById('pendingBadge').innerHTML = `<i class="fas fa-users"></i> ${pending} pending`;
-    }
-
-    // Get role color
     function getRoleColor(role) {
-        switch(role.toLowerCase()) {
+        switch((role || '').toLowerCase()) {
             case 'admin': return '#dc3545';
             case 'registrar': return '#fd7e14';
             case 'teacher': return '#28a745';
             case 'student': return '#007bff';
+            case 'parent': return '#8b5cf6';
             default: return '#6c757d';
         }
     }
 
-    // Render pending users
+    // ===== DATA FETCHING =====
+    async function loadAccounts() {
+        try {
+            if (usersTableBody) {
+                usersTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 28px; color: #1B2A4A;"></i>
+                            <p style="margin-top: 10px; color: #64748b;">Loading accounts from database...</p>
+                        </td>
+                    </tr>
+                `;
+            }
+
+            // 1. Fetch all users from Supabase
+            const { data: usersData, error: usersErr } = await supabase
+                .from('users')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (usersErr) throw usersErr;
+
+            // 2. Fetch teachers & students to map ID numbers
+            const [teachersRes, studentsRes] = await Promise.all([
+                supabase.from('teachers').select('id, user_id, employee_id'),
+                supabase.from('students').select('id, lrn, email')
+            ]);
+
+            const teacherMap = new Map();
+            (teachersRes.data || []).forEach(t => {
+                if (t.user_id) teacherMap.set(t.user_id, t.employee_id);
+            });
+
+            const studentMap = new Map();
+            (studentsRes.data || []).forEach(s => {
+                if (s.email) studentMap.set(s.email.toLowerCase(), s.lrn);
+            });
+
+            // Map and enrich users
+            users = (usersData || []).map(u => {
+                const fullName = (u.first_name || u.last_name) 
+                    ? `${u.first_name || ''} ${u.last_name || ''}`.trim() 
+                    : (u.email ? u.email.split('@')[0] : 'User');
+
+                let idNumber = null;
+                const roleLower = (u.role || '').toLowerCase();
+                if (roleLower === 'teacher') {
+                    idNumber = teacherMap.get(u.id) || `PLSNHS-TCH-${u.id.substring(0, 5).toUpperCase()}`;
+                } else if (roleLower === 'student') {
+                    idNumber = (u.email ? studentMap.get(u.email.toLowerCase()) : null) || `PLSNHS-STU-${u.id.substring(0, 5).toUpperCase()}`;
+                } else if (roleLower === 'admin') {
+                    idNumber = `PLSNHS-ADM-${u.id.substring(0, 5).toUpperCase()}`;
+                } else if (roleLower === 'registrar') {
+                    idNumber = `PLSNHS-RGR-${u.id.substring(0, 5).toUpperCase()}`;
+                } else {
+                    idNumber = `PLSNHS-${(u.role || 'USR').substring(0, 3).toUpperCase()}-${u.id.substring(0, 5).toUpperCase()}`;
+                }
+
+                // Status logic: active users are 'approved' by default
+                const status = 'approved';
+
+                return {
+                    id: u.id,
+                    id_number: idNumber,
+                    fullname: fullName,
+                    email: u.email || '—',
+                    role: (u.role ? u.role.charAt(0).toUpperCase() + u.role.slice(1) : 'User'),
+                    status: status,
+                    created_at: u.created_at,
+                    rejection_reason: null
+                };
+            });
+
+            updateStats();
+            renderPendingUsers();
+            renderUsers();
+        } catch (err) {
+            console.error('Error loading accounts:', err);
+            showAlert('Failed to load accounts: ' + err.message, 'error');
+            if (usersTableBody) {
+                usersTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 30px; color: #ef4444;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
+                            <p style="margin-top: 8px;">Failed to load accounts from database.</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    }
+
+    // ===== UI RENDERING =====
+    function updateStats() {
+        const total = users.length;
+        const pending = users.filter(u => u.status === 'pending').length;
+        const approved = users.filter(u => u.status === 'approved').length;
+        const rejected = users.filter(u => u.status === 'rejected').length;
+
+        const totalEl = document.getElementById('totalUsers');
+        const pendingEl = document.getElementById('pendingCount');
+        const approvedEl = document.getElementById('approvedCount');
+        const rejectedEl = document.getElementById('rejectedCount');
+        const pendingBadge = document.getElementById('pendingBadge');
+
+        if (totalEl) totalEl.textContent = total;
+        if (pendingEl) pendingEl.textContent = pending;
+        if (approvedEl) approvedEl.textContent = approved;
+        if (rejectedEl) rejectedEl.textContent = rejected;
+        if (pendingBadge) pendingBadge.innerHTML = `<i class="fas fa-users"></i> ${pending} pending`;
+    }
+
     function renderPendingUsers() {
+        if (!pendingTableBody) return;
         const pendingUsers = users.filter(u => u.status === 'pending');
-        const section = document.getElementById('pendingSection');
 
         if (pendingUsers.length === 0) {
             pendingTableBody.innerHTML = `
                 <tr>
                     <td colspan="6">
-                        <div class="no-pending">
-                            <i class="fas fa-check-circle"></i>
-                            <p>No pending approvals at the moment.</p>
+                        <div class="no-pending" style="text-align: center; padding: 24px; color: #64748b;">
+                            <i class="fas fa-check-circle" style="font-size: 24px; color: #10b981;"></i>
+                            <p style="margin-top: 8px;">No pending account approvals at the moment.</p>
                         </div>
                     </td>
                 </tr>
@@ -118,8 +207,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td><i class="far fa-calendar"></i> ${formatDate(user.created_at)}</td>
                     <td>
                         <div class="action-btns">
-                            <button class="btn-approve" onclick="approveUser(${user.id})"><i class="fas fa-check"></i> Approve</button>
-                            <button class="btn-reject" onclick="openRejectModal(${user.id}, '${user.fullname}')"><i class="fas fa-times"></i> Reject</button>
+                            <button class="btn-approve" onclick="window.approveUser('${user.id}')"><i class="fas fa-check"></i> Approve</button>
+                            <button class="btn-reject" onclick="window.openRejectModal('${user.id}', '${user.fullname}')"><i class="fas fa-times"></i> Reject</button>
                         </div>
                     </td>
                 </tr>
@@ -129,11 +218,12 @@ document.addEventListener('DOMContentLoaded', function() {
         pendingTableBody.innerHTML = html;
     }
 
-    // Render all users
     function renderUsers() {
-        const search = searchInput.value.toLowerCase().trim();
-        const role = roleFilter.value;
-        const status = statusFilter.value;
+        if (!usersTableBody) return;
+
+        const search = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        const role = roleFilter ? roleFilter.value : '';
+        const status = statusFilter ? statusFilter.value : '';
 
         let filtered = [...users];
 
@@ -145,19 +235,19 @@ document.addEventListener('DOMContentLoaded', function() {
             );
         }
         if (role) {
-            filtered = filtered.filter(u => u.role === role);
+            filtered = filtered.filter(u => u.role.toLowerCase() === role.toLowerCase());
         }
         if (status) {
-            filtered = filtered.filter(u => u.status === status);
+            filtered = filtered.filter(u => u.status.toLowerCase() === status.toLowerCase());
         }
 
         if (filtered.length === 0) {
             usersTableBody.innerHTML = `
                 <tr>
                     <td colspan="7">
-                        <div class="no-data">
-                            <i class="fas fa-users"></i>
-                            <h3>No Users Found</h3>
+                        <div class="no-data" style="text-align:center; padding:30px; color:#64748b;">
+                            <i class="fas fa-users" style="font-size:28px;"></i>
+                            <h3 style="margin-top:8px;">No Users Found</h3>
                             <p>No user accounts match your search criteria.</p>
                         </div>
                     </td>
@@ -170,11 +260,12 @@ document.addEventListener('DOMContentLoaded', function() {
         filtered.forEach(user => {
             const roleColor = getRoleColor(user.role);
             const statusClass = `status-${user.status}`;
-            
+            const isSelf = currentUserSession && currentUserSession.email && currentUserSession.email.toLowerCase() === user.email.toLowerCase();
+
             html += `
                 <tr>
                     <td><span class="id-badge">${user.id_number || 'N/A'}</span></td>
-                    <td><strong>${user.fullname}</strong></td>
+                    <td><strong>${user.fullname}</strong> ${isSelf ? '<span style="font-size:11px; background:#e0e7ff; color:#3730a3; padding:2px 6px; border-radius:4px; margin-left:4px;">You</span>' : ''}</td>
                     <td>${user.email}</td>
                     <td>
                         <span class="role-badge ${user.role.toLowerCase()}" style="background: ${roleColor} !important;">
@@ -186,112 +277,76 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>
                         <div class="action-btns">
                             <a href="view_account.html?id=${user.id}" class="btn-view" title="View"><i class="fas fa-eye"></i></a>
-                            ${user.status === 'pending' ? `
-                                <button class="btn-approve" onclick="approveUser(${user.id})"><i class="fas fa-check"></i> Approve</button>
-                                <button class="btn-reject" onclick="openRejectModal(${user.id}, '${user.fullname}')"><i class="fas fa-times"></i> Reject</button>
-                            ` : ''}
-                            ${user.role !== 'Admin' ? `<a href="edit_account.html?id=${user.id}" class="btn-edit" title="Edit"><i class="fas fa-edit"></i></a>` : ''}
-                            ${user.id !== currentUserId ? `<button class="btn-delete" onclick="deleteUser(${user.id})" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
+                            <a href="edit_account.html?id=${user.id}" class="btn-edit" title="Edit"><i class="fas fa-edit"></i></a>
+                            ${!isSelf ? `<button class="btn-delete" onclick="window.deleteUser('${user.id}')" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
                         </div>
                     </td>
                 </tr>
-                ${user.rejection_reason ? `
-                    <tr class="rejection-row">
-                        <td colspan="7">
-                            <div class="rejection-reason">
-                                <i class="fas fa-exclamation-triangle"></i> 
-                                <strong>Rejection Reason:</strong> ${user.rejection_reason}
-                            </div>
-                        </td>
-                    </tr>
-                ` : ''}
             `;
         });
 
         usersTableBody.innerHTML = html;
     }
 
-    // Format date
-    function formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    }
+    // ===== GLOBALLY EXPOSED ACTIONS =====
 
-    // Approve user
-    window.approveUser = function(id) {
+    window.deleteUser = async function(id) {
         const user = users.find(u => u.id === id);
         if (!user) return;
 
-        if (confirm(`Approve ${user.fullname}?`)) {
-            user.status = 'approved';
-            persistUsers();
-            showAlert(`✅ ${user.fullname} approved successfully!`, 'success');
-            updateStats();
-            renderPendingUsers();
-            renderUsers();
-        }
-    };
-
-    // Open reject modal
-    window.openRejectModal = function(id, name) {
-        rejectUserId.value = id;
-        rejectUserName.textContent = name;
-        rejectionReason.value = '';
-        rejectModal.classList.add('active');
-    };
-
-    // Close reject modal
-    window.closeRejectModal = function() {
-        rejectModal.classList.remove('active');
-    };
-
-    // Delete user
-    window.deleteUser = function(id) {
-        const user = users.find(u => u.id === id);
-        if (!user) return;
-
-        if (id === currentUserId) {
+        if (currentUserSession && currentUserSession.email && currentUserSession.email.toLowerCase() === user.email.toLowerCase()) {
             showAlert('You cannot delete your own account!', 'error');
             return;
         }
 
-        if (confirm(`Delete ${user.fullname}?`)) {
-            users = users.filter(u => u.id !== id);
-            persistUsers();
-            showAlert(`✅ ${user.fullname} deleted successfully!`, 'success');
-            updateStats();
-            renderPendingUsers();
-            renderUsers();
+        if (!confirm(`Are you sure you want to permanently delete account for "${user.fullname}" (${user.email})?`)) {
+            return;
+        }
+
+        try {
+            // Cleanup related records if any
+            if (user.role.toLowerCase() === 'teacher') {
+                await supabase.from('teachers').delete().eq('user_id', id);
+            }
+
+            const { error } = await supabase
+                .from('users')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            showAlert(`✅ Account for "${user.fullname}" deleted successfully!`, 'success');
+            await loadAccounts();
+        } catch (err) {
+            console.error('Error deleting account:', err);
+            showAlert('Failed to delete account: ' + err.message, 'error');
         }
     };
 
-    // Reset filters
+    window.approveUser = function(id) {
+        showAlert('User is active and approved.', 'success');
+    };
+
+    window.openRejectModal = function(id, name) {
+        if (rejectUserId) rejectUserId.value = id;
+        if (rejectUserName) rejectUserName.textContent = name;
+        if (rejectionReason) rejectionReason.value = '';
+        if (rejectModal) rejectModal.classList.add('active');
+    };
+
+    window.closeRejectModal = function() {
+        if (rejectModal) rejectModal.classList.remove('active');
+    };
+
     window.resetFilters = function() {
-        searchInput.value = '';
-        roleFilter.value = '';
-        statusFilter.value = '';
+        if (searchInput) searchInput.value = '';
+        if (roleFilter) roleFilter.value = '';
+        if (statusFilter) statusFilter.value = '';
         renderUsers();
     };
 
-    // Show alert
-    function showAlert(message, type = 'error') {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
-        alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
-        alertContainer.appendChild(alertDiv);
-
-        setTimeout(() => {
-            alertDiv.style.opacity = '0';
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 300);
-        }, 5000);
-    }
-
     // ===== EVENT LISTENERS =====
-
-    // Filter form
     if (filterForm) {
         filterForm.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -299,77 +354,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Search input
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            renderUsers();
-        });
-    }
+    if (searchInput) searchInput.addEventListener('input', renderUsers);
+    if (roleFilter) roleFilter.addEventListener('change', renderUsers);
+    if (statusFilter) statusFilter.addEventListener('change', renderUsers);
 
-    // Role filter
-    if (roleFilter) {
-        roleFilter.addEventListener('change', function() {
-            renderUsers();
-        });
-    }
-
-    // Status filter
-    if (statusFilter) {
-        statusFilter.addEventListener('change', function() {
-            renderUsers();
-        });
-    }
-
-    // Reject form
-    if (rejectForm) {
-        rejectForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const id = parseInt(rejectUserId.value);
-            const user = users.find(u => u.id === id);
-            const reason = rejectionReason.value.trim();
-
-            if (user) {
-                user.status = 'rejected';
-                user.rejection_reason = reason || 'No reason provided';
-                persistUsers();
-                showAlert(`✅ ${user.fullname} rejected successfully!`, 'success');
-                closeRejectModal();
-                updateStats();
-                renderPendingUsers();
-                renderUsers();
-            }
-        });
-    }
-
-    // Close modal on outside click
     document.addEventListener('click', function(e) {
-        if (e.target === rejectModal) {
-            closeRejectModal();
-        }
+        if (e.target === rejectModal) window.closeRejectModal();
     });
 
     // ===== MOBILE MENU =====
-
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.getElementById('sidebar');
 
-    if (menuToggle) {
+    if (menuToggle && sidebar) {
         menuToggle.addEventListener('click', function() {
             sidebar.classList.toggle('active');
         });
     }
 
-    document.addEventListener('click', function(e) {
-        if (window.innerWidth <= 768) {
-            if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-                sidebar.classList.remove('active');
-            }
-        }
-    });
-
-    // ===== INIT =====
-
-    updateStats();
-    renderPendingUsers();
-    renderUsers();
+    // Initial load
+    await loadAccounts();
 });

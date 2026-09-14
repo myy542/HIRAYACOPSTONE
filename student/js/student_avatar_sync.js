@@ -5,8 +5,7 @@
     function getStudentInitials(name) {
         if (!name || typeof name !== 'string') return 'S';
         const cleanName = name.replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?)\s+/i, '').trim();
-        if (!cleanName || cleanName.toLowerCase() === 'student' || cleanName.toLowerCase().includes('mylene') || cleanName.toLowerCase().includes('raganas')) return 'S';
-        const words = cleanName.split(/[\s,&-]+/).filter(w => w.length > 0 && !['and', 'the', 'of', '&'].includes(w.toLowerCase()));
+        const words = cleanName.split(/[\s,&-]+/).filter(w => w.length > 0);
         if (words.length === 0) return 'S';
         if (words.length === 1) return words[0].charAt(0).toUpperCase();
         return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
@@ -14,13 +13,9 @@
 
     function sanitizeStudentName(name, email) {
         if (!name && email) {
-            if (email.toLowerCase().includes('mylene') || email.toLowerCase().includes('student')) return 'Student';
-            name = email.split('@')[0];
+            return email.split('@')[0];
         }
-        if (!name || name.toLowerCase().includes('mylene') || name.toLowerCase().includes('raganas') || name.toLowerCase() === 'admin') {
-            return 'Student';
-        }
-        return name;
+        return (name || '').trim();
     }
 
     function syncStudentAvatarAndName() {
@@ -32,27 +27,18 @@
                 try {
                     const u = JSON.parse(currentUserStr);
                     if (u.role === 'student') {
-                        let nameFromSession = (u.firstName ? `${u.firstName} ${u.lastName || ''}`.trim() : (u.email ? u.email.split('@')[0] : ''));
-                        nameFromSession = sanitizeStudentName(nameFromSession, u.email);
-                        
-                        if (nameFromSession === 'Student') {
-                            u.firstName = 'Student';
-                            u.lastName = '';
-                            localStorage.setItem('currentUser', JSON.stringify(u));
-                        }
-                        
-                        studentNameStr = nameFromSession;
+                        let nameFromSession = u.displayName || (u.firstName ? `${u.firstName} ${u.lastName || ''}`.trim() : (u.email ? u.email.split('@')[0] : 'Student'));
+                        studentNameStr = nameFromSession || studentNameStr || 'Student';
                         localStorage.setItem('plsnhs_student_name', studentNameStr);
                     }
                 } catch(e) {}
             }
 
-            // Clean up stored name
-            studentNameStr = sanitizeStudentName(studentNameStr);
+            studentNameStr = studentNameStr || 'Student';
             localStorage.setItem('plsnhs_student_name', studentNameStr);
 
             // Apply name to all student name elements in dashboard and pages
-            document.querySelectorAll('.student-name, #studentName, #studentNameHeader').forEach(el => {
+            document.querySelectorAll('.student-name, #studentName, #studentNameHeader, #bannerStudentName, #profileName').forEach(el => {
                 el.textContent = studentNameStr;
             });
 
@@ -73,11 +59,12 @@
                 }
             });
 
-            // Update any loose studentInitial element if not inside .student-avatar
-            const looseInitial = document.getElementById('studentInitial');
-            if (looseInitial && !savedAvatar) {
-                looseInitial.textContent = initials;
-            }
+            // Update any loose studentInitial or profileInitial element
+            document.querySelectorAll('#studentInitial, #profileInitial, #modalInitial, #bannerInitial').forEach(initEl => {
+                if (!savedAvatar) {
+                    initEl.textContent = initials;
+                }
+            });
         } catch(e) {
             console.warn('Student avatar sync error:', e);
         }

@@ -3,44 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Attendance Records - PLSNHS Parent Portal</title>
+    <title>Student Attendance - PLSNHS</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- CSS -->
+    <!-- STUDENT CSS -->
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="css/attendance.css">
 </head>
 <body>
-    <!-- Mobile Menu Toggle -->
-    <div class="menu-toggle" id="menuToggle">
-        <i class="fas fa-bars"></i>
-    </div>
-
     <div class="app-container">
-        <!-- Sidebar -->
+        <!-- ===== SIDEBAR ===== -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
                     <div class="logo-icon">
-                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="PLSNHS Logo" class="logo-img" onerror="this.onerror=null; this.style.display='none'; this.parentElement.textContent='P'; this.parentElement.style.background='#FFD700'; this.parentElement.style.color='#0b2b4a'; this.parentElement.style.display='flex'; this.parentElement.style.alignItems='center'; this.parentElement.style.justifyContent='center'; this.parentElement.style.fontWeight='800'; this.parentElement.style.fontSize='1.2rem';">
                     </div>
-                    <div class="logo-text">PLS<span>NHS</span></div>
+                    <div class="logo-text">
+                        <div class="logo-main">PLS<span>NHS</span></div>
+                        <div class="logo-sub">Placido L. Señor NHS</div>
+                    </div>
                 </div>
-                <div class="school-badge">Placido L. Señor NHS</div>
             </div>
 
-            <div class="parent-profile">
-                <div class="parent-avatar">
-                    <div class="avatar-initial" id="parentInitial">P</div>
+            <div class="student-profile">
+                <div class="student-avatar">
+                    <div class="avatar-initial" id="studentInitial">S</div>
                     <div class="online-dot"></div>
                 </div>
-                <div class="parent-name" id="sidebarParentName">Parent</div>
-                <div class="parent-role"><i class="fas fa-user-friends"></i> Parent</div>
-                <div class="parent-child-badge" id="sidebarChildBadge" title="Linked Child">
-                    <i class="fas fa-child"></i> Student: <span id="sidebarChildName">Student</span>
-                </div>
+                <div class="student-name" id="studentName">Student</div>
+                <div class="student-role"><i class="fas fa-user-graduate"></i> Student</div>
             </div>
 
             <nav class="nav-menu">
@@ -48,28 +42,30 @@
                     <div class="nav-section-title">MAIN MENU</div>
                     <ul class="nav-items">
                         <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                        <li><a href="grades.html"><i class="fas fa-star"></i> Grades</a></li>
                         <li><a href="attendance.html" class="active"><i class="fas fa-calendar-check"></i> Attendance</a></li>
+                        <li><a href="schedule.html"><i class="fas fa-calendar-alt"></i> Class Schedule</a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> My Grades</a></li>
+                        <li><a href="requirements.html"><i class="fas fa-file-alt"></i> Requirements</a></li>
                     </ul>
                 </div>
 
                 <div class="nav-section">
                     <div class="nav-section-title">ACCOUNT</div>
                     <ul class="nav-items">
-                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                        <li><a href="../auth/logout.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        <li><a href="profile.html"><i class="fas fa-user-circle"></i> My Profile</a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                     </ul>
                 </div>
             </nav>
         </aside>
 
-        <!-- Main Content -->
+        <!-- ===== MAIN CONTENT ===== -->
         <main class="main-content">
             <!-- Page Header -->
             <div class="page-header">
                 <div>
-                    <h1><i class="fas fa-calendar-check"></i> Attendance Monitoring</h1>
-                    <p>Track and view daily school attendance records for <strong id="attendanceChildBanner" style="color: #0B4F2E;">Loading student...</strong></p>
+                    <h1><i class="fas fa-calendar-check"></i> My Attendance</h1>
+                    <p>Track and view your exclusive daily attendance records</p>
                 </div>
                 <div class="header-actions">
                     <div class="header-date-badge" id="currentDateBadge">
@@ -81,12 +77,11 @@
             <!-- Alert Container -->
             <div id="alertContainer"></div>
 
-            <!-- Child Info / Enrollment Card -->
+            <!-- Current Enrollment Card -->
             <div class="class-info-card" id="currentEnrollmentCard">
                 <div class="class-info-details">
-                    <h3><i class="fas fa-user-graduate"></i> Student: <span id="studentNameDisplay">Loading Child...</span></h3>
+                    <h3><i class="fas fa-graduation-cap"></i> Current Enrollment</h3>
                     <div class="class-info-badges">
-                        <span class="info-badge"><i class="fas fa-id-card"></i> LRN: <span id="lrnDisplay">109876543201</span></span>
                         <span class="info-badge"><i class="fas fa-layer-group"></i> Grade: <span id="gradeDisplay">Grade 11</span></span>
                         <span class="info-badge"><i class="fas fa-tag"></i> Strand: <span id="strandDisplay">TVL-ICT</span></span>
                         <span class="info-badge"><i class="fas fa-check-circle"></i> Status: <span id="statusDisplay">Approved</span></span>
@@ -176,7 +171,7 @@
             <div class="section-title-wrapper">
                 <div class="section-title">
                     <h2><i class="fas fa-history"></i> Attendance Records Log</h2>
-                    <p>Detailed breakdown of your child's daily school attendance</p>
+                    <p>Detailed breakdown of your daily school attendance</p>
                 </div>
                 <div class="record-counter" id="recordCountBadge">
                     Showing 0 records
@@ -185,13 +180,6 @@
 
             <!-- Filter Controls -->
             <div class="filter-card">
-                <div class="filter-group">
-                    <label for="studentFilter"><i class="fas fa-user-graduate"></i> Student:</label>
-                    <select id="studentFilter" class="filter-select">
-                        <option value="all">All Children</option>
-                    </select>
-                </div>
-
                 <div class="filter-group">
                     <label for="monthFilter"><i class="fas fa-calendar"></i> Month:</label>
                     <select id="monthFilter" class="filter-select">
@@ -225,7 +213,7 @@
 
                 <div class="filter-group search-group">
                     <label for="attendanceSearch"><i class="fas fa-search"></i> Search:</label>
-                    <input type="text" id="attendanceSearch" class="filter-search" placeholder="Search by date, day, student name or remarks...">
+                    <input type="text" id="attendanceSearch" class="filter-search" placeholder="Search by date, day or remarks...">
                 </div>
 
                 <div class="filter-actions">
@@ -244,21 +232,20 @@
                     <table class="attendance-table">
                         <thead>
                             <tr>
-                                <th><i class="fas fa-calendar-day"></i> DATE</th>
-                                <th><i class="fas fa-user-graduate"></i> STUDENT NAME</th>
-                                <th><i class="fas fa-calendar-week"></i> DAY</th>
-                                <th><i class="fas fa-clock"></i> TIME IN</th>
-                                <th><i class="fas fa-clock"></i> TIME OUT</th>
-                                <th><i class="fas fa-info-circle"></i> STATUS</th>
-                                <th><i class="fas fa-comment-alt"></i> REMARKS</th>
+                                <th><i class="fas fa-calendar-day"></i> Date</th>
+                                <th><i class="fas fa-calendar-week"></i> Day</th>
+                                <th><i class="fas fa-clock"></i> Time In</th>
+                                <th><i class="fas fa-clock"></i> Time Out</th>
+                                <th><i class="fas fa-info-circle"></i> Status</th>
+                                <th><i class="fas fa-comment-alt"></i> Remarks</th>
                             </tr>
                         </thead>
                         <tbody id="attendanceTableBody">
                             <tr>
-                                <td colspan="7" class="loading-state">
+                                <td colspan="6" class="loading-state">
                                     <div class="loading-spinner">
                                         <i class="fas fa-circle-notch fa-spin"></i>
-                                        <p>Loading attendance records...</p>
+                                        <p>Loading your attendance records...</p>
                                     </div>
                                 </td>
                             </tr>
@@ -266,10 +253,20 @@
                     </table>
                 </div>
             </div>
+
+            <!-- School Information Footer -->
+            <div class="school-info">
+                <p>
+                    <i class="fas fa-map-marker-alt"></i> PLACIDO L. SEÑOR NATIONAL HIGH SCHOOL<br>
+                    Langtad, City of Naga, Cebu 6037<br>
+                    <i class="fas fa-phone"></i> (032) 123-4567 · <i class="fas fa-envelope"></i> info@plsshs.edu.ph
+                </p>
+            </div>
         </main>
     </div>
 
-    <script src="js/parent_avatar_sync.js"></script>
+    <!-- STUDENT JS -->
+    <script src="js/student_avatar_sync.js"></script>
     <script type="module" src="js/attendance.js"></script>
 </body>
 </html>

@@ -33,10 +33,10 @@
 
             <div class="admin-profile">
                 <div class="admin-avatar">
-                    <div class="avatar-initial" id="adminAvatar">J</div>
+                    <div class="avatar-initial" id="adminAvatar">A</div>
                     <div class="online-dot"></div>
                 </div>
-                <div class="admin-name" id="adminName">Justine</div>
+                <div class="admin-name" id="adminName">Admin</div>
                 <div class="admin-role"><i class="fas fa-shield-alt"></i> Administrator</div>
             </div>
 
@@ -192,14 +192,8 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Adviser (Optional)</label>
-                        <select name="adviser_id" id="addAdviserId">
-                            <option value="">Select Adviser</option>
-                            <option value="1">Maria Santos</option>
-                            <option value="2">Juan Dela Cruz</option>
-                            <option value="3">Ana Reyes</option>
-                            <option value="4">Carlos Mendoza</option>
-                        </select>
+                        <label>Class Adviser <span class="required">*</span></label>
+                        <input type="text" name="adviser_name" id="addAdviserName" placeholder="e.g., Maria Santos" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -237,14 +231,8 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Adviser</label>
-                        <select name="adviser_id" id="editAdviserId">
-                            <option value="">Select Adviser</option>
-                            <option value="1">Maria Santos</option>
-                            <option value="2">Juan Dela Cruz</option>
-                            <option value="3">Ana Reyes</option>
-                            <option value="4">Carlos Mendoza</option>
-                        </select>
+                        <label>Class Adviser <span class="required">*</span></label>
+                        <input type="text" name="adviser_name" id="editAdviserName" placeholder="e.g., Maria Santos" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -277,6 +265,7 @@
         </div>
     </div>
 
-    <script src="js/sections.js"></script>
+    <script src="js/admin_avatar_sync.js"></script>
+    <script type="module" src="js/sections.js"></script>
 </body>
 </html>

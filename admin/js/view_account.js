@@ -1,70 +1,57 @@
-// ===== VIEW ACCOUNT JAVASCRIPT =====
+// ===== VIEW ACCOUNT JAVASCRIPT (SUPABASE POWERED) =====
+import { supabase } from '../../supabase/config.js';
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // DOM Elements
     const alertContainer = document.getElementById('alertContainer');
+    const profileAvatar = document.querySelector('.profile-avatar-large .avatar-initial');
+    const accountName = document.getElementById('accountName');
+    const accountEmail = document.getElementById('accountEmail');
+    const accountIdNumber = document.getElementById('accountIdNumber');
+    const accountRegistered = document.getElementById('accountRegistered');
+    const accountDaysActive = document.getElementById('accountDaysActive');
+    const accountRoleBadge = document.getElementById('accountRoleBadge');
+    const statsGrid = document.getElementById('statsGrid');
+    const accountInfoGrid = document.getElementById('accountInfoGrid');
+    const roleSpecificDetails = document.getElementById('roleSpecificDetails');
+    const timeline = document.getElementById('timeline');
 
-    // ===== ACCOUNT DATA =====
+    // State
+    let user = null;
+    let currentUserSession = null;
 
-    // Sample account data (from URL parameter in real app)
-    const accountData = {
-        id: 1,
-        fullname: 'Juan Dela Cruz',
-        email: 'juan.dela@plshs.edu.ph',
-        id_number: 'PLSNHS-STU-000001',
-        role: 'Student',
-        status: 'approved',
-        email_verified: 1,
-        created_at: '2026-06-15 10:30:00',
-        approved_at: '2026-06-16 08:00:00',
-        profile_picture: null
-    };
+    try {
+        const stored = localStorage.getItem('currentUser');
+        if (stored) currentUserSession = JSON.parse(stored);
+    } catch(e) {}
 
-    // Role-specific stats
-    const roleStats = {
-        Student: {
-            enrollments: 2,
-            attendance: 45,
-            current_enrollment: {
-                grade_name: 'Grade 11',
-                strand: 'STEM',
-                school_year: '2026-2027',
-                status: 'Enrolled',
-                id: 1
-            }
-        },
-        Teacher: {
-            sections_count: 2,
-            sections: [
-                { id: 1, section_name: 'Grade 7 - Section A', grade_name: 'Grade 7' },
-                { id: 2, section_name: 'Grade 10 - Section B', grade_name: 'Grade 10' }
-            ]
-        },
-        Registrar: {
-            processed: 156
-        },
-        Admin: {
-            total_users: 278,
-            total_enrollments: 189
-        }
-    };
+    // Alert helper
+    function showAlert(message, type = 'error') {
+        if (!alertContainer) return;
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> <div>${message}</div>`;
+        alertContainer.appendChild(alertDiv);
 
-    const currentUser = {
-        id: 1 // Logged in user ID
-    };
+        setTimeout(() => {
+            alertDiv.style.opacity = '0';
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 300);
+        }, 5000);
+    }
 
-    // ===== FUNCTIONS =====
-
-    // Calculate days active
     function calculateDaysActive(createdAt) {
+        if (!createdAt) return 1;
         const created = new Date(createdAt);
         const today = new Date();
         const diffTime = Math.abs(today - created);
-        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
     }
 
-    // Format date
     function formatDate(dateString) {
+        if (!dateString) return '—';
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', { 
             month: 'long', 
@@ -75,56 +62,141 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Get role icon
     function getRoleIcon(role) {
         const icons = {
-            'Admin': 'user-shield',
-            'Registrar': 'user-tie',
-            'Teacher': 'chalkboard-user',
-            'Student': 'user-graduate'
+            'admin': 'user-shield',
+            'registrar': 'user-tie',
+            'teacher': 'chalkboard-user',
+            'student': 'user-graduate',
+            'parent': 'user-group'
         };
-        return icons[role] || 'user';
+        return icons[(role || '').toLowerCase()] || 'user';
     }
 
-    // Get role color class
-    function getRoleClass(role) {
-        return `role-${role.toLowerCase()}`;
-    }
+    // ===== MAIN LOAD FUNCTION =====
+    async function init() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            let userId = urlParams.get('id');
 
-    // Render profile
-    function renderProfile() {
-        const initial = accountData.fullname.charAt(0).toUpperCase();
-        const daysActive = calculateDaysActive(accountData.created_at);
-        const roleIcon = getRoleIcon(accountData.role);
-        const roleClass = getRoleClass(accountData.role);
+            if (!userId) {
+                const { data: firstUser } = await supabase.from('users').select('id').limit(1).maybeSingle();
+                if (firstUser) userId = firstUser.id;
+            }
 
-        document.querySelector('.profile-avatar-large .avatar-initial').textContent = initial;
-        document.getElementById('accountName').textContent = accountData.fullname;
-        document.getElementById('accountEmail').textContent = accountData.email;
-        document.getElementById('accountIdNumber').textContent = accountData.id_number || 'Not assigned';
-        document.getElementById('accountRegistered').textContent = formatDate(accountData.created_at);
-        document.getElementById('accountDaysActive').textContent = daysActive;
+            if (!userId) {
+                showAlert('No account specified to view.', 'error');
+                return;
+            }
 
-        document.getElementById('accountRoleBadge').className = `role-badge ${roleClass}`;
-        document.getElementById('accountRoleBadge').innerHTML = `
-            <i class="fas fa-${roleIcon}"></i> ${accountData.role}
-        `;
+            // Fetch user
+            const { data: userData, error: userErr } = await supabase
+                .from('users')
+                .select('*')
+                .eq('id', userId)
+                .single();
 
-        // Update action buttons
-        const editBtn = document.querySelector('.btn-edit');
-        if (editBtn) {
-            editBtn.href = `edit_account.html?id=${accountData.id}`;
+            if (userErr || !userData) throw new Error('User account not found.');
+            user = userData;
+
+            const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+            const roleFormatted = user.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User';
+
+            // Resolve ID Number
+            let idNumber = null;
+            let roleStats = {};
+
+            const roleLower = (user.role || '').toLowerCase();
+            if (roleLower === 'teacher') {
+                const { data: teacherRec } = await supabase
+                    .from('teachers')
+                    .select('id, employee_id, specialization')
+                    .eq('user_id', user.id)
+                    .maybeSingle();
+
+                idNumber = teacherRec?.employee_id || `PLSNHS-TCH-${user.id.substring(0, 5).toUpperCase()}`;
+
+                // Fetch teacher's sections
+                const { data: sections } = await supabase
+                    .from('sections')
+                    .select('*')
+                    .or(`adviser_id.eq.${teacherRec?.id || 'none'},adviser_id.eq.${user.id}`);
+
+                roleStats.sections = sections || [];
+                roleStats.sections_count = (sections || []).length;
+            } else if (roleLower === 'student') {
+                const { data: studentRec } = await supabase
+                    .from('students')
+                    .select('*')
+                    .eq('email', user.email)
+                    .maybeSingle();
+
+                idNumber = studentRec?.lrn || `PLSNHS-STU-${user.id.substring(0, 5).toUpperCase()}`;
+
+                // Fetch enrollments & attendance
+                const [enrollmentsRes, attendanceRes] = await Promise.all([
+                    supabase.from('enrollments').select('*').eq('email', user.email),
+                    studentRec ? supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('student_id', studentRec.id) : { count: 0 }
+                ]);
+
+                roleStats.enrollments = (enrollmentsRes.data || []).length;
+                roleStats.attendance = attendanceRes.count || 0;
+                roleStats.current_enrollment = (enrollmentsRes.data && enrollmentsRes.data.length > 0) ? enrollmentsRes.data[0] : null;
+            } else if (roleLower === 'registrar') {
+                idNumber = `PLSNHS-RGR-${user.id.substring(0, 5).toUpperCase()}`;
+                const { count: enrollmentsProcessed } = await supabase
+                    .from('enrollments')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'Approved');
+                roleStats.processed = enrollmentsProcessed || 0;
+            } else {
+                idNumber = `PLSNHS-ADM-${user.id.substring(0, 5).toUpperCase()}`;
+                const [usersCount, enrollmentsCount] = await Promise.all([
+                    supabase.from('users').select('*', { count: 'exact', head: true }),
+                    supabase.from('enrollments').select('*', { count: 'exact', head: true })
+                ]);
+                roleStats.total_users = usersCount.count || 0;
+                roleStats.total_enrollments = enrollmentsCount.count || 0;
+            }
+
+            // Render UI
+            renderProfile(fullName, roleFormatted, idNumber);
+            renderStats(roleLower, roleStats);
+            renderAccountInfo(fullName, roleFormatted, idNumber);
+            renderRoleSpecific(roleLower, roleStats);
+            renderTimeline();
+        } catch (err) {
+            console.error('Error viewing account:', err);
+            showAlert('Failed to load account: ' + err.message, 'error');
         }
     }
 
-    // Render stats
-    function renderStats() {
-        const stats = roleStats[accountData.role] || {};
-        const grid = document.getElementById('statsGrid');
-        
+    function renderProfile(fullName, roleFormatted, idNumber) {
+        const initial = fullName.charAt(0).toUpperCase() || 'U';
+        const daysActive = calculateDaysActive(user.created_at);
+        const roleIcon = getRoleIcon(user.role);
+
+        if (profileAvatar) profileAvatar.textContent = initial;
+        if (accountName) accountName.textContent = fullName;
+        if (accountEmail) accountEmail.textContent = user.email || '—';
+        if (accountIdNumber) accountIdNumber.textContent = idNumber;
+        if (accountRegistered) accountRegistered.textContent = formatDate(user.created_at);
+        if (accountDaysActive) accountDaysActive.textContent = daysActive;
+
+        if (accountRoleBadge) {
+            accountRoleBadge.className = `role-badge role-${(user.role || '').toLowerCase()}`;
+            accountRoleBadge.innerHTML = `<i class="fas fa-${roleIcon}"></i> ${roleFormatted}`;
+        }
+
+        const editBtn = document.querySelector('.btn-edit');
+        if (editBtn) editBtn.href = `edit_account.html?id=${user.id}`;
+    }
+
+    function renderStats(roleLower, stats) {
+        if (!statsGrid) return;
         let html = '';
 
-        if (accountData.role === 'Student') {
+        if (roleLower === 'student') {
             html = `
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-file-signature"></i></div>
@@ -143,12 +215,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
                     <div class="stat-content">
-                        <div class="stat-number">${stats.current_enrollment?.grade_name || 'N/A'}</div>
+                        <div class="stat-number">${stats.current_enrollment?.grade_level || 'Grade 11'}</div>
                         <div class="stat-label">Current Grade</div>
                     </div>
                 </div>
             `;
-        } else if (accountData.role === 'Teacher') {
+        } else if (roleLower === 'teacher') {
             html = `
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
@@ -160,25 +232,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-chalkboard-user"></i></div>
                     <div class="stat-content">
-                        <div class="stat-number">${stats.sections_count > 0 ? 'Active' : 'No Section'}</div>
+                        <div class="stat-number">${stats.sections_count > 0 ? 'Active' : 'Faculty'}</div>
                         <div class="stat-label">Teaching Status</div>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
                     <div class="stat-content">
-                        <div class="stat-number">${new Date().getFullYear()}</div>
-                        <div class="stat-label">Current Year</div>
+                        <div class="stat-number">2026-2027</div>
+                        <div class="stat-label">School Year</div>
                     </div>
                 </div>
             `;
-        } else if (accountData.role === 'Registrar') {
+        } else if (roleLower === 'registrar') {
             html = `
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-file-signature"></i></div>
                     <div class="stat-content">
                         <div class="stat-number">${stats.processed || 0}</div>
-                        <div class="stat-label">Enrollments Processed</div>
+                        <div class="stat-label">Enrollments Approved</div>
                     </div>
                 </div>
                 <div class="stat-card">
@@ -191,12 +263,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-calendar-alt"></i></div>
                     <div class="stat-content">
-                        <div class="stat-number">${new Date().getFullYear()}</div>
+                        <div class="stat-number">2026-2027</div>
                         <div class="stat-label">School Year</div>
                     </div>
                 </div>
             `;
-        } else if (accountData.role === 'Admin') {
+        } else {
             html = `
                 <div class="stat-card">
                     <div class="stat-icon"><i class="fas fa-users"></i></div>
@@ -222,68 +294,55 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
 
-        grid.innerHTML = html;
+        statsGrid.innerHTML = html;
     }
 
-    // Render account info
-    function renderAccountInfo() {
-        const grid = document.getElementById('accountInfoGrid');
-        const statusColor = accountData.status === 'approved' ? '#10b981' : 
-                           accountData.status === 'pending' ? '#f59e0b' : '#ef4444';
-        const statusIcon = accountData.status === 'approved' ? 'check-circle' : 
-                          accountData.status === 'pending' ? 'clock' : 'times-circle';
-        const verifiedColor = accountData.email_verified ? '#10b981' : '#ef4444';
-        const verifiedIcon = accountData.email_verified ? 'check-circle' : 'times-circle';
-
-        grid.innerHTML = `
+    function renderAccountInfo(fullName, roleFormatted, idNumber) {
+        if (!accountInfoGrid) return;
+        accountInfoGrid.innerHTML = `
             <div class="info-item">
                 <div class="info-label">Account ID</div>
-                <div class="info-value">${accountData.id}</div>
+                <div class="info-value">${user.id}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">Full Name</div>
-                <div class="info-value"><i class="fas fa-user"></i> ${accountData.fullname}</div>
+                <div class="info-value"><i class="fas fa-user"></i> ${fullName}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">Email Address</div>
-                <div class="info-value"><i class="fas fa-envelope"></i> ${accountData.email}</div>
+                <div class="info-value"><i class="fas fa-envelope"></i> ${user.email}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">ID Number</div>
-                <div class="info-value"><i class="fas fa-id-card"></i> ${accountData.id_number || 'Not assigned'}</div>
+                <div class="info-value"><i class="fas fa-id-card"></i> ${idNumber}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">Role</div>
-                <div class="info-value"><i class="fas fa-user-tag"></i> ${accountData.role}</div>
+                <div class="info-value"><i class="fas fa-user-tag"></i> ${roleFormatted}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">Account Created</div>
-                <div class="info-value"><i class="fas fa-calendar-alt"></i> ${formatDate(accountData.created_at)}</div>
-            </div>
-            <div class="info-item">
-                <div class="info-label">Email Verified</div>
-                <div class="info-value">
-                    <i class="fas fa-${verifiedIcon}" style="color: ${verifiedColor};"></i>
-                    ${accountData.email_verified ? 'Verified' : 'Not Verified'}
-                </div>
+                <div class="info-value"><i class="fas fa-calendar-alt"></i> ${formatDate(user.created_at)}</div>
             </div>
             <div class="info-item">
                 <div class="info-label">Account Status</div>
                 <div class="info-value">
-                    <i class="fas fa-${statusIcon}" style="color: ${statusColor};"></i>
-                    ${accountData.status.charAt(0).toUpperCase() + accountData.status.slice(1)}
+                    <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                    Active / Approved
                 </div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Last Updated</div>
+                <div class="info-value"><i class="fas fa-clock"></i> ${formatDate(user.updated_at || user.created_at)}</div>
             </div>
         `;
     }
 
-    // Render role-specific details
-    function renderRoleSpecific() {
-        const container = document.getElementById('roleSpecificDetails');
-        const stats = roleStats[accountData.role] || {};
+    function renderRoleSpecific(roleLower, stats) {
+        if (!roleSpecificDetails) return;
         let html = '';
 
-        if (accountData.role === 'Student' && stats.current_enrollment) {
+        if (roleLower === 'student' && stats.current_enrollment) {
             const enrollment = stats.current_enrollment;
             html += `
                 <div class="detail-card">
@@ -294,31 +353,27 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="info-grid">
                         <div class="info-item">
                             <div class="info-label">Grade Level</div>
-                            <div class="info-value"><i class="fas fa-layer-group"></i> ${enrollment.grade_name}</div>
+                            <div class="info-value"><i class="fas fa-layer-group"></i> ${enrollment.grade_level || 'Grade 11'}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">Strand</div>
-                            <div class="info-value"><i class="fas fa-tag"></i> ${enrollment.strand || 'Not Applicable'}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">School Year</div>
-                            <div class="info-value"><i class="fas fa-calendar-alt"></i> ${enrollment.school_year}</div>
+                            <div class="info-value"><i class="fas fa-tag"></i> ${enrollment.strand || 'TVL-ICT'}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">Status</div>
-                            <div class="info-value"><i class="fas fa-check-circle" style="color: #10b981;"></i> ${enrollment.status}</div>
+                            <div class="info-value"><i class="fas fa-check-circle" style="color: #10b981;"></i> ${enrollment.status || 'Approved'}</div>
                         </div>
                     </div>
                 </div>
             `;
         }
 
-        if (accountData.role === 'Teacher' && stats.sections && stats.sections.length > 0) {
+        if (roleLower === 'teacher' && stats.sections && stats.sections.length > 0) {
             let sectionsHtml = stats.sections.map(section => `
-                <div class="section-card">
-                    <h4><i class="fas fa-users"></i> ${section.section_name}</h4>
-                    <p><i class="fas fa-layer-group"></i> ${section.grade_name}</p>
-                    <a href="view_section.html?id=${section.id}" class="view-link">View Section <i class="fas fa-arrow-right"></i></a>
+                <div class="section-card" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px;">
+                    <h4 style="color:#1B2A4A; margin-bottom:6px;"><i class="fas fa-users"></i> ${section.name}</h4>
+                    <p style="color:#64748b; font-size:13px; margin-bottom:8px;"><i class="fas fa-layer-group"></i> ${section.grade_level}</p>
+                    <a href="view_section.html?id=${section.id}" class="view-link" style="color:#1B2A4A; font-weight:600; text-decoration:none;">View Section <i class="fas fa-arrow-right"></i></a>
                 </div>
             `).join('');
 
@@ -327,111 +382,69 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="card-header">
                         <h3><i class="fas fa-layer-group"></i> Advisory Sections</h3>
                     </div>
-                    <div class="sections-grid">
+                    <div class="sections-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:12px;">
                         ${sectionsHtml}
                     </div>
                 </div>
             `;
         }
 
-        container.innerHTML = html;
+        roleSpecificDetails.innerHTML = html;
     }
 
-    // Render timeline
     function renderTimeline() {
-        const timeline = document.getElementById('timeline');
-        let html = `
+        if (!timeline || !user) return;
+        timeline.innerHTML = `
             <li class="timeline-item">
                 <div class="timeline-icon"><i class="fas fa-user-plus"></i></div>
                 <div class="timeline-content">
                     <div class="timeline-title">Account Created</div>
-                    <div class="timeline-time"><i class="far fa-clock"></i> ${formatDate(accountData.created_at)}</div>
+                    <div class="timeline-time"><i class="far fa-clock"></i> ${formatDate(user.created_at)}</div>
+                </div>
+            </li>
+            <li class="timeline-item">
+                <div class="timeline-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="timeline-content">
+                    <div class="timeline-title">Account Verified & Active</div>
+                    <div class="timeline-time"><i class="far fa-clock"></i> Status: Active in PLSNHS System</div>
                 </div>
             </li>
         `;
-
-        if (accountData.email_verified) {
-            html += `
-                <li class="timeline-item">
-                    <div class="timeline-icon"><i class="fas fa-envelope"></i></div>
-                    <div class="timeline-content">
-                        <div class="timeline-title">Email Verified</div>
-                        <div class="timeline-time"><i class="far fa-clock"></i> Email has been verified</div>
-                    </div>
-                </li>
-            `;
-        }
-
-        if (accountData.status === 'approved' && accountData.approved_at) {
-            html += `
-                <li class="timeline-item">
-                    <div class="timeline-icon"><i class="fas fa-check-circle"></i></div>
-                    <div class="timeline-content">
-                        <div class="timeline-title">Account Approved</div>
-                        <div class="timeline-time"><i class="far fa-clock"></i> ${formatDate(accountData.approved_at)}</div>
-                    </div>
-                </li>
-            `;
-        }
-
-        timeline.innerHTML = html;
     }
 
-    // Show alert
-    function showAlert(message, type = 'error') {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
-        alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
-        alertContainer.appendChild(alertDiv);
+    window.deleteAccount = async function() {
+        if (!user) return;
 
-        setTimeout(() => {
-            alertDiv.style.opacity = '0';
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 300);
-        }, 5000);
-    }
-
-    // Delete account
-    window.deleteAccount = function() {
-        if (accountData.id === currentUser.id) {
+        if (currentUserSession && currentUserSession.email && currentUserSession.email.toLowerCase() === user.email.toLowerCase()) {
             showAlert('You cannot delete your own account!', 'error');
             return;
         }
 
-        if (confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
+        if (!confirm(`Are you sure you want to delete account for ${user.first_name || ''} ${user.last_name || ''}? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            if (user.role === 'teacher') {
+                await supabase.from('teachers').delete().eq('user_id', user.id);
+            }
+
+            const { error } = await supabase
+                .from('users')
+                .delete()
+                .eq('id', user.id);
+
+            if (error) throw error;
+
             showAlert('✅ Account deleted successfully!', 'success');
             setTimeout(() => {
                 window.location.href = 'manage_accounts.html';
-            }, 1500);
+            }, 1200);
+        } catch (err) {
+            console.error('Error deleting account:', err);
+            showAlert('Failed to delete account: ' + err.message, 'error');
         }
     };
 
-    // ===== MOBILE MENU =====
-
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('sidebar');
-
-    if (menuToggle) {
-        menuToggle.addEventListener('click', function() {
-            sidebar.classList.toggle('active');
-        });
-    }
-
-    document.addEventListener('click', function(e) {
-        if (window.innerWidth <= 768) {
-            if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-                sidebar.classList.remove('active');
-            }
-        }
-    });
-
-    // ===== INIT =====
-
-    renderProfile();
-    renderStats();
-    renderAccountInfo();
-    renderRoleSpecific();
-    renderTimeline();
+    await init();
 });

@@ -36,6 +36,50 @@
                     `;
                 }
             });
+
+            // Update sidebar enrollments links with pending badge if found
+            document.querySelectorAll('.nav-items a[href*="enrollments.html"]').forEach(link => {
+                let badge = link.querySelector('#pendingEnrollmentsBadge') || link.querySelector('.nav-badge');
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.id = 'pendingEnrollmentsBadge';
+                    badge.className = 'nav-badge';
+                    badge.style.display = 'none';
+                    badge.textContent = '0';
+                    link.appendChild(badge);
+                }
+            });
+
+            // Try to load and render pending badge from localStorage or Supabase
+            const cachedPending = localStorage.getItem('plsnhs_pending_enrollments_count');
+            if (cachedPending && parseInt(cachedPending, 10) > 0) {
+                document.querySelectorAll('#pendingEnrollmentsBadge, .nav-badge').forEach(b => {
+                    b.textContent = cachedPending;
+                    b.style.display = 'inline-flex';
+                });
+            }
+
+            if (window.supabase) {
+                window.supabase
+                    .from('enrollments')
+                    .select('*', { count: 'exact', head: true })
+                    .or('status.ilike.pending,status.eq.Pending,status.eq.pending')
+                    .then(({ count }) => {
+                        if (count !== null && count !== undefined) {
+                            try { localStorage.setItem('plsnhs_pending_enrollments_count', String(count)); } catch(e) {}
+                            document.querySelectorAll('#pendingEnrollmentsBadge, .nav-badge').forEach(b => {
+                                if (count > 0) {
+                                    b.textContent = count;
+                                    b.style.display = 'inline-flex';
+                                } else {
+                                    b.style.display = 'none';
+                                }
+                            });
+                        }
+                    })
+                    .catch(() => {});
+            }
+
         } catch(e) {
             console.warn('Registrar avatar sync error:', e);
         }
@@ -49,3 +93,4 @@
 
     window.syncRegistrarAvatarAndName = syncRegistrarAvatarAndName;
 })();
+

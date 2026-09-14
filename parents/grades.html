@@ -33,14 +33,17 @@
 
             <div class="parent-profile">
                 <div class="parent-avatar">
-                    <div class="avatar-initial">P</div>
+                    <div class="avatar-initial" id="parentInitial">P</div>
                     <div class="online-dot"></div>
                 </div>
-                <div class="parent-name">Mr. & Mrs. Dela Cruz</div>
+                <div class="parent-name" id="sidebarParentName">Parent</div>
                 <div class="parent-role"><i class="fas fa-user-friends"></i> Parent</div>
+                <div class="parent-child-badge" id="sidebarChildBadge" title="Linked Child">
+                    <i class="fas fa-child"></i> Student: <span id="sidebarChildName">Student</span>
+                </div>
             </div>
 
-            <div class="nav-menu">
+            <nav class="nav-menu">
                 <div class="nav-section">
                     <div class="nav-section-title">MAIN MENU</div>
                     <ul class="nav-items">
@@ -54,10 +57,10 @@
                     <div class="nav-section-title">ACCOUNT</div>
                     <ul class="nav-items">
                         <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                        <li><a href="../auth/logout.html"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        <li><a href="../auth/logout.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                     </ul>
                 </div>
-            </div>
+            </nav>
         </aside>
 
         <!-- Main Content -->
@@ -65,8 +68,11 @@
             <!-- Header -->
             <div class="page-header">
                 <div>
-                    <h1>Grades</h1>
-                    <p class="subtitle">View your child's academic performance and grades</p>
+                    <h1>Academic Grades & Records</h1>
+                    <p class="subtitle">Monitor quarterly grades, subject averages, and honors standings for <strong id="gradesChildBanner" style="color: #0B4F2E;">Loading student...</strong></p>
+                </div>
+                <div class="date-badge" id="currentDateDisplay">
+                    <i class="fas fa-calendar-alt"></i> Loading date...
                 </div>
             </div>
 
@@ -75,11 +81,9 @@
 
             <!-- Student Selector -->
             <div class="student-selector">
-                <label>Select Student:</label>
+                <label for="studentSelect"><i class="fas fa-user-graduate"></i> Select Student:</label>
                 <select id="studentSelect">
                     <option value="all">All Children</option>
-                    <option value="1">Juan Dela Cruz</option>
-                    <option value="2">Maria Dela Cruz</option>
                 </select>
             </div>
 
@@ -108,7 +112,11 @@
                             </tr>
                         </thead>
                         <tbody id="gradesBody">
-                            <!-- Loaded by JavaScript -->
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 25px; color: #64748b;">
+                                    <i class="fas fa-circle-notch fa-spin"></i> Loading grades records...
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -127,6 +135,6 @@
     </div>
 
     <script src="js/parent_avatar_sync.js"></script>
-    <script src="js/grades.js"></script>
+    <script type="module" src="js/grades.js"></script>
 </body>
 </html>

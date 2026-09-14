@@ -1,30 +1,49 @@
 // ===== PLSNHS ADMIN AVATAR & INITIALS SYNC =====
 (function() {
     function getAdminInitials(name) {
-        if (!name || typeof name !== 'string') return 'J';
+        if (!name || typeof name !== 'string') return 'A';
         const cleanName = name.replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?|prof\.?|engr\.?|atty\.?)\s+/i, '').trim();
         const words = cleanName.split(/[\s,&-]+/).filter(w => w.length > 0 && !['and', 'the', 'of', '&'].includes(w.toLowerCase()));
-        if (words.length === 0) return 'J';
+        if (words.length === 0) return 'A';
         if (words.length === 1) return words[0].substring(0, Math.min(2, words[0].length)).toUpperCase();
         return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
     }
 
     function syncAdminAvatarAndName() {
         try {
-            let savedName = localStorage.getItem('plsnhs_admin_name');
-            const savedAvatar = localStorage.getItem('plsnhs_admin_avatar');
-
-            if (!savedName || savedName.toLowerCase().includes('mylene') || savedName.toLowerCase() === 'student' || savedName.toLowerCase() === 'admin') {
-                savedName = 'Justine';
-                localStorage.setItem('plsnhs_admin_name', 'Justine');
+            let adminDisplayName = '';
+            
+            // 1. Check active user session first
+            const currentUserStr = localStorage.getItem('currentUser');
+            if (currentUserStr) {
+                try {
+                    const user = JSON.parse(currentUserStr);
+                    if (user) {
+                        if (user.firstName || user.lastName) {
+                            adminDisplayName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+                        } else if (user.first_name || user.last_name) {
+                            adminDisplayName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+                        } else if (user.displayName) {
+                            adminDisplayName = user.displayName.trim();
+                        } else if (user.email) {
+                            adminDisplayName = user.email.split('@')[0];
+                        }
+                    }
+                } catch(e) {}
             }
 
+            // 2. Check saved admin name if not set
+            if (!adminDisplayName) {
+                adminDisplayName = localStorage.getItem('plsnhs_admin_name') || 'Admin';
+            }
+
+            const savedAvatar = localStorage.getItem('plsnhs_admin_avatar');
+
             document.querySelectorAll('.admin-name').forEach(el => {
-                el.textContent = savedName;
+                el.textContent = adminDisplayName;
             });
 
-            const name = savedName || 'Justine';
-            const initials = getAdminInitials(name);
+            const initials = getAdminInitials(adminDisplayName);
 
             document.querySelectorAll('.admin-avatar').forEach(avatar => {
                 if (savedAvatar) {
@@ -53,3 +72,4 @@
     // Expose for immediate re-sync
     window.syncAdminAvatarAndName = syncAdminAvatarAndName;
 })();
+

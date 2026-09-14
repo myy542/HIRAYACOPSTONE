@@ -1,8 +1,7 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // ============================================
-// ILISI NI SA IMONG SUPABASE CREDENTIALS
+// SUPABASE CONFIGURATION & CREDENTIALS
 // ============================================
 
 const SUPABASE_URL = 'https://tuujlqrfyuazvbvoribz.supabase.co';
@@ -20,6 +19,10 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         storage: window.localStorage
     }
 });
+
+if (typeof window !== 'undefined') {
+    window.supabase = supabase;
+}
 
 console.log('✅ Supabase client initialized');
 console.log('📍 URL:', SUPABASE_URL);

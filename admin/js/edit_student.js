@@ -1,7 +1,48 @@
-// ===== EDIT STUDENT JAVASCRIPT =====
+/**
+ * PLSNHS Admin - Edit Student (Supabase Dynamic Integration)
+ */
 
-document.addEventListener('DOMContentLoaded', function() {
-    // DOM Elements
+import { supabase } from '../../supabase/config.js';
+
+(function() {
+    'use strict';
+
+    console.log('✏️ Admin Edit Student (Supabase) ready');
+
+    // ============================================
+    // ROLE & SESSION GUARD
+    // ============================================
+
+    const currentUserStr = localStorage.getItem('currentUser');
+    if (!currentUserStr) {
+        window.location.replace('../auth/login.html');
+        return;
+    }
+
+    let currentUser;
+    try {
+        currentUser = JSON.parse(currentUserStr);
+    } catch (e) {
+        localStorage.removeItem('currentUser');
+        window.location.replace('../auth/login.html');
+        return;
+    }
+
+    if (currentUser.role !== 'admin') {
+        const routes = {
+            'teacher': '../teacher/dashboard.html',
+            'student': '../student/dashboard.html',
+            'parent': '../parents/dashboard.html',
+            'registrar': '../registrar/dashboard.html'
+        };
+        window.location.replace(routes[currentUser.role] || '../auth/login.html');
+        return;
+    }
+
+    // ============================================
+    // DOM ELEMENTS
+    // ============================================
+
     const firstnameInput = document.getElementById('firstname');
     const middlenameInput = document.getElementById('middlename');
     const lastnameInput = document.getElementById('lastname');
@@ -25,43 +66,71 @@ document.addEventListener('DOMContentLoaded', function() {
     const passwordMatch = document.getElementById('passwordMatch');
     const passwordFields = document.getElementById('passwordFields');
 
-    // ===== FUNCTIONS =====
+    // Mobile Menu
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
 
-    // Calculate age from birthdate
-    function calculateAge(birthdate) {
-        if (!birthdate) return 'Unknown';
-        const birth = new Date(birthdate);
-        const today = new Date();
-        let age = today.getFullYear() - birth.getFullYear();
-        const m = today.getMonth() - birth.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-            age--;
-        }
-        return age + ' years old';
+    // ============================================
+    // STATE
+    // ============================================
+
+    let currentStudent = null;
+    let currentUserId = null;
+
+    // ============================================
+    // FUNCTIONS
+    // ============================================
+
+    function showAlert(message, type = 'error') {
+        if (!alertContainer) return;
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+        alertContainer.appendChild(alertDiv);
+
+        setTimeout(() => {
+            alertDiv.style.opacity = '0';
+            setTimeout(() => alertDiv.remove(), 300);
+        }, 5000);
     }
 
-    // Update preview
+    function calculateAge(birthdate) {
+        if (!birthdate) return 'Unknown';
+        try {
+            const birth = new Date(birthdate);
+            if (isNaN(birth.getTime())) return 'Unknown';
+            const today = new Date();
+            let age = today.getFullYear() - birth.getFullYear();
+            const m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+                age--;
+            }
+            return (age >= 0 ? age : 0) + ' years old';
+        } catch {
+            return 'Unknown';
+        }
+    }
+
     function updatePreview() {
-        const firstname = firstnameInput.value.trim() || '';
-        const middlename = middlenameInput.value.trim() || '';
-        const lastname = lastnameInput.value.trim() || '';
-        const fullname = firstname + (middlename ? ' ' + middlename + ' ' : ' ') + lastname;
+        const firstname = firstnameInput ? firstnameInput.value.trim() : '';
+        const middlename = middlenameInput ? middlenameInput.value.trim() : '';
+        const lastname = lastnameInput ? lastnameInput.value.trim() : '';
+        const fullname = `${firstname} ${middlename ? middlename + ' ' : ''}${lastname}`.trim();
         
-        previewName.textContent = fullname || 'Student Name';
+        if (previewName) previewName.textContent = fullname || 'Student Name';
         
         const initial = firstname.charAt(0).toUpperCase() || 'S';
-        previewInitial.textContent = initial;
+        if (previewInitial) previewInitial.textContent = initial;
 
-        const email = emailInput.value.trim() || 'student@plshs.edu.ph';
-        previewEmail.innerHTML = `<i class="fas fa-envelope"></i> ${email}`;
+        const email = emailInput ? emailInput.value.trim() : 'student@plshs.edu.ph';
+        if (previewEmail) previewEmail.innerHTML = `<i class="fas fa-envelope"></i> ${email}`;
 
-        // Age
-        const birthdate = birthdateInput.value;
-        previewAge.textContent = birthdate ? calculateAge(birthdate) : 'Unknown age';
+        const birthdate = birthdateInput ? birthdateInput.value : '';
+        if (previewAge) previewAge.textContent = birthdate ? calculateAge(birthdate) : 'Unknown age';
 
-        // Gender
-        const gender = genderSelect.value || 'Not set';
-        previewGender.textContent = gender;
+        const gender = genderSelect ? genderSelect.value : 'Not set';
+        if (previewGender) previewGender.textContent = gender || 'Not set';
     }
 
     // Toggle password visibility
@@ -80,8 +149,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Check password strength
     function checkPasswordStrength() {
+        if (!newPassword) return;
         const password = newPassword.value;
         let strength = 0;
         let strengthLabel = '';
@@ -94,169 +163,218 @@ document.addEventListener('DOMContentLoaded', function() {
         if (password.match(/[!@#$%^&*(),.?":{}|<>]+/)) strength += 1;
 
         if (password.length === 0) {
-            strengthBar.style.width = '0';
-            strengthText.innerHTML = '<i class="fas fa-info-circle"></i> <span>Minimum 6 characters</span>';
+            if (strengthBar) strengthBar.style.width = '0';
+            if (strengthText) strengthText.innerHTML = '<i class="fas fa-info-circle"></i> <span>Minimum 6 characters</span>';
             return;
         }
 
         if (strength <= 2) {
-            strengthBar.style.width = '30%';
-            strengthBar.style.backgroundColor = '#ef4444';
+            if (strengthBar) {
+                strengthBar.style.width = '30%';
+                strengthBar.style.backgroundColor = '#ef4444';
+            }
             strengthLabel = 'Weak';
             strengthColor = '#ef4444';
         } else if (strength <= 4) {
-            strengthBar.style.width = '65%';
-            strengthBar.style.backgroundColor = '#f59e0b';
+            if (strengthBar) {
+                strengthBar.style.width = '65%';
+                strengthBar.style.backgroundColor = '#f59e0b';
+            }
             strengthLabel = 'Medium';
             strengthColor = '#f59e0b';
         } else {
-            strengthBar.style.width = '100%';
-            strengthBar.style.backgroundColor = '#10b981';
+            if (strengthBar) {
+                strengthBar.style.width = '100%';
+                strengthBar.style.backgroundColor = '#10b981';
+            }
             strengthLabel = 'Strong';
             strengthColor = '#10b981';
         }
 
-        strengthText.innerHTML = `<i class="fas fa-shield-alt"></i> <span style="color: ${strengthColor};">Password strength: ${strengthLabel}</span>`;
+        if (strengthText) {
+            strengthText.innerHTML = `<i class="fas fa-shield-alt"></i> <span style="color: ${strengthColor};">Password strength: ${strengthLabel}</span>`;
+        }
     }
 
-    // Check password match
     function checkPasswordMatch() {
+        if (!newPassword || !confirmPassword || !passwordMatch) return;
         const password = newPassword.value;
         const confirm = confirmPassword.value;
 
         if (confirm.length === 0) {
             passwordMatch.innerHTML = '<i class="fas fa-info-circle"></i> <span>Re-enter new password</span>';
-        } else if (password === confirm) {
+            return;
+        }
+
+        if (password === confirm) {
             passwordMatch.innerHTML = '<i class="fas fa-check-circle" style="color: #10b981;"></i> <span style="color: #10b981;">Passwords match</span>';
         } else {
-            passwordMatch.innerHTML = '<i class="fas fa-exclamation-circle" style="color: #ef4444;"></i> <span style="color: #ef4444;">Passwords do not match</span>';
+            passwordMatch.innerHTML = '<i class="fas fa-times-circle" style="color: #ef4444;"></i> <span style="color: #ef4444;">Passwords do not match</span>';
         }
     }
 
-    // Show alert
-    function showAlert(message, type = 'error') {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
-        alertDiv.innerHTML = `<i class="fas ${icon}"></i> ${message}`;
-        alertContainer.appendChild(alertDiv);
+    // ============================================
+    // LOAD STUDENT FROM SUPABASE
+    // ============================================
 
-        setTimeout(() => {
-            alertDiv.style.opacity = '0';
-            setTimeout(() => {
-                alertDiv.remove();
-            }, 300);
-        }, 5000);
-    }
+    async function loadStudent() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetId = urlParams.get('id') || urlParams.get('student_id') || '';
 
-    // ===== EVENT LISTENERS =====
-
-    // Live preview
-    if (firstnameInput) firstnameInput.addEventListener('input', updatePreview);
-    if (middlenameInput) middlenameInput.addEventListener('input', updatePreview);
-    if (lastnameInput) lastnameInput.addEventListener('input', updatePreview);
-    if (birthdateInput) birthdateInput.addEventListener('change', updatePreview);
-    if (genderSelect) genderSelect.addEventListener('change', updatePreview);
-    if (emailInput) emailInput.addEventListener('input', updatePreview);
-
-    // Password reset checkbox
-    if (resetCheckbox) {
-        resetCheckbox.addEventListener('change', function() {
-            const isChecked = this.checked;
-            newPassword.disabled = !isChecked;
-            confirmPassword.disabled = !isChecked;
-            resetBtn.disabled = !isChecked;
-            passwordFields.classList.toggle('active', isChecked);
-            
-            if (!isChecked) {
-                newPassword.value = '';
-                confirmPassword.value = '';
-                strengthBar.style.width = '0';
-                strengthText.innerHTML = '<i class="fas fa-info-circle"></i> <span>Minimum 6 characters</span>';
-                passwordMatch.innerHTML = '<i class="fas fa-info-circle"></i> <span>Re-enter new password</span>';
+            let student = null;
+            if (targetId) {
+                try {
+                    const { data: sData } = await supabase
+                        .from('students')
+                        .select('*')
+                        .or(`id.eq.${targetId},lrn.eq.${targetId}`)
+                        .maybeSingle();
+                    if (sData) student = sData;
+                } catch(e) {}
             }
-        });
-    }
 
-    // Password strength
-    if (newPassword) {
-        newPassword.addEventListener('input', function() {
-            if (resetCheckbox.checked) {
-                checkPasswordStrength();
-                checkPasswordMatch();
+            if (!student) {
+                const { data: sList } = await supabase.from('students').select('*').limit(1);
+                if (sList && sList.length > 0) student = sList[0];
             }
-        });
-    }
 
-    // Confirm password
-    if (confirmPassword) {
-        confirmPassword.addEventListener('input', function() {
-            if (resetCheckbox.checked) {
-                checkPasswordMatch();
+            if (!student) {
+                showAlert('No student profile found.', 'error');
+                return;
             }
-        });
+
+            currentStudent = student;
+
+            // Fetch user record for this student
+            try {
+                const { data: uData } = await supabase
+                    .from('users')
+                    .select('*')
+                    .or(`student_id.eq.${student.id},email.eq.${student.email}`)
+                    .maybeSingle();
+                if (uData) currentUserId = uData.id;
+            } catch(e) {}
+
+            // Populate form
+            if (firstnameInput) firstnameInput.value = student.first_name || '';
+            if (middlenameInput) middlenameInput.value = student.middle_name || '';
+            if (lastnameInput) lastnameInput.value = student.last_name || '';
+            if (birthdateInput) birthdateInput.value = student.date_of_birth || student.birth_date || '';
+            if (genderSelect) genderSelect.value = student.gender || 'Male';
+            if (emailInput) emailInput.value = student.email || '';
+
+            updatePreview();
+
+        } catch (error) {
+            console.error('❌ Error loading student profile:', error);
+            showAlert('Failed to load student: ' + error.message, 'error');
+        }
     }
 
-    // ===== FORM SUBMITS =====
+    // ============================================
+    // SAVE STUDENT FORM
+    // ============================================
 
-    // Edit student form
     if (editForm) {
-        editForm.addEventListener('submit', function(e) {
+        editForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const firstname = firstnameInput.value.trim();
-            const lastname = lastnameInput.value.trim();
-            const email = emailInput.value.trim();
-            const birthdate = birthdateInput.value;
-            const gender = genderSelect.value;
+            if (!currentStudent) return;
 
-            let errors = [];
+            const firstname = firstnameInput ? firstnameInput.value.trim() : '';
+            const middlename = middlenameInput ? middlenameInput.value.trim() : '';
+            const lastname = lastnameInput ? lastnameInput.value.trim() : '';
+            const birthdate = birthdateInput ? birthdateInput.value : '';
+            const gender = genderSelect ? genderSelect.value : 'Male';
+            const email = emailInput ? emailInput.value.trim() : '';
 
-            if (!firstname) errors.push('First name is required');
-            if (!lastname) errors.push('Last name is required');
-            if (!birthdate) errors.push('Birthdate is required');
-            if (!gender) errors.push('Gender is required');
-            if (!email) errors.push('Email address is required');
-            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                errors.push('Invalid email format');
+            if (!firstname || !lastname || !email) {
+                showAlert('Please fill in all required fields (First Name, Last Name, Email).', 'error');
+                return;
             }
 
-            // Age validation
-            if (birthdate) {
-                const birth = new Date(birthdate);
-                const today = new Date();
-                let age = today.getFullYear() - birth.getFullYear();
-                const m = today.getMonth() - birth.getMonth();
-                if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-                    age--;
-                }
-                if (age < 15 || age > 30) {
-                    errors.push('Student must be between 15-30 years old');
-                }
+            const submitBtn = editForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
             }
 
-            if (errors.length > 0) {
-                showAlert(errors.join('<br>'), 'error');
-            } else {
+            try {
+                // 1. Update students table
+                const { error: sErr } = await supabase
+                    .from('students')
+                    .update({
+                        first_name: firstname,
+                        middle_name: middlename,
+                        last_name: lastname,
+                        date_of_birth: birthdate || null,
+                        birth_date: birthdate || null,
+                        gender: gender,
+                        email: email,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', currentStudent.id);
+
+                if (sErr) throw sErr;
+
+                // 2. Update users table if user exists
+                if (currentUserId) {
+                    await supabase
+                        .from('users')
+                        .update({
+                            first_name: firstname,
+                            last_name: lastname,
+                            email: email,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('id', currentUserId);
+                }
+
                 showAlert('✅ Student information updated successfully!', 'success');
                 updatePreview();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            } catch (error) {
+                console.error('❌ Error updating student:', error);
+                showAlert('Failed to save changes: ' + error.message, 'error');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+                }
             }
         });
     }
 
-    // Password reset form
-    const passwordForm = document.getElementById('passwordForm') || document.querySelector('form[action=""]');
-    if (passwordForm) {
-        passwordForm.addEventListener('submit', function(e) {
-            // This is handled by the parent form
-            // The password reset is actually a separate submit in the PHP
+    // ============================================
+    // PASSWORD RESET
+    // ============================================
+
+    if (resetCheckbox) {
+        resetCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            if (newPassword) newPassword.disabled = !isChecked;
+            if (confirmPassword) confirmPassword.disabled = !isChecked;
+            if (resetBtn) resetBtn.disabled = !isChecked;
+            if (passwordFields) passwordFields.classList.toggle('active', isChecked);
+            if (isChecked && newPassword) newPassword.focus();
         });
     }
 
-    // Handle password reset via separate button
+    if (newPassword) {
+        newPassword.addEventListener('input', function() {
+            checkPasswordStrength();
+            checkPasswordMatch();
+        });
+    }
+
+    if (confirmPassword) {
+        confirmPassword.addEventListener('input', checkPasswordMatch);
+    }
+
     if (resetBtn) {
-        resetBtn.addEventListener('click', function(e) {
+        resetBtn.addEventListener('click', async function(e) {
             e.preventDefault();
 
             if (!resetCheckbox.checked) {
@@ -264,55 +382,80 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const password = newPassword.value;
-            const confirm = confirmPassword.value;
-            let errors = [];
+            const password = newPassword ? newPassword.value : '';
+            const confirm = confirmPassword ? confirmPassword.value : '';
 
-            if (!password) errors.push('New password is required');
-            if (password && password.length < 6) errors.push('Password must be at least 6 characters');
-            if (password !== confirm) errors.push('Passwords do not match');
+            if (!password || password.length < 6) {
+                showAlert('New password must be at least 6 characters long.', 'error');
+                return;
+            }
 
-            if (errors.length > 0) {
-                showAlert(errors.join('<br>'), 'error');
-            } else {
-                showAlert('✅ Password reset successfully!', 'success');
-                
-                newPassword.value = '';
-                confirmPassword.value = '';
-                strengthBar.style.width = '0';
-                strengthText.innerHTML = '<i class="fas fa-info-circle"></i> <span>Minimum 6 characters</span>';
-                passwordMatch.innerHTML = '<i class="fas fa-info-circle"></i> <span>Re-enter new password</span>';
-                resetCheckbox.checked = false;
-                newPassword.disabled = true;
-                confirmPassword.disabled = true;
-                resetBtn.disabled = true;
-                passwordFields.classList.remove('active');
-                
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (password !== confirm) {
+                showAlert('Passwords do not match.', 'error');
+                return;
+            }
+
+            resetBtn.disabled = true;
+            resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Resetting...';
+
+            try {
+                const targetEmail = emailInput ? emailInput.value.trim() : (currentStudent?.email || '');
+
+                const { error: pErr } = await supabase
+                    .from('users')
+                    .update({
+                        password: password,
+                        updated_at: new Date().toISOString()
+                    })
+                    .or(`student_id.eq.${currentStudent.id},email.eq.${targetEmail}`);
+
+                if (pErr) throw pErr;
+
+                showAlert('✅ Student password reset successfully!', 'success');
+
+                if (newPassword) newPassword.value = '';
+                if (confirmPassword) confirmPassword.value = '';
+                if (resetCheckbox) resetCheckbox.checked = false;
+                if (newPassword) newPassword.disabled = true;
+                if (confirmPassword) confirmPassword.disabled = true;
+                if (passwordFields) passwordFields.classList.remove('active');
+
+            } catch (error) {
+                console.error('❌ Error resetting password:', error);
+                showAlert('Failed to reset password: ' + error.message, 'error');
+            } finally {
+                resetBtn.disabled = false;
+                resetBtn.innerHTML = '<i class="fas fa-key"></i> Reset Password';
             }
         });
     }
 
-    // ===== INITIAL PREVIEW =====
+    // Input listeners for preview
+    [firstnameInput, middlenameInput, lastnameInput, birthdateInput, genderSelect, emailInput].forEach(el => {
+        if (el) el.addEventListener('input', updatePreview);
+    });
 
-    updatePreview();
+    // ============================================
+    // MOBILE MENU
+    // ============================================
 
-    // ===== MOBILE MENU =====
-
-    const menuToggle = document.getElementById('menuToggle');
-    const sidebar = document.getElementById('sidebar');
-
-    if (menuToggle) {
-        menuToggle.addEventListener('click', function() {
+    if (menuToggle && sidebar) {
+        menuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
             sidebar.classList.toggle('active');
         });
     }
 
     document.addEventListener('click', function(e) {
-        if (window.innerWidth <= 768) {
-            if (!sidebar.contains(e.target) && !menuToggle.contains(e.target)) {
-                sidebar.classList.remove('active');
-            }
+        if (sidebar && sidebar.classList.contains('active') && !sidebar.contains(e.target) && (!menuToggle || !menuToggle.contains(e.target))) {
+            sidebar.classList.remove('active');
         }
     });
-});
+
+    // ============================================
+    // INIT
+    // ============================================
+
+    loadStudent();
+
+})();

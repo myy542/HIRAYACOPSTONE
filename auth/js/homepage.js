@@ -31,7 +31,8 @@
 
     if (enrollBtn) {
         enrollBtn.addEventListener('click', function(e) {
-            window.location.href = 'enrollment.html';
+            e.preventDefault();
+            window.location.href = '../student/enrollment.html';
         });
     }
 

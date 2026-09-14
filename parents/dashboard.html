@@ -32,14 +32,17 @@
 
             <div class="parent-profile">
                 <div class="parent-avatar">
-                    <div class="avatar-initial">P</div>
+                    <div class="avatar-initial" id="parentInitial">P</div>
                     <div class="online-dot"></div>
                 </div>
-                <div class="parent-name">Mr. & Mrs. Dela Cruz</div>
+                <div class="parent-name" id="sidebarParentName">Parent</div>
                 <div class="parent-role"><i class="fas fa-user-friends"></i> Parent</div>
+                <div class="parent-child-badge" id="sidebarChildBadge" title="Linked Child">
+                    <i class="fas fa-child"></i> Student: <span id="sidebarChildName">Student</span>
+                </div>
             </div>
 
-            <div class="nav-menu">
+            <nav class="nav-menu">
                 <div class="nav-section">
                     <div class="nav-section-title">MAIN MENU</div>
                     <ul class="nav-items">
@@ -53,10 +56,10 @@
                     <div class="nav-section-title">ACCOUNT</div>
                     <ul class="nav-items">
                         <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                        <li><a href="../auth/logout.html"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        <li><a href="../auth/logout.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                     </ul>
                 </div>
-            </div>
+            </nav>
         </aside>
 
         <!-- Main Content -->
@@ -65,7 +68,10 @@
             <div class="page-header">
                 <div>
                     <h1>Parents Dashboard</h1>
-                    <p class="subtitle">Welcome back, <span id="parentName">Mr. & Mrs. Dela Cruz</span>! Here's your child's academic overview.</p>
+                    <p class="subtitle">Welcome back, <span id="parentName">Parent</span>! Monitoring: <strong id="dashboardChildName" style="color: #0B4F2E;">Loading student...</strong></p>
+                </div>
+                <div class="date-badge" id="currentDateDisplay">
+                    <i class="fas fa-calendar-alt"></i> Loading date...
                 </div>
             </div>
 
@@ -80,7 +86,7 @@
                         <div class="stat-icon"><i class="fas fa-child"></i></div>
                     </div>
                     <div class="stat-number" id="childrenCount">0</div>
-                    <div class="stat-label">Total children</div>
+                    <div class="stat-label">Total registered children</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
@@ -95,8 +101,8 @@
                         <h3>Average Grade</h3>
                         <div class="stat-icon"><i class="fas fa-star"></i></div>
                     </div>
-                    <div class="stat-number" id="avgGrade">0.00</div>
-                    <div class="stat-label">Overall average</div>
+                    <div class="stat-number" id="avgGrade">0.00%</div>
+                    <div class="stat-label">Overall academic standing</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-header">
@@ -104,7 +110,7 @@
                         <div class="stat-icon"><i class="fas fa-user-check"></i></div>
                     </div>
                     <div class="stat-number" id="attendanceRate">0%</div>
-                    <div class="stat-label">Overall attendance</div>
+                    <div class="stat-label">Overall attendance standing</div>
                 </div>
             </div>
 
@@ -114,12 +120,15 @@
             </div>
 
             <div class="children-grid" id="childrenGrid">
-                <!-- Loaded by JavaScript -->
+                <div class="no-data">
+                    <i class="fas fa-circle-notch fa-spin"></i>
+                    <p>Loading children records from database...</p>
+                </div>
             </div>
 
             <!-- Recent Grades -->
             <div class="section-title">
-                <h2><i class="fas fa-star"></i> Recent Grades</h2>
+                <h2><i class="fas fa-star"></i> Academic Performance</h2>
             </div>
 
             <div class="grades-table-container">
@@ -131,29 +140,36 @@
                             <th>Quarter</th>
                             <th>Grade</th>
                             <th>Remarks</th>
-                            <th>Date</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="gradesBody">
-                        <!-- Loaded by JavaScript -->
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 25px; color: #64748b;">
+                                <i class="fas fa-circle-notch fa-spin"></i> Loading academic records...
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
 
             <!-- Enrollment Status -->
             <div class="section-title">
-                <h2><i class="fas fa-file-signature"></i> Enrollment Status</h2>
+                <h2><i class="fas fa-file-signature"></i> Official Enrollment Status</h2>
             </div>
 
             <div class="enrollment-card">
                 <div class="enrollment-list" id="enrollmentList">
-                    <!-- Loaded by JavaScript -->
+                    <div class="no-data">
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                        <p>Loading enrollment status...</p>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
 
     <script src="js/parent_avatar_sync.js"></script>
-    <script src="js/dashboard.js"></script>
+    <script type="module" src="js/dashboard.js"></script>
 </body>
 </html>

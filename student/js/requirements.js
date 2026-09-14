@@ -110,8 +110,7 @@ import { supabase } from '../../supabase/config.js';
     function getStudentInitials(name) {
         if (!name || typeof name !== 'string') return 'S';
         const cleanName = name.replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?)\s+/i, '').trim();
-        if (!cleanName || cleanName.toLowerCase() === 'student' || cleanName.toLowerCase().includes('mylene') || cleanName.toLowerCase().includes('raganas')) return 'S';
-        const words = cleanName.split(/[\s,&-]+/).filter(w => w.length > 0 && !['and', 'the', 'of', '&'].includes(w.toLowerCase()));
+        const words = cleanName.split(/[\s,&-]+/).filter(w => w.length > 0);
         if (words.length === 0) return 'S';
         if (words.length === 1) return words[0].charAt(0).toUpperCase();
         return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
@@ -119,18 +118,14 @@ import { supabase } from '../../supabase/config.js';
 
     function sanitizeStudentName(name, email) {
         if (!name && email) {
-            if (email.toLowerCase().includes('mylene') || email.toLowerCase().includes('student')) return 'Student';
-            name = email.split('@')[0];
+            return email.split('@')[0];
         }
-        if (!name || name.toLowerCase().includes('mylene') || name.toLowerCase().includes('raganas') || name.toLowerCase() === 'admin') {
-            return 'Student';
-        }
-        return name;
+        return (name || '').trim();
     }
 
-    let displayName = sessionUser.firstName ? 
-        `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim() : 
-        (sessionUser.email ? sessionUser.email.split('@')[0] : 'Student');
+    let displayName = sessionUser.displayName || 
+        (sessionUser.firstName ? `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim() : 
+        (sessionUser.email ? sessionUser.email.split('@')[0] : 'Student'));
     displayName = sanitizeStudentName(displayName, sessionUser.email);
 
     if (studentName) studentName.textContent = displayName;
@@ -192,7 +187,52 @@ import { supabase } from '../../supabase/config.js';
                 } catch(e) {}
             }
 
-            // Assemble requirements status
+            // 3. Fetch enrollment to show status and grade
+            let enrollment = null;
+            try {
+                let eq = supabase.from('enrollments').select('*');
+                if (userEmail && studentRow?.id) {
+                    eq = eq.or(`email.eq.${userEmail},student_id.eq.${studentRow.id}`);
+                } else if (userEmail) {
+                    eq = eq.eq('email', userEmail);
+                } else if (studentRow?.id) {
+                    eq = eq.eq('student_id', studentRow.id);
+                }
+                const { data: eRows } = await eq.order('created_at', { ascending: false }).limit(1);
+                if (eRows && eRows.length > 0) enrollment = eRows[0];
+            } catch(e) {}
+
+            const reqContent = document.getElementById('requirementsContent');
+            const noEnrollCard = document.getElementById('noEnrollmentCard');
+            const enrollStatusBadge = document.getElementById('enrollmentStatusBadge');
+            const enrollGrade = document.getElementById('enrollmentGrade');
+            const studentTypeBadge = document.getElementById('studentTypeBadge');
+            const approvedBadge = document.getElementById('approvedBadge');
+
+            if (reqContent) reqContent.style.display = 'block';
+            if (noEnrollCard) noEnrollCard.style.display = 'none';
+
+            if (enrollGrade) {
+                enrollGrade.textContent = enrollment?.grade_level || studentRow?.grade_level || 'Grade 11';
+            }
+
+            const rawSt = (enrollment?.status || studentRow?.status || 'pending').toLowerCase();
+            const isEnrolled = rawSt === 'enrolled' || rawSt === 'approved';
+
+            if (enrollStatusBadge) {
+                enrollStatusBadge.textContent = isEnrolled ? 'Enrolled' : (rawSt === 'rejected' ? 'Rejected' : 'Pending');
+                enrollStatusBadge.className = `status-badge ${isEnrolled ? 'status-approved' : (rawSt === 'rejected' ? 'status-rejected' : 'status-pending')}`;
+                if (isEnrolled) {
+                    enrollStatusBadge.style.background = '#dcfce7';
+                    enrollStatusBadge.style.color = '#15803d';
+                }
+            }
+
+            if (approvedBadge) {
+                approvedBadge.style.display = isEnrolled ? 'inline-flex' : 'none';
+            }
+
+            // 4. Assemble requirements status
             requirementsData = requirementDefs.map(def => {
                 let fileUrl = studentRow ? studentRow[def.dbField] : null;
                 let isSubmitted = !!fileUrl;

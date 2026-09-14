@@ -181,6 +181,23 @@ body {
     width: 20px;
     text-align: center;
     font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.nav-items a .nav-badge,
+.nav-badge {
+    margin-left: auto;
+    background: #ef4444;
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 700;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .nav-items a:hover {

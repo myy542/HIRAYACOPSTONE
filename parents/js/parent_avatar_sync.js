@@ -1,5 +1,7 @@
 // ===== PLSNHS PARENT AVATAR & INITIALS SYNC =====
 (function() {
+    'use strict';
+
     function getParentInitials(name) {
         if (!name || typeof name !== 'string') return 'P';
         const cleanName = name.replace(/^(mr\.?|mrs\.?|ms\.?|dr\.?)\s+/i, '').trim();
@@ -11,17 +13,32 @@
 
     function syncParentAvatarAndName() {
         try {
-            const savedName = localStorage.getItem('plsnhs_parent_name');
-            const savedAvatar = localStorage.getItem('plsnhs_parent_avatar');
+            let parentNameStr = localStorage.getItem('plsnhs_parent_name');
+            const currentUserStr = localStorage.getItem('currentUser');
 
-            if (savedName) {
-                document.querySelectorAll('.parent-name, #profileName').forEach(el => {
-                    el.textContent = savedName;
-                });
+            if (currentUserStr) {
+                try {
+                    const u = JSON.parse(currentUserStr);
+                    if (u.role === 'parent') {
+                        let nameFromSession = (u.firstName ? `${u.firstName} ${u.lastName || ''}`.trim() : (u.email ? u.email.split('@')[0] : ''));
+                        if (nameFromSession && nameFromSession.toLowerCase() !== 'parent') {
+                            parentNameStr = nameFromSession;
+                        } else if (!parentNameStr) {
+                            parentNameStr = 'Parent';
+                        }
+                    }
+                } catch(e) {}
             }
 
-            const name = savedName || 'Mr. & Mrs. Dela Cruz';
+            const name = parentNameStr || 'Parent';
+
+            // Apply name to all parent name elements in dashboard and pages
+            document.querySelectorAll('.parent-name, #parentName, #profileName').forEach(el => {
+                el.textContent = name;
+            });
+
             const initials = getParentInitials(name);
+            const savedAvatar = localStorage.getItem('plsnhs_parent_avatar');
 
             document.querySelectorAll('.parent-avatar').forEach(avatar => {
                 if (savedAvatar) {
@@ -36,6 +53,19 @@
                     `;
                 }
             });
+
+            // Large avatar on profile page
+            document.querySelectorAll('.profile-avatar-large .avatar-initial').forEach(el => {
+                el.textContent = initials;
+            });
+
+            // Child Name Sync in Sidebar
+            let childNameStr = localStorage.getItem('plsnhs_parent_child_name');
+            if (childNameStr) {
+                document.querySelectorAll('#sidebarChildName, .sidebar-child-name, #sidebarChildBadge span').forEach(el => {
+                    el.textContent = childNameStr;
+                });
+            }
         } catch(e) {
             console.warn('Parent avatar sync error:', e);
         }
