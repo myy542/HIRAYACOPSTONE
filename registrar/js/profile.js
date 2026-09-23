@@ -1,6 +1,6 @@
 /**
  * Registrar Profile - Interactive JavaScript
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -86,7 +86,7 @@ import { supabase } from '../../supabase/config.js';
 
     if (!sessionUser) {
         sessionUser = {
-            email: 'registrar@plsnhs.edu.ph',
+            email: 'registrar@hes.edu.ph',
             firstName: 'Registrar',
             lastName: 'Office',
             role: 'registrar',
@@ -120,8 +120,8 @@ import { supabase } from '../../supabase/config.js';
             console.log('🚪 Registrar logging out...');
             localStorage.removeItem('currentUser');
             localStorage.removeItem('registrarName');
-            localStorage.removeItem('plsnhs_registrar_avatar');
-            localStorage.removeItem('plsnhs_registrar_name');
+            localStorage.removeItem('hes_registrar_avatar');
+            localStorage.removeItem('hes_registrar_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}
@@ -232,8 +232,8 @@ import { supabase } from '../../supabase/config.js';
         const lastName = data.last_name || data.lastName || '';
         const fullName = `${firstName} ${lastName}`.trim() || data.displayName || (data.email ? data.email.split('@')[0] : 'Registrar');
         const initial = fullName.charAt(0).toUpperCase() || 'R';
-        const email = data.email || sessionUser.email || 'registrar@plsnhs.edu.ph';
-        const empId = data.id_number || data.idNumber || `PLSNHS-REG-${String(data.id || '00001').substring(0, 5).toUpperCase()}`;
+        const email = data.email || sessionUser.email || 'registrar@hes.edu.ph';
+        const empId = data.id_number || data.idNumber || `HES-REG-${String(data.id || '00001').substring(0, 5).toUpperCase()}`;
         const createdAt = data.created_at || data.createdAt || '2026-01-15';
         const days = calculateDaysActive(createdAt);
 
@@ -253,12 +253,14 @@ import { supabase } from '../../supabase/config.js';
             profileEmail.innerHTML = `${email} <span class="verified-badge"><i class="fas fa-check-circle"></i> Verified</span>`;
         }
 
-        // Edit form
-        if (editFullname && !editFullname.value) editFullname.value = fullName;
-        if (editPhone && !editPhone.value) editPhone.value = data.phone || data.contact_number || '';
+        // Render Account Information View Mode Fields
+        renderRegistrarAccountInfoView(data, fullName, email, empId);
+
+        // Populate edit form fields
+        populateRegistrarEditForm(data, firstName, lastName);
 
         // Avatar check
-        const effectiveAvatar = localStorage.getItem('plsnhs_registrar_avatar') || data.profile_picture;
+        const effectiveAvatar = localStorage.getItem('hes_registrar_avatar') || data.profile_picture;
         if (effectiveAvatar) {
             applyRegistrarAvatarToDOM(effectiveAvatar);
         }
@@ -268,6 +270,73 @@ import { supabase } from '../../supabase/config.js';
         renderEmailChange();
     }
 
+    function renderRegistrarAccountInfoView(data, fullName, email, empId) {
+        const viewRegistrarFullName = document.getElementById('viewRegistrarFullName');
+        const viewRegistrarEmail = document.getElementById('viewRegistrarEmail');
+        const viewRegistrarEmployeeId = document.getElementById('viewRegistrarEmployeeId');
+        const viewRegistrarGender = document.getElementById('viewRegistrarGender');
+        const viewRegistrarPhone = document.getElementById('viewRegistrarPhone');
+        const viewRegistrarDesignation = document.getElementById('viewRegistrarDesignation');
+        const viewRegistrarAddress = document.getElementById('viewRegistrarAddress');
+
+        if (viewRegistrarFullName) viewRegistrarFullName.textContent = fullName || '-';
+        if (viewRegistrarEmail) viewRegistrarEmail.textContent = email || '-';
+        if (viewRegistrarEmployeeId) viewRegistrarEmployeeId.textContent = empId || 'HES-REG-2026';
+        if (viewRegistrarGender) viewRegistrarGender.textContent = data?.gender || sessionUser?.gender || 'Not specified';
+        if (viewRegistrarPhone) viewRegistrarPhone.textContent = data?.phone || data?.contact_number || sessionUser?.phone || 'Not provided';
+        if (viewRegistrarDesignation) viewRegistrarDesignation.textContent = 'Office of the Registrar';
+        if (viewRegistrarAddress) viewRegistrarAddress.textContent = data?.address || sessionUser?.address || 'Not provided';
+    }
+
+    function populateRegistrarEditForm(data, firstName, lastName) {
+        const editFirstName = document.getElementById('editFirstName');
+        const editLastName = document.getElementById('editLastName');
+        const editRegistrarGender = document.getElementById('editRegistrarGender');
+        const editRegistrarAddress = document.getElementById('editRegistrarAddress');
+
+        if (editFirstName) editFirstName.value = firstName || sessionUser.firstName || '';
+        if (editLastName) editLastName.value = lastName || sessionUser.lastName || '';
+        if (editRegistrarGender) editRegistrarGender.value = data?.gender || sessionUser.gender || '';
+        if (editPhone) editPhone.value = data?.phone || data?.contact_number || sessionUser.phone || '';
+        if (editRegistrarAddress) editRegistrarAddress.value = data?.address || sessionUser.address || '';
+    }
+
+    // ============================================
+    // EDIT TOGGLE HANDLER (View Mode vs Edit Mode)
+    // ============================================
+    const editRegistrarInfoToggleBtn = document.getElementById('editRegistrarInfoToggleBtn');
+    const registrarInfoViewContainer = document.getElementById('registrarInfoViewContainer');
+    const registrarInfoEditContainer = document.getElementById('registrarInfoEditContainer');
+    const cancelRegistrarEditBtn = document.getElementById('cancelRegistrarEditBtn');
+
+    function setRegistrarEditMode(isEditing) {
+        if (!registrarInfoViewContainer || !registrarInfoEditContainer || !editRegistrarInfoToggleBtn) return;
+        if (isEditing) {
+            registrarInfoViewContainer.style.display = 'none';
+            registrarInfoEditContainer.style.display = 'block';
+            editRegistrarInfoToggleBtn.innerHTML = '<i class="fas fa-times"></i> Cancel';
+            editRegistrarInfoToggleBtn.classList.add('is-editing');
+        } else {
+            registrarInfoViewContainer.style.display = 'block';
+            registrarInfoEditContainer.style.display = 'none';
+            editRegistrarInfoToggleBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+            editRegistrarInfoToggleBtn.classList.remove('is-editing');
+        }
+    }
+
+    if (editRegistrarInfoToggleBtn) {
+        editRegistrarInfoToggleBtn.addEventListener('click', function() {
+            const isCurrentlyEditing = registrarInfoEditContainer && registrarInfoEditContainer.style.display !== 'none';
+            setRegistrarEditMode(!isCurrentlyEditing);
+        });
+    }
+
+    if (cancelRegistrarEditBtn) {
+        cancelRegistrarEditBtn.addEventListener('click', function() {
+            setRegistrarEditMode(false);
+        });
+    }
+
     function renderEmailVerification() {
         if (!emailVerificationStatus) return;
         emailVerificationStatus.innerHTML = `
@@ -275,7 +344,7 @@ import { supabase } from '../../supabase/config.js';
                 <i class="fas fa-check-circle"></i> Verified Official Email
             </div>
             <div class="verification-info">
-                <p><i class="fas fa-check-circle" style="color: #28a745;"></i> Your email address has been verified for DepEd PLSNHS registrar operations.</p>
+                <p><i class="fas fa-check-circle" style="color: #28a745;"></i> Your email address has been verified for DepEd HES registrar operations.</p>
                 <p style="margin-top: 10px;">Authorized for student records processing, enrollment validation, and official grading endorsements.</p>
             </div>
         `;
@@ -328,11 +397,14 @@ import { supabase } from '../../supabase/config.js';
     if (editProfileForm) {
         editProfileForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            const fullname = editFullname ? editFullname.value.trim() : '';
+            const firstName = document.getElementById('editFirstName')?.value.trim() || '';
+            const lastName = document.getElementById('editLastName')?.value.trim() || '';
+            const gender = document.getElementById('editRegistrarGender')?.value || '';
             const phone = editPhone ? editPhone.value.trim() : '';
+            const address = document.getElementById('editRegistrarAddress')?.value.trim() || '';
 
-            if (!fullname) {
-                showAlert('Full name is required.', 'error');
+            if (!firstName || !lastName) {
+                showAlert('First name and last name are required.', 'error');
                 return;
             }
 
@@ -342,9 +414,7 @@ import { supabase } from '../../supabase/config.js';
             }
 
             try {
-                const nameParts = fullname.split(/\s+/);
-                const firstName = nameParts[0] || fullname;
-                const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+                const fullname = `${firstName} ${lastName}`.trim();
                 const userUid = sessionUser?.uid || sessionUser?.id || userData?.id;
 
                 if (userUid) {
@@ -354,7 +424,9 @@ import { supabase } from '../../supabase/config.js';
                             .update({
                                 first_name: firstName,
                                 last_name: lastName,
+                                gender: gender,
                                 phone: phone,
+                                address: address,
                                 updated_at: new Date().toISOString()
                             })
                             .eq('id', userUid);
@@ -369,29 +441,46 @@ import { supabase } from '../../supabase/config.js';
                 if (sessionUser) {
                     sessionUser.firstName = firstName;
                     sessionUser.lastName = lastName;
+                    sessionUser.displayName = fullname;
+                    sessionUser.gender = gender;
                     sessionUser.phone = phone;
+                    sessionUser.address = address;
                     localStorage.setItem('currentUser', JSON.stringify(sessionUser));
                 }
-                localStorage.setItem('plsnhs_registrar_name', fullname);
+                localStorage.setItem('hes_registrar_name', fullname);
 
+                if (userData) {
+                    userData.first_name = firstName;
+                    userData.last_name = lastName;
+                    userData.gender = gender;
+                    userData.phone = phone;
+                    userData.address = address;
+                }
+
+                // Update UI and View Mode
                 if (profileName) profileName.textContent = fullname;
                 if (adminName) adminName.textContent = fullname;
                 const init = fullname.charAt(0).toUpperCase();
                 if (adminInitial) adminInitial.textContent = init;
                 if (avatarInitial) avatarInitial.textContent = init;
 
+                const empId = userData?.employee_id || 'HES-REG-2026';
+                const userEmail = sessionUser?.email || '';
+                renderRegistrarAccountInfoView(userData, fullname, userEmail, empId);
+                setRegistrarEditMode(false);
+
                 if (window.syncRegistrarAvatarAndName) {
                     window.syncRegistrarAvatarAndName();
                 }
 
-                showAlert('✅ Profile information updated successfully!', 'success');
+                showAlert('✅ Account information updated successfully!', 'success');
             } catch (err) {
                 console.error('Error saving registrar profile:', err);
                 showAlert('❌ Failed to update profile: ' + err.message, 'error');
             } finally {
                 if (saveProfileBtn) {
                     saveProfileBtn.disabled = false;
-                    saveProfileBtn.innerHTML = '<i class="fas fa-save"></i> Save Profile Changes';
+                    saveProfileBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
                 }
             }
         });
@@ -660,7 +749,7 @@ import { supabase } from '../../supabase/config.js';
                 reader.onload = function(evt) {
                     const base64 = evt.target.result;
                     try {
-                        localStorage.setItem('plsnhs_registrar_avatar', base64);
+                        localStorage.setItem('hes_registrar_avatar', base64);
                     } catch(e) {}
                     applyRegistrarAvatarToDOM(base64);
                     showAlert('Profile photo updated!', 'success');
@@ -675,7 +764,7 @@ import { supabase } from '../../supabase/config.js';
         removePicBtn.addEventListener('click', function() {
             if (confirm('Remove profile photo?')) {
                 try {
-                    localStorage.removeItem('plsnhs_registrar_avatar');
+                    localStorage.removeItem('hes_registrar_avatar');
                 } catch(e) {}
                 const avatarEl = document.querySelector('.profile-avatar-large');
                 if (avatarEl) {
@@ -721,12 +810,12 @@ import { supabase } from '../../supabase/config.js';
 
     let registrarDocs = [];
     try {
-        const savedRDocs = localStorage.getItem('plsnhs_registrar_documents');
+        const savedRDocs = localStorage.getItem('hes_registrar_documents');
         if (savedRDocs) {
             registrarDocs = JSON.parse(savedRDocs);
         } else {
             registrarDocs = [...defaultRegistrarDocs];
-            localStorage.setItem('plsnhs_registrar_documents', JSON.stringify(registrarDocs));
+            localStorage.setItem('hes_registrar_documents', JSON.stringify(registrarDocs));
         }
     } catch(e) {
         registrarDocs = [...defaultRegistrarDocs];
@@ -734,7 +823,7 @@ import { supabase } from '../../supabase/config.js';
 
     function persistRegistrarDocs() {
         try {
-            localStorage.setItem('plsnhs_registrar_documents', JSON.stringify(registrarDocs));
+            localStorage.setItem('hes_registrar_documents', JSON.stringify(registrarDocs));
         } catch(e) {}
     }
 

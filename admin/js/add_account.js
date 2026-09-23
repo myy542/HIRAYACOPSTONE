@@ -33,11 +33,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function getPreviewIDNumber(role) {
         if (role === 'Teacher') {
-            return 'PLSNHS-TCH-XXXXX';
+            return 'HES-TCH-XXXXX';
         } else if (role === 'Registrar') {
-            return 'PLSNHS-RGR-XXXXX';
+            return 'HES-RGR-XXXXX';
         } else if (role === 'Admin') {
-            return 'PLSNHS-ADM-XXXXX';
+            return 'HES-ADM-XXXXX';
         }
         return 'Will be auto-generated';
     }
@@ -45,13 +45,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function generateActualIDNumber(role) {
         const rand = Math.floor(10000 + Math.random() * 90000);
         if (role === 'Teacher') {
-            return `PLSNHS-TCH-${rand}`;
+            return `HES-TCH-${rand}`;
         } else if (role === 'Registrar') {
-            return `PLSNHS-RGR-${rand}`;
+            return `HES-RGR-${rand}`;
         } else if (role === 'Admin') {
-            return `PLSNHS-ADM-${rand}`;
+            return `HES-ADM-${rand}`;
         }
-        return `PLSNHS-ACC-${rand}`;
+        return `HES-ACC-${rand}`;
     }
 
     function updateIDPreview() {

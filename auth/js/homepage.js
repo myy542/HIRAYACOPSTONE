@@ -1,11 +1,11 @@
 /**
- * PLSNHS Homepage - Interactive JavaScript
+ * HES Homepage - Interactive JavaScript
  */
 
 (function() {
     'use strict';
 
-    console.log('🏫 PLSNHS Homepage ready');
+    console.log('🏫 HES Homepage ready');
 
     // ============================================
     // DOM ELEMENTS
@@ -21,7 +21,7 @@
     if (loginNavBtn) {
         loginNavBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            window.location.href = '../auth/login.html';
+            window.location.href = 'login.html';
         });
     }
 
@@ -200,7 +200,7 @@
     // CONSOLE WELCOME
     // ============================================
     
-    console.log('🎯 PLSNHS Features:');
+    console.log('🎯 HES Features:');
     console.log('  📌 Click "Home", "Features", "About", "Contact" to navigate');
     console.log('  🔐 Login button redirects to login page');
     console.log('  📊 Stats animate when scrolled into view');

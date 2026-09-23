@@ -276,7 +276,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         if (modalNotifMessage) modalNotifMessage.textContent = notif.message || 'No description provided.';
-        if (modalNotifSender) modalNotifSender.textContent = notif.sender || 'Placido L. Señor NHS System';
+        if (modalNotifSender) modalNotifSender.textContent = notif.sender || 'Hiraya Enrollment System';
         if (modalNotifActionType) modalNotifActionType.textContent = notif.actionType || notif.type || 'System Notification';
         if (modalNotifPriority) modalNotifPriority.textContent = notif.priority || 'Normal';
         if (modalNotifSystemId) modalNotifSystemId.textContent = `NOTIF-${String(notif.id).substring(0, 8)}`;
@@ -971,7 +971,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     message: n.message || '',
                     created_at: n.created_at || new Date().toISOString(),
                     is_read: n.read === true || n.is_read === true,
-                    sender: n.sender || 'Placido L. Señor NHS',
+                    sender: n.sender || 'Hiraya Enrollment System',
                     actionType: n.action_type || n.type || 'System Advisory',
                     priority: n.priority || 'Normal'
                 }));

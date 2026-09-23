@@ -23,7 +23,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     const adminName = document.getElementById('adminName');
 
     // Input fields
-    const fullnameInput = document.getElementById('fullname');
+    const editAdminFirstName = document.getElementById('editAdminFirstName');
+    const editAdminLastName = document.getElementById('editAdminLastName');
+    const editAdminGender = document.getElementById('editAdminGender');
+    const editAdminAddress = document.getElementById('editAdminAddress');
     const idNumberInput = document.getElementById('idNumber');
     const phoneInput = document.getElementById('phone');
 
@@ -92,22 +95,33 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // Immediate population from session
-            const initFullName = `${currentUser.firstName || currentUser.first_name || ''} ${currentUser.lastName || currentUser.last_name || ''}`.trim() || (currentUser.email ? currentUser.email.split('@')[0] : 'Admin');
+            const fName = currentUser.firstName || currentUser.first_name || 'System';
+            const lName = currentUser.lastName || currentUser.last_name || 'Admin';
+            const initFullName = `${fName} ${lName}`.trim() || (currentUser.email ? currentUser.email.split('@')[0] : 'Admin');
             const initInitial = initFullName.charAt(0).toUpperCase() || 'A';
             const initDays = calculateDaysActive(currentUser.created_at || '2026-09-01');
-            const initIdNum = `PLSNHS-ADM-${String(currentUser.id || '00001').substring(0, 5).toUpperCase()}`;
+            const initIdNum = currentUser.id_number || `HES-ADM-${String(currentUser.id || '00001').substring(0, 5).toUpperCase()}`;
             const initMemberSince = formatDate(currentUser.created_at || '2026-09-01');
+            const initPhone = currentUser.phone || currentUser.contact_number || '09123456789';
+            const initAddress = currentUser.address || '';
+            const initGender = currentUser.gender || '';
 
             if (profileInitial) profileInitial.textContent = initInitial;
             if (profileName) profileName.textContent = initFullName;
             if (daysActiveEl) daysActiveEl.textContent = initDays;
             if (emailValueText) emailValueText.textContent = currentUser.email || 'admin@hiraya.edu.ph';
             if (profileIdNumber) profileIdNumber.textContent = initIdNum;
+            if (profilePhone) profilePhone.textContent = initPhone;
             if (profileMemberSince) profileMemberSince.textContent = initMemberSince;
-            if (fullnameInput && !fullnameInput.value) fullnameInput.value = initFullName;
-            if (idNumberInput && !idNumberInput.value) idNumberInput.value = initIdNum;
             if (adminAvatar) adminAvatar.textContent = initInitial;
             if (adminName) adminName.textContent = initFullName;
+
+            if (editAdminFirstName && !editAdminFirstName.value) editAdminFirstName.value = fName;
+            if (editAdminLastName && !editAdminLastName.value) editAdminLastName.value = lName;
+            if (editAdminGender && !editAdminGender.value) editAdminGender.value = initGender;
+            if (editAdminAddress && !editAdminAddress.value) editAdminAddress.value = initAddress;
+            if (idNumberInput && !idNumberInput.value) idNumberInput.value = initIdNum;
+            if (phoneInput && !phoneInput.value) phoneInput.value = initPhone !== 'Not set' ? initPhone : '';
 
             // Fetch latest record from Supabase
             const { data, error } = await supabase
@@ -118,26 +132,93 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (data) {
                 userData = data;
-                const freshFullName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || initFullName;
+                const dbFirst = userData.first_name || fName;
+                const dbLast = userData.last_name || lName;
+                const freshFullName = `${dbFirst} ${dbLast}`.trim() || initFullName;
                 const freshInitial = freshFullName.charAt(0).toUpperCase() || 'A';
                 const freshDays = calculateDaysActive(userData.created_at);
-                const freshIdNum = `PLSNHS-ADM-${String(userData.id || '00001').substring(0, 5).toUpperCase()}`;
+                const freshIdNum = userData.id_number || `HES-ADM-${String(userData.id || '00001').substring(0, 5).toUpperCase()}`;
                 const freshMemberSince = formatDate(userData.created_at || '2026-09-01');
+                const freshPhone = userData.phone || userData.contact_number || initPhone;
+                const freshAddr = userData.address || initAddress;
+                const freshGender = userData.gender || initGender;
 
                 if (profileInitial) profileInitial.textContent = freshInitial;
                 if (profileName) profileName.textContent = freshFullName;
                 if (daysActiveEl) daysActiveEl.textContent = freshDays;
                 if (emailValueText) emailValueText.textContent = userData.email;
                 if (profileIdNumber) profileIdNumber.textContent = freshIdNum;
+                if (profilePhone) profilePhone.textContent = freshPhone;
                 if (profileMemberSince) profileMemberSince.textContent = freshMemberSince;
-                if (fullnameInput) fullnameInput.value = freshFullName;
-                if (idNumberInput) idNumberInput.value = freshIdNum;
                 if (adminAvatar) adminAvatar.textContent = freshInitial;
                 if (adminName) adminName.textContent = freshFullName;
+
+                if (editAdminFirstName) editAdminFirstName.value = dbFirst;
+                if (editAdminLastName) editAdminLastName.value = dbLast;
+                if (editAdminGender) editAdminGender.value = freshGender;
+                if (editAdminAddress) editAdminAddress.value = freshAddr;
+                if (idNumberInput) idNumberInput.value = freshIdNum;
+                if (phoneInput) phoneInput.value = freshPhone;
+
+                renderAdminAccountInfoView(freshFullName, userData.email, freshIdNum, freshGender, freshPhone, freshAddr);
+            } else {
+                renderAdminAccountInfoView(initFullName, currentUser.email, initIdNum, initGender, initPhone, initAddress);
             }
         } catch (err) {
             console.error('Error loading profile:', err);
         }
+    }
+
+    function renderAdminAccountInfoView(fullName, email, idNum, gender, phone, address) {
+        const viewAdminFullName = document.getElementById('viewAdminFullName');
+        const viewAdminEmail = document.getElementById('viewAdminEmail');
+        const viewAdminEmployeeId = document.getElementById('viewAdminEmployeeId');
+        const viewAdminGender = document.getElementById('viewAdminGender');
+        const viewAdminPhone = document.getElementById('viewAdminPhone');
+        const viewAdminRole = document.getElementById('viewAdminRole');
+        const viewAdminAddress = document.getElementById('viewAdminAddress');
+
+        if (viewAdminFullName) viewAdminFullName.textContent = fullName || '-';
+        if (viewAdminEmail) viewAdminEmail.textContent = email || '-';
+        if (viewAdminEmployeeId) viewAdminEmployeeId.textContent = idNum || 'HES-ADM-00001';
+        if (viewAdminGender) viewAdminGender.textContent = gender || 'Not specified';
+        if (viewAdminPhone) viewAdminPhone.textContent = phone && phone !== 'Not set' ? phone : 'Not provided';
+        if (viewAdminRole) viewAdminRole.textContent = 'System Administrator';
+        if (viewAdminAddress) viewAdminAddress.textContent = address && address !== 'Not set' ? address : 'Not provided';
+    }
+
+    // ===== EDIT TOGGLE HANDLER (View Mode vs Edit Mode) =====
+    const editAdminInfoToggleBtn = document.getElementById('editAdminInfoToggleBtn');
+    const adminInfoViewContainer = document.getElementById('adminInfoViewContainer');
+    const adminInfoEditContainer = document.getElementById('adminInfoEditContainer');
+    const cancelAdminEditBtn = document.getElementById('cancelAdminEditBtn');
+
+    function setAdminEditMode(isEditing) {
+        if (!adminInfoViewContainer || !adminInfoEditContainer || !editAdminInfoToggleBtn) return;
+        if (isEditing) {
+            adminInfoViewContainer.style.display = 'none';
+            adminInfoEditContainer.style.display = 'block';
+            editAdminInfoToggleBtn.innerHTML = '<i class="fas fa-times"></i> Cancel';
+            editAdminInfoToggleBtn.classList.add('is-editing');
+        } else {
+            adminInfoViewContainer.style.display = 'block';
+            adminInfoEditContainer.style.display = 'none';
+            editAdminInfoToggleBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+            editAdminInfoToggleBtn.classList.remove('is-editing');
+        }
+    }
+
+    if (editAdminInfoToggleBtn) {
+        editAdminInfoToggleBtn.addEventListener('click', function() {
+            const isCurrentlyEditing = adminInfoEditContainer && adminInfoEditContainer.style.display !== 'none';
+            setAdminEditMode(!isCurrentlyEditing);
+        });
+    }
+
+    if (cancelAdminEditBtn) {
+        cancelAdminEditBtn.addEventListener('click', function() {
+            setAdminEditMode(false);
+        });
     }
 
     // ===== PASSWORD STRENGTH & VALIDATION =====
@@ -203,6 +284,26 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // Global password visibility toggle
+    window.togglePasswordVisibility = function(fieldId, btnEl) {
+        const input = document.getElementById(fieldId);
+        if (!input) return;
+        const icon = btnEl ? btnEl.querySelector('i') : null;
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (icon) {
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            }
+        } else {
+            input.type = 'password';
+            if (icon) {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    };
+
     // ===== EVENT LISTENERS =====
 
     if (changePasswordCheckbox) {
@@ -213,6 +314,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (confirmPassword) confirmPassword.disabled = !checked;
             if (changePasswordBtn) changePasswordBtn.disabled = !checked;
             if (passwordFields) passwordFields.classList.toggle('active', checked);
+            const toggleCard = document.getElementById('passwordToggleCard');
+            if (toggleCard) toggleCard.classList.toggle('active', checked);
         });
     }
 
@@ -232,48 +335,91 @@ document.addEventListener('DOMContentLoaded', async function() {
         profileForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const fullname = fullnameInput.value.trim();
-            if (!fullname) {
-                showAlert('Full name cannot be empty', 'error');
+            const firstName = editAdminFirstName ? editAdminFirstName.value.trim() : '';
+            const lastName = editAdminLastName ? editAdminLastName.value.trim() : '';
+            const gender = editAdminGender ? editAdminGender.value : '';
+            const phone = phoneInput ? phoneInput.value.trim() : '';
+            const address = editAdminAddress ? editAdminAddress.value.trim() : '';
+            const idNumber = idNumberInput ? idNumberInput.value.trim() : '';
+
+            if (!firstName || !lastName) {
+                showAlert('First name and last name are required.', 'error');
                 return;
             }
 
-            const nameParts = fullname.split(' ');
-            const firstName = nameParts[0] || fullname;
-            const lastName = nameParts.slice(1).join(' ') || '';
-
-            const submitBtn = profileForm.querySelector('button[type="submit"]');
+            const submitBtn = document.getElementById('saveAdminProfileBtn') || profileForm.querySelector('button[type="submit"]');
             try {
-                if (submitBtn) submitBtn.disabled = true;
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                }
 
-                if (userData && userData.id) {
-                    const { error } = await supabase
+                const userUid = sessionUser?.uid || sessionUser?.id || userData?.id || currentUser?.id;
+                const userEmail = sessionUser?.email || currentUser?.email || userData?.email;
+
+                if (userUid || userEmail) {
+                    let uUpdate = supabase
                         .from('users')
                         .update({
                             first_name: firstName,
                             last_name: lastName,
+                            gender: gender,
+                            phone: phone,
+                            address: address,
+                            id_number: idNumber,
                             updated_at: new Date().toISOString()
-                        })
-                        .eq('id', userData.id);
+                        });
 
-                    if (error) throw error;
+                    if (userUid) {
+                        uUpdate = uUpdate.eq('id', userUid);
+                    } else {
+                        uUpdate = uUpdate.eq('email', userEmail);
+                    }
+
+                    const { error } = await uUpdate;
+                    if (error) console.warn('Supabase update note:', error);
                 }
 
                 // Update session
+                const fullname = `${firstName} ${lastName}`.trim();
                 currentUser.first_name = firstName;
                 currentUser.last_name = lastName;
                 currentUser.firstName = firstName;
                 currentUser.lastName = lastName;
                 currentUser.displayName = fullname;
+                currentUser.gender = gender;
+                currentUser.phone = phone;
+                currentUser.address = address;
+                currentUser.id_number = idNumber;
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                localStorage.setItem('hes_admin_name', fullname);
 
-                showAlert('✅ Profile updated successfully!', 'success');
+                if (userData) {
+                    userData.first_name = firstName;
+                    userData.last_name = lastName;
+                    userData.gender = gender;
+                    userData.phone = phone;
+                    userData.address = address;
+                    userData.id_number = idNumber;
+                }
+
+                renderAdminAccountInfoView(fullname, userEmail, idNumber, gender, phone, address);
+                setAdminEditMode(false);
+
+                if (window.syncAdminAvatarAndName) {
+                    window.syncAdminAvatarAndName();
+                }
+
+                showAlert('✅ Account information saved successfully!', 'success');
                 await loadProfile();
             } catch (err) {
                 console.error('Error updating profile:', err);
                 showAlert('Failed to update profile: ' + err.message, 'error');
             } finally {
-                if (submitBtn) submitBtn.disabled = false;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+                }
             }
         });
     }
@@ -320,6 +466,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (newPassword) newPassword.disabled = true;
                     if (confirmPassword) confirmPassword.disabled = true;
                     if (passwordFields) passwordFields.classList.remove('active');
+                    const toggleCard = document.getElementById('passwordToggleCard');
+                    if (toggleCard) toggleCard.classList.remove('active');
                 }
             } catch (err) {
                 console.error('Error changing password:', err);
@@ -410,12 +558,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     let adminDocs = [];
     try {
-        const savedADocs = localStorage.getItem('plsnhs_admin_documents');
+        const savedADocs = localStorage.getItem('hes_admin_documents');
         if (savedADocs) {
             adminDocs = JSON.parse(savedADocs);
         } else {
             adminDocs = [...defaultAdminDocs];
-            localStorage.setItem('plsnhs_admin_documents', JSON.stringify(adminDocs));
+            localStorage.setItem('hes_admin_documents', JSON.stringify(adminDocs));
         }
     } catch(e) {
         adminDocs = [...defaultAdminDocs];
@@ -423,7 +571,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     function persistAdminDocs() {
         try {
-            localStorage.setItem('plsnhs_admin_documents', JSON.stringify(adminDocs));
+            localStorage.setItem('hes_admin_documents', JSON.stringify(adminDocs));
         } catch(e) {}
     }
 

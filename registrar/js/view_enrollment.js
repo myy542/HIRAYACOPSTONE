@@ -1,5 +1,5 @@
 /**
- * PLSNHS Registrar - View Enrollment Details (Supabase Dynamic Integration)
+ * HES Registrar - View Enrollment Details (Supabase Dynamic Integration)
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -114,8 +114,8 @@ import { EmailNotificationService } from '../../js/email_service.js';
         logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_registrar_avatar');
-            localStorage.removeItem('plsnhs_registrar_name');
+            localStorage.removeItem('hes_registrar_avatar');
+            localStorage.removeItem('hes_registrar_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}
@@ -400,7 +400,7 @@ import { EmailNotificationService } from '../../js/email_service.js';
             'new': 'New Student (From Elementary)',
             'continuing': 'Continuing Student',
             'transferee': 'Transferee',
-            'same_school': 'From PLSNHS Junior High',
+            'same_school': 'From HES Junior High',
             'different_school': 'Transferee (From another school)'
         };
         const studentType = typeMap[rawStudentType] || rawStudentType;
@@ -412,7 +412,7 @@ import { EmailNotificationService } from '../../js/email_service.js';
             if (rawStudentType === 'new' || gradeLevel === 'Grade 7') {
                 prevSchool = 'Elementary School';
             } else {
-                prevSchool = 'Placido L. Señor National High School';
+                prevSchool = 'Hiraya Enrollment System';
             }
         }
 
@@ -688,31 +688,49 @@ import { EmailNotificationService } from '../../js/email_service.js';
             }
         });
 
+        const docCountBadge = document.getElementById('docCountBadge');
+        if (docCountBadge) {
+            docCountBadge.textContent = `${docs.length} ${docs.length === 1 ? 'Document' : 'Documents'} Attached`;
+        }
+
         if (docs.length === 0) {
             documentsGrid.innerHTML = `
-                <div style="grid-column: 1 / -1; padding: 20px; text-align: center; color: #64748b; background: #f8fafc; border-radius: 8px;">
-                    <i class="fas fa-file-alt" style="font-size: 28px; color: #94a3b8; margin-bottom: 8px; display: block;"></i>
-                    <span>Digital document copies are being processed or submitted in person at the Registrar's Office.</span>
+                <div style="padding: 28px 20px; text-align: center; color: #64748b; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px;">
+                    <i class="fas fa-folder-open" style="font-size: 32px; color: #94a3b8; margin-bottom: 10px; display: block;"></i>
+                    <span style="font-size: 13.5px; font-weight: 500;">No digital documents uploaded yet. Physical copies may be submitted at the Registrar's Office.</span>
                 </div>
             `;
             return;
         }
 
         let html = '';
-        docs.forEach((doc, idx) => {
+        docs.forEach((doc) => {
+            const isPdf = doc.type === 'pdf' || (doc.url && doc.url.toLowerCase().includes('.pdf'));
+            const iconClass = isPdf ? 'fa-file-pdf' : 'fa-file-image';
+            const iconWrapClass = isPdf ? 'doc-icon-pdf' : 'doc-icon-img';
+            const formatLabel = isPdf ? 'PDF Document' : 'Image File (JPG/PNG)';
+
             html += `
-                <div class="info-item" style="display: flex; align-items: center; justify-content: space-between;">
-                    <div>
-                        <span class="info-label"><i class="fas fa-file-pdf"></i> ${doc.title}</span>
-                        <span class="info-value" style="font-size: 12px; color: #64748b;">Uploaded File &bull; PDF / Image</span>
+                <div class="submitted-doc-card">
+                    <div class="doc-left-info">
+                        <div class="doc-icon-wrapper ${iconWrapClass}">
+                            <i class="fas ${iconClass}"></i>
+                        </div>
+                        <div class="doc-details">
+                            <div class="doc-title">${doc.title}</div>
+                            <div class="doc-badges-row">
+                                <span class="doc-badge-status"><i class="fas fa-check-circle"></i> Uploaded</span>
+                                <span class="doc-badge-format">${formatLabel}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div style="display: flex; gap: 6px;">
+                    <div class="doc-actions">
                         ${doc.url ? `
-                            <button type="button" class="btn-filter view-doc-btn" data-url="${doc.url}" data-name="${doc.title}" style="padding: 4px 10px; font-size: 11px;">
-                                <i class="fas fa-eye"></i> View
+                            <button type="button" class="btn-doc-view view-doc-btn" data-url="${doc.url}" data-name="${doc.title}">
+                                <i class="fas fa-eye"></i> View File
                             </button>
                         ` : `
-                            <span style="font-size: 11px; color: #10b981; font-weight: 600;"><i class="fas fa-check"></i> On Record</span>
+                            <span class="doc-badge-record"><i class="fas fa-check-double"></i> Physical Copy</span>
                         `}
                     </div>
                 </div>
@@ -886,6 +904,8 @@ import { EmailNotificationService } from '../../js/email_service.js';
             }
         }
 
+        let studentTableId = currentEnrollment?.student_id || currentStudent?.id || null;
+
         const studentPayload = {
             first_name: firstName,
             last_name: lastName,
@@ -966,12 +986,15 @@ import { EmailNotificationService } from '../../js/email_service.js';
         if (studentTableId) currentEnrollment.student_id = studentTableId;
 
         // 4. Send Approval Notification with login credentials to student
-        const credentialsMessage = `Congratulations ${firstName}! Your enrollment for ${gradeLevel}${strand ? ' (' + strand + ')' : ''} has been approved by the Registrar.\n\nYour Student Portal Login Credentials:\n• Username (Email): ${email}\n• Password: ${lastName}\n\nYou can now log in to the PLSNHS Student Portal.`;
+        const credentialsMessage = `Congratulations ${firstName}! Your enrollment for ${gradeLevel}${strand ? ' (' + strand + ')' : ''} has been approved by the Registrar.\n\nYour Student Portal Login Credentials:\n• Username (Email): ${email}\n• Password: ${lastName}\n\nYou can now log in to the HES Student Portal.`;
 
+        const targetStudentId = studentUserId || studentTableId || null;
         await supabase
             .from('notifications')
             .insert([{
-                user_id: studentUserId || studentTableId || null,
+                user_id: targetStudentId,
+                student_id: studentTableId || null,
+                recipient_email: email,
                 role: 'student',
                 title: '🎉 Enrollment Approved!',
                 message: credentialsMessage,
@@ -981,6 +1004,23 @@ import { EmailNotificationService } from '../../js/email_service.js';
                 is_read: false,
                 created_at: new Date().toISOString()
             }]);
+
+        if (targetStudentId) {
+            try {
+                const k = `hes_notifications_${targetStudentId}`;
+                const raw = localStorage.getItem(k);
+                let list = raw ? JSON.parse(raw) : [];
+                list.unshift({
+                    id: 'notif_' + Date.now(),
+                    type: 'action',
+                    title: '🎉 Enrollment Approved!',
+                    message: credentialsMessage,
+                    time: 'Just now',
+                    read: false
+                });
+                localStorage.setItem(k, JSON.stringify(list.slice(0, 30)));
+            } catch(e) {}
+        }
 
         return {
             email,
@@ -1045,21 +1085,43 @@ import { EmailNotificationService } from '../../js/email_service.js';
                         // Send status notification
                         try {
                             const studentFullName = `${currentEnrollment.first_name || ''} ${currentEnrollment.last_name || ''}`.trim() || 'Student';
+                            const targetStudentId = currentEnrollment.student_id || currentEnrollment.user_id || currentEnrollment.id || null;
+                            const notifMsg = newStatus === 'Rejected' 
+                                ? `Your enrollment application was not approved. Reason: ${reason}` 
+                                : `Your enrollment status is currently: ${newStatus}.`;
+
                             await supabase
                                 .from('notifications')
                                 .insert([{
-                                    user_id: currentEnrollment.student_id || null,
+                                    user_id: targetStudentId,
+                                    student_id: currentEnrollment.student_id || null,
+                                    recipient_email: currentEnrollment.email || null,
                                     role: 'student',
                                     title: newStatus === 'Rejected' ? '⚠️ Enrollment Update' : '📋 Enrollment In Review',
-                                    message: newStatus === 'Rejected' 
-                                        ? `Your enrollment application was not approved. Reason: ${reason}` 
-                                        : `Your enrollment status is currently: ${newStatus}.`,
+                                    message: notifMsg,
                                     type: 'enrollment_status',
                                     enrollment_id: currentEnrollment.id,
                                     is_read: false,
                                     read: false,
                                     created_at: new Date().toISOString()
                                 }]);
+
+                            if (targetStudentId) {
+                                try {
+                                    const k = `hes_notifications_${targetStudentId}`;
+                                    const raw = localStorage.getItem(k);
+                                    let list = raw ? JSON.parse(raw) : [];
+                                    list.unshift({
+                                        id: 'notif_' + Date.now(),
+                                        type: 'alert',
+                                        title: newStatus === 'Rejected' ? '⚠️ Enrollment Update' : '📋 Enrollment In Review',
+                                        message: notifMsg,
+                                        time: 'Just now',
+                                        read: false
+                                    });
+                                    localStorage.setItem(k, JSON.stringify(list.slice(0, 30)));
+                                } catch(e) {}
+                            }
                         } catch(notifErr) {}
 
                         showAlert(`✅ Enrollment status updated to "${newStatus}"!`, 'success');
@@ -1124,34 +1186,268 @@ import { EmailNotificationService } from '../../js/email_service.js';
     }
 
     // ============================================
-    // NOTIFY STUDENT BUTTON
+    // NOTIFY STUDENT MODAL & GMAIL DISPATCH
     // ============================================
 
-    if (notifyStudentBtn) {
-        notifyStudentBtn.addEventListener('click', async function() {
-            const msg = prompt('Enter a notification message to send to this student:', 'Please be reminded to submit your original physical Form 138 to the Registrar Office.');
-            if (!msg) return;
+    const noticeModal = document.getElementById('noticeModal');
+    const closeNoticeBtn = document.getElementById('closeNoticeBtn');
+    const dismissNoticeBtn = document.getElementById('dismissNoticeBtn');
+    const noticeRecipientName = document.getElementById('noticeRecipientName');
+    const noticeRecipientEmail = document.getElementById('noticeRecipientEmail');
+    const noticePresetSelect = document.getElementById('noticePresetSelect');
+    const noticeTitleInput = document.getElementById('noticeTitleInput');
+    const noticeMessageInput = document.getElementById('noticeMessageInput');
+    const sendNoticeGmailBtn = document.getElementById('sendNoticeGmailBtn');
+    const saveNoticeInAppBtn = document.getElementById('saveNoticeInAppBtn');
+    const copyNoticeTextBtn = document.getElementById('copyNoticeTextBtn');
 
-            try {
-                await supabase
-                    .from('notifications')
-                    .insert([{
-                        user_id: currentEnrollment?.student_id || null,
-                        role: 'student',
-                        title: '📢 Notice from Registrar Office',
-                        message: msg,
-                        type: 'message',
-                        enrollment_id: currentEnrollment?.id || null,
-                        is_read: false,
-                        read: false,
-                        created_at: new Date().toISOString()
-                    }]);
+    const noticePresets = {
+        welcome_credentials: {
+            title: '🎉 Welcome to H.E.S! Your Student Portal Login Credentials',
+            body: 'Congratulations! Your enrollment application has been verified. Your Student Portal account is active and you can now log in using your credentials to view your class schedule, grades, and announcements.'
+        },
+        custom: {
+            title: '📢 Official Notice from H.E.S Registrar',
+            body: 'Please be reminded to submit your original physical Form 138 (Report Card) to the Registrar\'s Office to complete your official enrollment.'
+        },
+        missing_form138: {
+            title: '📄 Missing Form 138 / Report Card Requirement',
+            body: 'Our records indicate that your official Form 138 (Report Card) is still pending submission. Please upload a clear photo/scan or submit the original hard copy to the Registrar\'s Office.'
+        },
+        missing_psa: {
+            title: '📜 Missing PSA Birth Certificate Requirement',
+            body: 'Please be advised that your official PSA Birth Certificate is required to verify your enrollment record. Please upload a legible digital copy or present the document to the Registrar.'
+        },
+        missing_goodmoral: {
+            title: '🎖️ Missing Certificate of Good Moral Character',
+            body: 'We kindly remind you to submit your Certificate of Good Moral Character from your previous school to finalize your enrollment credentials.'
+        },
+        physical_docs: {
+            title: '🏢 Submission of Physical Hard Copies Required',
+            body: 'Please visit the Registrar\'s Office during official hours (Monday-Friday, 8:00 AM - 5:00 PM) to submit your physical original documents for official DepEd record compliance.'
+        },
+        section_update: {
+            title: '👥 Section Assignment & Class Schedule Ready',
+            body: 'Your section assignment and class timetable for SY 2026-2027 have been updated. Please log in to your H.E.S Student Dashboard to view your full daily class schedule.'
+        }
+    };
 
-                showAlert('✅ Notification sent to the student successfully!', 'success');
-            } catch(e) {
-                showAlert('❌ Failed to send notification: ' + e.message, 'error');
+    function openNoticeModal() {
+        if (!noticeModal) return;
+
+        const firstName = currentEnrollment?.first_name || currentStudent?.first_name || '';
+        let lastName = (currentEnrollment?.last_name || currentStudent?.last_name || '').trim();
+        if (!lastName && currentEnrollment?.fullname) {
+            const parts = currentEnrollment.fullname.trim().split(' ');
+            lastName = parts[parts.length - 1];
+        }
+        if (!lastName) lastName = 'Student';
+
+        const sName = currentEnrollment?.fullname || `${firstName} ${lastName}`.trim() || 'Student';
+        const sEmail = (currentEnrollment?.email || currentStudent?.email || '').trim().toLowerCase();
+
+        if (noticeRecipientName) noticeRecipientName.textContent = sName;
+        if (noticeRecipientEmail) noticeRecipientEmail.textContent = sEmail || 'No email registered';
+
+        const noticeStudentUsername = document.getElementById('noticeStudentUsername');
+        const noticeStudentPassword = document.getElementById('noticeStudentPassword');
+        if (noticeStudentUsername) noticeStudentUsername.textContent = sEmail || 'student@email.com';
+        if (noticeStudentPassword) noticeStudentPassword.textContent = lastName;
+
+        noticeModal.style.display = 'flex';
+    }
+
+    function closeNoticeModal() {
+        if (noticeModal) noticeModal.style.display = 'none';
+    }
+
+    if (closeNoticeBtn) closeNoticeBtn.addEventListener('click', closeNoticeModal);
+    if (dismissNoticeBtn) dismissNoticeBtn.addEventListener('click', closeNoticeModal);
+
+    if (noticePresetSelect) {
+        noticePresetSelect.addEventListener('change', function() {
+            const selected = noticePresets[this.value];
+            if (selected) {
+                if (noticeTitleInput) noticeTitleInput.value = selected.title;
+                if (noticeMessageInput) noticeMessageInput.value = selected.body;
             }
         });
+    }
+
+    async function recordInAppNotice(title, message) {
+        const targetStudentId = currentEnrollment?.student_id || currentEnrollment?.user_id || currentEnrollment?.id || null;
+        const targetEmail = (currentEnrollment?.email || currentStudent?.email || '').trim().toLowerCase();
+
+        await supabase
+            .from('notifications')
+            .insert([{
+                user_id: targetStudentId,
+                student_id: currentEnrollment?.student_id || null,
+                recipient_email: targetEmail || null,
+                role: 'student',
+                title: title,
+                message: message,
+                type: 'message',
+                enrollment_id: currentEnrollment?.id || null,
+                is_read: false,
+                read: false,
+                created_at: new Date().toISOString()
+            }]);
+
+        if (targetStudentId) {
+            try {
+                const k = `hes_notifications_${targetStudentId}`;
+                const raw = localStorage.getItem(k);
+                let list = raw ? JSON.parse(raw) : [];
+                list.unshift({
+                    id: 'notif_' + Date.now(),
+                    type: 'message',
+                    title: title,
+                    message: message,
+                    time: 'Just now',
+                    read: false
+                });
+                localStorage.setItem(k, JSON.stringify(list.slice(0, 30)));
+            } catch(e) {}
+        }
+
+        if (targetEmail) {
+            try {
+                const kEm = `hes_notifications_${targetEmail}`;
+                const rawEm = localStorage.getItem(kEm);
+                let listEm = rawEm ? JSON.parse(rawEm) : [];
+                listEm.unshift({
+                    id: 'notif_em_' + Date.now(),
+                    type: 'message',
+                    title: title,
+                    message: message,
+                    time: 'Just now',
+                    read: false
+                });
+                localStorage.setItem(kEm, JSON.stringify(listEm.slice(0, 30)));
+            } catch(e) {}
+        }
+    }
+
+    if (sendNoticeGmailBtn) {
+        sendNoticeGmailBtn.addEventListener('click', async function() {
+            const title = noticeTitleInput?.value?.trim() || '📢 Official Notice from Registrar';
+            const body = noticeMessageInput?.value?.trim() || '';
+            const sEmail = (currentEnrollment?.email || currentStudent?.email || '').trim().toLowerCase();
+            const firstName = currentEnrollment?.first_name || currentStudent?.first_name || '';
+            let lastName = (currentEnrollment?.last_name || currentStudent?.last_name || '').trim();
+            if (!lastName && currentEnrollment?.fullname) {
+                const parts = currentEnrollment.fullname.trim().split(' ');
+                lastName = parts[parts.length - 1];
+            }
+            if (!lastName) lastName = 'Student';
+
+            const sName = currentEnrollment?.fullname || `${firstName} ${lastName}`.trim() || 'Student';
+            const includeCreds = document.getElementById('includeCredsCheckbox')?.checked !== false;
+
+            if (!sEmail) {
+                showAlert('⚠️ Student does not have a registered email address.', 'error');
+                return;
+            }
+
+            if (!body) {
+                showAlert('⚠️ Please enter a message to send.', 'error');
+                return;
+            }
+
+            try {
+                sendNoticeGmailBtn.disabled = true;
+                sendNoticeGmailBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Dispatching...';
+
+                // 1. Post to In-App Notifications
+                await recordInAppNotice(title, body);
+
+                // 2. Open Student's Gmail compose with Username = Gmail & Password = Last Name
+                const emailData = EmailNotificationService.buildRegistrarNoticeEmail({
+                    studentName: sName,
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: sEmail,
+                    messageTitle: title,
+                    messageBody: body,
+                    gradeLevel: currentEnrollment?.grade_level || 'Junior/Senior High',
+                    includeCredentials: includeCreds
+                });
+
+                EmailNotificationService.sendViaGmailWeb(emailData);
+
+                closeNoticeModal();
+                showAlert(`✅ Notice saved and Gmail compose opened to notify ${sName} (${sEmail})!`, 'success');
+            } catch(err) {
+                console.error('Error sending notice:', err);
+                showAlert('❌ Failed to send notice: ' + err.message, 'error');
+            } finally {
+                sendNoticeGmailBtn.disabled = false;
+                sendNoticeGmailBtn.innerHTML = '<i class="fab fa-google"></i> Send via Student\'s Gmail';
+            }
+        });
+    }
+
+    if (saveNoticeInAppBtn) {
+        saveNoticeInAppBtn.addEventListener('click', async function() {
+            const title = noticeTitleInput?.value?.trim() || '📢 Official Notice from Registrar';
+            const body = noticeMessageInput?.value?.trim() || '';
+            const sName = currentEnrollment?.fullname || `${currentEnrollment?.first_name || ''} ${currentEnrollment?.last_name || ''}`.trim() || 'Student';
+
+            if (!body) {
+                showAlert('⚠️ Please enter a message to post.', 'error');
+                return;
+            }
+
+            try {
+                saveNoticeInAppBtn.disabled = true;
+                await recordInAppNotice(title, body);
+                closeNoticeModal();
+                showAlert(`✅ In-app notice posted to ${sName}'s dashboard!`, 'success');
+            } catch(err) {
+                showAlert('❌ Error posting notice: ' + err.message, 'error');
+            } finally {
+                saveNoticeInAppBtn.disabled = false;
+            }
+        });
+    }
+
+    if (copyNoticeTextBtn) {
+        copyNoticeTextBtn.addEventListener('click', async function() {
+            const title = noticeTitleInput?.value?.trim() || '📢 Official Notice from Registrar';
+            const body = noticeMessageInput?.value?.trim() || '';
+            const firstName = currentEnrollment?.first_name || currentStudent?.first_name || '';
+            let lastName = (currentEnrollment?.last_name || currentStudent?.last_name || '').trim();
+            if (!lastName && currentEnrollment?.fullname) {
+                const parts = currentEnrollment.fullname.trim().split(' ');
+                lastName = parts[parts.length - 1];
+            }
+            if (!lastName) lastName = 'Student';
+
+            const sName = currentEnrollment?.fullname || `${firstName} ${lastName}`.trim() || 'Student';
+            const sEmail = (currentEnrollment?.email || currentStudent?.email || '').trim().toLowerCase();
+            const includeCreds = document.getElementById('includeCredsCheckbox')?.checked !== false;
+
+            const emailData = EmailNotificationService.buildRegistrarNoticeEmail({
+                studentName: sName,
+                firstName: firstName,
+                lastName: lastName,
+                email: sEmail,
+                messageTitle: title,
+                messageBody: body,
+                gradeLevel: currentEnrollment?.grade_level || 'Junior/Senior High',
+                includeCredentials: includeCreds
+            });
+
+            const ok = await EmailNotificationService.copyEmailText(emailData);
+            if (ok) {
+                showAlert('📋 Full notice email text copied to clipboard!', 'success');
+            }
+        });
+    }
+
+    if (notifyStudentBtn) {
+        notifyStudentBtn.addEventListener('click', openNoticeModal);
     }
 
     // ============================================
@@ -1182,6 +1478,13 @@ import { EmailNotificationService } from '../../js/email_service.js';
         btn.addEventListener('click', () => {
             if (filePreviewModal) filePreviewModal.style.display = 'none';
         });
+    });
+
+    window.addEventListener('click', function(e) {
+        const nModal = document.getElementById('noticeModal');
+        if (e.target === nModal) closeNoticeModal();
+        const cModal = document.getElementById('credentialsModal');
+        if (e.target === cModal) closeCredentialsModal();
     });
 
     // ============================================

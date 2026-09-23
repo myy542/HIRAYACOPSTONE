@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 return {
                     id: s.id,
                     name: name,
-                    email: s.email || 'student@plshs.edu.ph',
+                    email: s.email || 'student@hiraya.edu.ph',
                     lrn: s.lrn || '—',
                     documents_status: s.documents_status || 'Pending'
                 };
@@ -240,12 +240,31 @@ document.addEventListener('DOMContentLoaded', async function() {
                     .from('notifications')
                     .insert([{
                         user_id: student.id,
+                        student_id: student.id,
+                        recipient_email: student.email || null,
                         role: 'student',
                         title: notificationTitle,
                         message: notificationMsg,
                         type: 'warning',
-                        read: false
+                        read: false,
+                        is_read: false,
+                        created_at: new Date().toISOString()
                     }]);
+
+                try {
+                    const k = `hes_notifications_${student.id}`;
+                    const raw = localStorage.getItem(k);
+                    let list = raw ? JSON.parse(raw) : [];
+                    list.unshift({
+                        id: 'notif_' + Date.now(),
+                        type: 'warning',
+                        title: notificationTitle,
+                        message: notificationMsg,
+                        time: 'Just now',
+                        read: false
+                    });
+                    localStorage.setItem(k, JSON.stringify(list.slice(0, 30)));
+                } catch(e) {}
 
                 showAlert(`✅ Notification sent to ${student.name}!`, 'success');
                 addLogEntry(student.name, requirement, 'Sent');

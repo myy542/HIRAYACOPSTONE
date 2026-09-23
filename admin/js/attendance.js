@@ -1,5 +1,5 @@
 /**
- * PLSNHS Admin - Attendance Management (SUPABASE POWERED)
+ * HES Admin - Attendance Management (SUPABASE POWERED)
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -250,9 +250,33 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (chipCountG12) chipCountG12.textContent = counts[12];
     }
 
+    function isWeekend(dateStr) {
+        if (!dateStr) return false;
+        try {
+            const d = new Date(dateStr + 'T00:00:00');
+            const day = d.getDay();
+            return day === 0 || day === 6;
+        } catch {
+            return false;
+        }
+    }
+
     async function loadStudentAttendanceRecords() {
         try {
             const date = studentDateFilter ? studentDateFilter.value : todayStr;
+            const isWk = isWeekend(date);
+
+            if (isWk) {
+                const d = new Date(date + 'T00:00:00');
+                const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+                showAlert(`📅 Notice: Selected date (${dayName}) is a weekend. School attendance is disabled on weekends (Monday - Friday only).`, 'warning');
+                if (markAllPresentBtn) markAllPresentBtn.disabled = true;
+                if (saveAllAttendanceBtn) saveAllAttendanceBtn.disabled = true;
+            } else {
+                if (markAllPresentBtn) markAllPresentBtn.disabled = false;
+                if (saveAllAttendanceBtn) saveAllAttendanceBtn.disabled = false;
+            }
+
             const { data, error } = await supabase
                 .from('attendance')
                 .select('*')
@@ -277,6 +301,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function loadTeacherAttendanceRecords() {
         try {
             const date = teacherDateFilter ? teacherDateFilter.value : todayStr;
+            const isWk = isWeekend(date);
+
+            if (isWk) {
+                const d = new Date(date + 'T00:00:00');
+                const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+                showAlert(`📅 Notice: Selected date (${dayName}) is a weekend. Faculty attendance is disabled on weekends.`, 'warning');
+            }
+
             const { data, error } = await supabase
                 .from('attendance')
                 .select('*')
@@ -613,6 +645,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (markAllPresentBtn) {
         markAllPresentBtn.addEventListener('click', function() {
             const date = studentDateFilter ? studentDateFilter.value : todayStr;
+            if (isWeekend(date)) {
+                showAlert('📅 Cannot mark attendance on weekends. Selected date is Saturday/Sunday.', 'warning');
+                return;
+            }
+
             allStudents.forEach(stu => {
                 if (!studentAttendanceMap[stu.id]) {
                     studentAttendanceMap[stu.id] = {
@@ -636,6 +673,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (saveAllAttendanceBtn) {
         saveAllAttendanceBtn.addEventListener('click', async function() {
             const date = studentDateFilter ? studentDateFilter.value : todayStr;
+            if (isWeekend(date)) {
+                showAlert('📅 Attendance recording is disabled on weekends (Saturday & Sunday).', 'warning');
+                return;
+            }
             const recordsToSave = allStudents.map(stu => {
                 const rec = studentAttendanceMap[stu.id];
                 return {
@@ -700,7 +741,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement('a');
             link.setAttribute('href', encodedUri);
-            link.setAttribute('download', `PLSNHS_Attendance_${date}.csv`);
+            link.setAttribute('download', `HES_Attendance_${date}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

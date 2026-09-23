@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile - PLSNHS</title>
+    <title>My Profile - HES, Hiraya Enrollment System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/profile.css">
+    <link rel="stylesheet" href="../css/chatbot.css">
 </head>
 <body>
     <div class="app-container">
@@ -15,13 +16,11 @@
             <div class="sidebar-header">
                 <div class="logo">
                     <div class="logo-icon">
-                        <img src="../pictures/logo sa skwelahan.jpg" alt="PLSNHS Logo" class="logo-img" onerror="this.onerror=null; this.style.display='none'; this.parentElement.textContent='P'; this.parentElement.style.background='#FFD700'; this.parentElement.style.color='#0b2b4a'; this.parentElement.style.display='flex'; this.parentElement.style.alignItems='center'; this.parentElement.style.justifyContent='center'; this.parentElement.style.fontWeight='800'; this.parentElement.style.fontSize='1.2rem';">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
                     </div>
-                    <div class="logo-text">
-                        <div class="logo-main">PLS<span>NHS</span></div>
-                        <div class="logo-sub">Placido L. Señor NHS</div>
-                    </div>
+                    <div class="logo-text">H.<span>E.S</span></div>
                 </div>
+                <div class="school-badge">Hiraya Enrollment System</div>
             </div>
 
             <div class="student-profile">
@@ -96,7 +95,7 @@
                         <div class="info-icon"><i class="fas fa-envelope"></i></div>
                         <div class="info-content">
                             <div class="info-label">Email Address</div>
-                            <div class="info-value" id="profileEmail">student@plsnhs.edu.ph</div>
+                            <div class="info-value" id="profileEmail">student@hes.edu.ph</div>
                         </div>
                     </div>
 
@@ -140,7 +139,6 @@
                                 <div>
                                     <label style="font-size: 11px; font-weight: 600; color: #64748b; display: block; margin-bottom: 4px;">Requirement Type</label>
                                     <select id="studentDocTypeSelect" style="width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12.5px;">
-                                        <option value="2x2 Photo">2x2 ID Photo</option>
                                         <option value="PSA Birth Certificate">PSA Birth Certificate</option>
                                         <option value="Form 138 / Report Card">Form 138 / Report Card</option>
                                         <option value="Good Moral Certificate">Good Moral Certificate</option>
@@ -191,41 +189,121 @@
                         </div>
                     </div>
 
-                    <!-- Edit Personal Information Card -->
-                    <div class="academic-card">
-                        <div class="verification-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 18px;">
-                            <i class="fas fa-user-edit" style="color: var(--primary); font-size: 1.2rem;"></i>
-                            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #0b2b4a;">Edit Personal Information</h3>
-                        </div>
-                        <form id="editStudentProfileForm">
-                            <div class="form-group" style="margin-bottom: 14px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.88rem; color: #1e293b;">Contact / Mobile Number</label>
-                                <input type="tel" name="contact_number" id="editStudentPhone" placeholder="09XXXXXXXXX" style="width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem;">
-                                <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 4px;">
-                                    <i class="fas fa-info-circle"></i> 11-digit Philippine mobile number
-                                </small>
-                            </div>
-
-                            <div class="form-group" style="margin-bottom: 14px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.88rem; color: #1e293b;">Complete Home Address</label>
-                                <textarea name="address" id="editStudentAddress" rows="2" placeholder="Barangay, Municipality/City, Province" style="width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; resize: vertical;"></textarea>
-                            </div>
-
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-                                <div class="form-group">
-                                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.88rem; color: #1e293b;">Parent / Guardian Name</label>
-                                    <input type="text" name="parent_name" id="editParentName" placeholder="Full name of parent/guardian" style="width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem;">
-                                </div>
-                                <div class="form-group">
-                                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.88rem; color: #1e293b;">Parent / Guardian Contact</label>
-                                    <input type="tel" name="parent_contact" id="editParentPhone" placeholder="09XXXXXXXXX" style="width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem;">
-                                </div>
-                            </div>
-
-                            <button type="submit" id="saveStudentProfileBtn" class="btn-submit" style="width: 100%; padding: 11px; background: #0b2b4a; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 0.92rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                                <i class="fas fa-save"></i> Save Personal Details
+                    <!-- Account Information Card (View & Edit Modes) -->
+                    <div class="account-info-card" id="accountInfoCard">
+                        <div class="card-header-with-action">
+                            <h3><i class="fas fa-id-card"></i> Account Information</h3>
+                            <button type="button" class="btn-edit-toggle" id="editInfoToggleBtn">
+                                <i class="fas fa-edit"></i> Edit
                             </button>
-                        </form>
+                        </div>
+
+                        <!-- VIEW MODE -->
+                        <div class="account-info-view" id="infoViewContainer">
+                            <div class="account-info-grid">
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Full Name</span>
+                                    <span class="account-info-value" id="viewStudentFullName">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Email Address</span>
+                                    <span class="account-info-value" id="viewStudentEmail">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Learner Reference Number (LRN)</span>
+                                    <span class="account-info-value" id="viewStudentLrn">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Gender</span>
+                                    <span class="account-info-value" id="viewStudentGender">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Date of Birth</span>
+                                    <span class="account-info-value" id="viewStudentBirthdate">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Contact / Mobile Number</span>
+                                    <span class="account-info-value" id="viewStudentPhone">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Parent / Guardian</span>
+                                    <span class="account-info-value" id="viewStudentParentName">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Parent / Guardian Contact</span>
+                                    <span class="account-info-value" id="viewStudentParentPhone">-</span>
+                                </div>
+                                <div class="account-info-item full-width">
+                                    <span class="account-info-label">Complete Home Address</span>
+                                    <span class="account-info-value" id="viewStudentAddress">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- EDIT MODE (Form) -->
+                        <div class="account-info-edit-container" id="infoEditContainer" style="display: none;">
+                            <form id="editStudentProfileForm">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                                    <div class="form-group">
+                                        <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.88rem; color: #1e293b;">First Name <span style="color: #ef4444;">*</span></label>
+                                        <input type="text" name="first_name" id="editStudentFirstName" placeholder="e.g. Juan" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.88rem; color: #1e293b;">Last Name <span style="color: #ef4444;">*</span></label>
+                                        <input type="text" name="last_name" id="editStudentLastName" placeholder="e.g. Dela Cruz" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;" required>
+                                    </div>
+                                </div>
+
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                                    <div class="form-group">
+                                        <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.88rem; color: #1e293b;">Gender</label>
+                                        <select name="gender" id="editStudentGender" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; background: #fff;">
+                                            <option value="">Select Gender</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Prefer not to say">Prefer not to say</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.88rem; color: #1e293b;">Date of Birth</label>
+                                        <input type="date" name="birthdate" id="editStudentBirthdate" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                                    </div>
+                                </div>
+
+                                <div class="form-group" style="margin-bottom: 14px;">
+                                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.88rem; color: #1e293b;">Contact / Mobile Number</label>
+                                    <input type="tel" name="contact_number" id="editStudentPhone" placeholder="09XXXXXXXXX" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                                    <small style="color: #64748b; font-size: 0.75rem; display: block; margin-top: 4px;">
+                                        <i class="fas fa-info-circle"></i> 11-digit Philippine mobile number
+                                    </small>
+                                </div>
+
+                                <div class="form-group" style="margin-bottom: 14px;">
+                                    <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.88rem; color: #1e293b;">Complete Home Address</label>
+                                    <textarea name="address" id="editStudentAddress" rows="2" placeholder="Barangay, Municipality/City, Province" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; resize: vertical;"></textarea>
+                                </div>
+
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+                                    <div class="form-group">
+                                        <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.88rem; color: #1e293b;">Parent / Guardian Name</label>
+                                        <input type="text" name="parent_name" id="editParentName" placeholder="Full name of parent/guardian" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.88rem; color: #1e293b;">Parent / Guardian Contact</label>
+                                        <input type="tel" name="parent_contact" id="editParentPhone" placeholder="09XXXXXXXXX" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                                    </div>
+                                </div>
+
+                                <div class="account-info-actions">
+                                    <button type="button" class="btn-secondary" id="cancelStudentEditBtn" style="padding: 9px 18px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; color: #475569; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                    <button type="submit" id="saveStudentProfileBtn" class="btn-primary" style="padding: 9px 22px; background: #0b2b4a; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 0.92rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                                        <i class="fas fa-save"></i> Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
 
                     <!-- Email Verification -->
@@ -340,5 +418,6 @@
 
     <script src="js/student_avatar_sync.js"></script>
     <script type="module" src="js/profile.js"></script>
+    <script src="../js/chatbot.js"></script>
 </body>
 </html>

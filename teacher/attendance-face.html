@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Attendance - Teacher Portal | HES</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Face Attendance CSS -->
+    <link rel="stylesheet" href="css/attendance-face.css">
+    <link rel="stylesheet" href="../css/chatbot.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                    </div>
+                    <div class="logo-text">H.<span>E.S</span></div>
+                </div>
+                <div class="school-badge">Hiraya Enrollment System</div>
+            </div>
+
+            <div class="teacher-profile">
+                <div class="teacher-avatar">
+                    <div class="avatar-initial" id="teacherInitial">T</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="teacher-name" id="teacherName">Teacher</div>
+                <div class="teacher-role"><i class="fas fa-chalkboard-user"></i> Teacher</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></a></li>
+                        <li><a href="attendance-face.html" class="active"><i class="fas fa-camera"></i> <span>Face Attendance</span></a></li>
+                        <li><a href="student-attendance.html"><i class="fas fa-user-check"></i> <span>Student Attendance</span></a></li>
+                        <li><a href="classes.html"><i class="fas fa-users"></i> <span>My Classes</span></a></li>
+                        <li><a href="schedule.html"><i class="fas fa-clock"></i> <span>Schedule</span></a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> <span>Grades</span></a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> <span>Profile</span></a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1>Biometric Face Attendance</h1>
+                    <p>Record your daily Time In and Time Out using AI facial recognition</p>
+                </div>
+                <div class="date-badge" id="dateBadge">
+                    <i class="fas fa-calendar-alt"></i> Loading...
+                </div>
+            </div>
+
+            <!-- Philippine Time Bar -->
+            <div class="ph-time-bar">
+                <div class="ph-time-info">
+                    <i class="fas fa-clock"></i>
+                    <span>Philippine Time: <strong id="phTimeDisplay">Loading...</strong></span>
+                </div>
+                <div class="cutoff-pill">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Time In Cutoff: <strong>8:00 AM</strong></span>
+                    <span id="lateWarning" style="display:none; color:#fde047; margin-left:6px;">(Late arrival)</span>
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Warning Card if Face Not Registered -->
+            <div class="unregistered-notice-card" id="unregisteredNotice">
+                <div class="unregistered-icon"><i class="fas fa-user-slash"></i></div>
+                <h3>Face Biometrics Not Registered Yet</h3>
+                <p>
+                    Your biometric facial profile has not been registered in the system. Facial recognition is required to log your faculty attendance.
+                </p>
+                <div style="background: rgba(245, 158, 11, 0.15); padding: 12px 18px; border-radius: 10px; display: inline-block; font-size: 13px; font-weight: 600; color: #92400e;">
+                    <i class="fas fa-id-card"></i> Please contact the School Administrator to register your face at <strong>Admin Portal &gt; Face Registration</strong>.
+                </div>
+            </div>
+
+            <!-- Statistics Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Total Days</h3>
+                        <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalDaysStat">0</div>
+                    <div class="stat-label">Logged sessions</div>
+                </div>
+
+                <div class="stat-card present">
+                    <div class="stat-header">
+                        <h3>Present</h3>
+                        <div class="stat-icon present"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                    <div class="stat-number" id="presentDaysStat">0</div>
+                    <div class="stat-label">On time arrivals</div>
+                </div>
+
+                <div class="stat-card late">
+                    <div class="stat-header">
+                        <h3>Late</h3>
+                        <div class="stat-icon late"><i class="fas fa-clock"></i></div>
+                    </div>
+                    <div class="stat-number" id="lateDaysStat">0</div>
+                    <div class="stat-label">After 8:00 AM</div>
+                </div>
+
+                <div class="stat-card absent">
+                    <div class="stat-header">
+                        <h3>Absent</h3>
+                        <div class="stat-icon absent"><i class="fas fa-times-circle"></i></div>
+                    </div>
+                    <div class="stat-number" id="absentDaysStat">0</div>
+                    <div class="stat-label">Unexcused / missed</div>
+                </div>
+            </div>
+
+            <!-- Main Scanner & Status Layout -->
+            <div class="face-scanner-layout" id="scannerSection">
+                <!-- Left: Live Face Scanner -->
+                <div class="camera-card">
+                    <div class="card-title-bar">
+                        <h2><i class="fas fa-camera"></i> Live Face Scanner</h2>
+                        <span class="biometric-badge"><i class="fas fa-shield-alt"></i> Biometrics Active</span>
+                    </div>
+
+                    <!-- Camera Viewfinder -->
+                    <div class="viewfinder-container">
+                        <video id="cameraVideo" autoplay playsinline muted class="camera-video"></video>
+                        <canvas id="captureCanvas" style="display: none;"></canvas>
+
+                        <!-- Standby Overlay -->
+                        <div class="camera-standby-overlay" id="cameraStandby">
+                            <i class="fas fa-video-slash"></i>
+                            <h4>Camera Not Active</h4>
+                            <p>Please grant browser camera access to scan your face.</p>
+                            <button type="button" class="btn-permission" id="btnGrantPermission">
+                                <i class="fas fa-camera"></i> Enable Camera
+                            </button>
+                        </div>
+
+                        <!-- Face Frame Guide Overlay -->
+                        <div class="face-frame-overlay" id="faceFrame">
+                            <div class="scan-beam"></div>
+                        </div>
+
+                        <!-- Viewfinder Hint -->
+                        <div class="viewfinder-hint" id="viewfinderHint">
+                            <i class="fas fa-user-circle"></i>
+                            <span>Position face inside the oval frame • Look at the lens</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Controls -->
+                    <div class="camera-actions-bar">
+                        <button type="button" class="btn-face-scan" id="btnFaceScan">
+                            <i class="fas fa-spinner fa-spin" id="scanSpinner" style="display: none;"></i>
+                            <i class="fas fa-expand"></i>
+                            <span id="btnScanText">Scan Face for Time In</span>
+                        </button>
+                        <button type="button" class="btn-toggle-cam" id="btnToggleCam" title="Switch Camera">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Profile & Today's Attendance -->
+                <div class="side-column">
+                    <!-- Profile Card -->
+                    <div class="profile-summary-card">
+                        <div class="profile-card-inner">
+                            <img id="regPhotoImg" class="profile-reg-photo" src="" alt="Registered Face" onerror="this.style.display='none'">
+                            <div class="profile-card-details">
+                                <h3 id="profileTeacherName">Teacher Name</h3>
+                                <p>Employee ID: <strong id="profileEmployeeId">HES-TCH-001</strong></p>
+                                <div class="meta-chip"><i class="fas fa-graduation-cap"></i> <span id="profileDept">Faculty</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Today's Attendance Box -->
+                    <div class="today-status-card">
+                        <h3><i class="fas fa-calendar-day"></i> Today's Attendance</h3>
+                        <div class="status-row-grid">
+                            <div class="status-box">
+                                <div class="status-box-title"><i class="fas fa-sign-in-alt"></i> Time In</div>
+                                <div class="status-box-time" id="timeInDisplay">Not yet</div>
+                                <span class="status-box-badge pending" id="timeInBadge">Pending</span>
+                            </div>
+                            <div class="status-box">
+                                <div class="status-box-title"><i class="fas fa-sign-out-alt"></i> Time Out</div>
+                                <div class="status-box-time" id="timeOutDisplay">Not yet</div>
+                                <span class="status-box-badge pending" id="timeOutBadge">Pending</span>
+                            </div>
+                        </div>
+                        <p style="font-size: 12px; color: #64748b; margin: 0; text-align: center;">
+                            <i class="fas fa-info-circle"></i> Daily cutoff is 8:00 AM. Time in after 8:00 AM is logged as Late.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance History Section -->
+            <div class="history-card">
+                <h3><i class="fas fa-history"></i> Recent Attendance History</h3>
+                <div style="overflow-x: auto;">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                                <th>Status</th>
+                                <th>Verification</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Success Verification Modal -->
+    <div class="modal-overlay" id="successVerificationModal">
+        <div class="modal-box">
+            <div class="modal-body-success">
+                <div class="success-badge-icon" id="successModalIcon"><i class="fas fa-check"></i></div>
+                <h3 id="successModalTitle">Face Verified!</h3>
+                <p id="successModalSub">Attendance recorded successfully.</p>
+
+                <!-- Comparison Photos -->
+                <div class="face-comparison-preview">
+                    <div class="face-thumb-wrap">
+                        <img id="modalLivePhoto" src="" alt="Live Scan">
+                        <span>Live Scan</span>
+                    </div>
+                    <i class="fas fa-arrows-alt-h" style="color: #94a3b8; font-size: 18px;"></i>
+                    <div class="face-thumb-wrap">
+                        <img id="modalRegPhoto" src="" alt="Registered Profile">
+                        <span>Registered</span>
+                    </div>
+                </div>
+
+                <div class="match-score-badge" id="modalConfidenceScore">
+                    <i class="fas fa-shield-alt"></i> 95.4% Match
+                </div>
+
+                <!-- Record Details -->
+                <div class="attendance-details-box">
+                    <div class="details-row">
+                        <span style="font-weight:600; color:#475569;" id="modalActionLabel">Time In:</span>
+                        <span style="font-weight:700; color:#1B2A4A;" id="modalActionTime">07:45 AM</span>
+                    </div>
+                    <div class="details-row">
+                        <span style="font-weight:600; color:#475569;">Attendance Status:</span>
+                        <span style="font-weight:700;" id="modalActionStatus">Present (On Time)</span>
+                    </div>
+                    <div class="details-row">
+                        <span style="font-weight:600; color:#475569;">Verification Engine:</span>
+                        <span style="color:#64748b;">Face++ Biometrics</span>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-modal-done" id="btnCloseSuccessModal">
+                    <i class="fas fa-check"></i> Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/teacher_avatar_sync.js"></script>
+    <script type="module" src="js/attendance-face.js"></script>
+    <script src="../js/chatbot.js"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-// ===== PLSNHS REGISTRAR AVATAR & INITIALS SYNC =====
+// ===== HES REGISTRAR AVATAR & INITIALS SYNC =====
 (function() {
     function getRegistrarInitials(name) {
         if (!name || typeof name !== 'string') return 'R';
@@ -11,8 +11,8 @@
 
     function syncRegistrarAvatarAndName() {
         try {
-            const savedName = localStorage.getItem('plsnhs_registrar_name');
-            const savedAvatar = localStorage.getItem('plsnhs_registrar_avatar');
+            const savedName = localStorage.getItem('hes_registrar_name');
+            const savedAvatar = localStorage.getItem('hes_registrar_avatar');
 
             if (savedName) {
                 document.querySelectorAll('.admin-name, #adminName').forEach(el => {
@@ -51,7 +51,7 @@
             });
 
             // Try to load and render pending badge from localStorage or Supabase
-            const cachedPending = localStorage.getItem('plsnhs_pending_enrollments_count');
+            const cachedPending = localStorage.getItem('hes_pending_enrollments_count');
             if (cachedPending && parseInt(cachedPending, 10) > 0) {
                 document.querySelectorAll('#pendingEnrollmentsBadge, .nav-badge').forEach(b => {
                     b.textContent = cachedPending;
@@ -66,7 +66,7 @@
                     .or('status.ilike.pending,status.eq.Pending,status.eq.pending')
                     .then(({ count }) => {
                         if (count !== null && count !== undefined) {
-                            try { localStorage.setItem('plsnhs_pending_enrollments_count', String(count)); } catch(e) {}
+                            try { localStorage.setItem('hes_pending_enrollments_count', String(count)); } catch(e) {}
                             document.querySelectorAll('#pendingEnrollmentsBadge, .nav-badge').forEach(b => {
                                 if (count > 0) {
                                     b.textContent = count;

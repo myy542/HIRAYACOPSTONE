@@ -1,6 +1,7 @@
 /**
- * Teacher QR Attendance - Supabase Integration
- * Real-time Attendance Generation, Scanning & Logging
+ * Faculty QR Attendance System
+ * Exclusively handles Teacher Personal QR Attendance (Time In, Time Out, 8:00 AM Cutoff, Camera Scanner, Photo Upload)
+ * Strict Weekend Restriction: Attendance is disabled on Saturday and Sunday.
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -8,37 +9,32 @@ import { supabase } from '../../supabase/config.js';
 (function() {
     'use strict';
 
-    console.log('📷 QR Attendance ready');
+    console.log('🌟 Faculty QR Attendance System ready');
 
     // ============================================
-    // DOM ELEMENTS
+    // DOM ELEMENTS - GENERAL & HEADER
     // ============================================
-
     const teacherName = document.getElementById('teacherName');
     const teacherInitial = document.getElementById('teacherInitial');
     const logoutBtn = document.getElementById('logoutBtn');
-
-    // Date & Time display
-    const dateBadge = document.querySelector('.date-badge');
     const phTimeDisplay = document.getElementById('phTimeDisplay');
+    const alertContainer = document.getElementById('alertContainer');
     const lateWarning = document.getElementById('lateWarning');
+    const dateBadge = document.querySelector('.date-badge');
 
-    // Stats
+    // DOM Elements - Stats & Info
     const totalDays = document.getElementById('totalDays');
     const presentDays = document.getElementById('presentDays');
     const lateDays = document.getElementById('lateDays');
     const absentDays = document.getElementById('absentDays');
-
-    // Today's attendance
     const attendanceInfo = document.getElementById('attendanceInfo');
     const timeInDisplay = document.getElementById('timeInDisplay');
     const timeOutDisplay = document.getElementById('timeOutDisplay');
     const statusDisplay = document.getElementById('statusDisplay');
-
-    // QR Section
     const qrContainer = document.getElementById('qrContainer');
+    const historyList = document.getElementById('historyList');
 
-    // Scanner
+    // DOM Elements - Scanner
     const startCameraBtn = document.getElementById('startCameraBtn');
     const stopCameraBtn = document.getElementById('stopCameraBtn');
     const video = document.getElementById('video');
@@ -46,26 +42,21 @@ import { supabase } from '../../supabase/config.js';
     const ctx = canvas ? canvas.getContext('2d') : null;
     const scanResult = document.getElementById('scanResult');
 
-    // Alert container
-    const alertContainer = document.getElementById('alertContainer');
-    const historyList = document.getElementById('historyList');
-
     // ============================================
     // STATE
     // ============================================
-
     let sessionUser = null;
     let teacherId = null;
-    let currentAttendance = null;
-    let attendanceHistory = [];
+    let displayName = 'Teacher';
+    let facultyCurrentAttendance = null;
+    let facultyAttendanceHistory = [];
     let cameraStream = null;
     let isScanning = false;
     let scanThrottle = false;
 
     // ============================================
-    // SESSION CHECK & AUTH
+    // SESSION & AUTH
     // ============================================
-
     try {
         const stored = localStorage.getItem('currentUser');
         if (stored) {
@@ -93,21 +84,26 @@ import { supabase } from '../../supabase/config.js';
     }
 
     teacherId = sessionUser.id || sessionUser.uid;
-    const displayName = sessionUser.firstName ? `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim() : (sessionUser.displayName || (sessionUser.email ? sessionUser.email.split('@')[0] : 'Teacher'));
+    displayName = sessionUser.firstName ? `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim() : (sessionUser.displayName || (sessionUser.email ? sessionUser.email.split('@')[0] : 'Teacher'));
     if (teacherName) teacherName.textContent = displayName;
-    if (teacherInitial) teacherInitial.textContent = displayName.charAt(0).toUpperCase();
+    if (typeof window.syncTeacherAvatarAndName === 'function') {
+        window.syncTeacherAvatarAndName();
+    } else if (teacherInitial) {
+        const words = displayName.split(/\s+/);
+        const initials = words.length > 1 ? (words[0][0] + words[words.length - 1][0]).toUpperCase() : displayName.substring(0, 2).toUpperCase();
+        teacherInitial.textContent = initials;
+    }
 
     // ============================================
     // LOGOUT
     // ============================================
-
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             console.log('🚪 Teacher logging out...');
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_teacher_avatar');
-            localStorage.removeItem('plsnhs_teacher_name');
+            localStorage.removeItem('hes_teacher_avatar');
+            localStorage.removeItem('hes_teacher_name');
             try {
                 if (cameraStream) {
                     cameraStream.getTracks().forEach(track => track.stop());
@@ -121,7 +117,6 @@ import { supabase } from '../../supabase/config.js';
     // ============================================
     // DATE & TIME HELPERS
     // ============================================
-
     function getLocalDateString() {
         const now = new Date();
         const year = now.getFullYear();
@@ -139,8 +134,9 @@ import { supabase } from '../../supabase/config.js';
     }
 
     function formatTime(timeStr) {
-        if (!timeStr) return '--:--';
+        if (!timeStr || timeStr === '—' || timeStr === '--:--') return '—';
         try {
+            if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr;
             const parts = timeStr.split(':');
             const h = parseInt(parts[0], 10);
             const m = parts[1] || '00';
@@ -157,76 +153,98 @@ import { supabase } from '../../supabase/config.js';
         try {
             const d = new Date(dateStr + 'T00:00:00');
             if (isNaN(d.getTime())) return dateStr;
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+            return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
         } catch {
             return dateStr;
         }
     }
 
-    function updateDateTime() {
-        const now = new Date();
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        if (dateBadge) {
-            dateBadge.innerHTML = `<i class="fas fa-calendar-alt"></i> ${now.toLocaleDateString('en-US', options)}`;
-        }
-        if (phTimeDisplay) {
-            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
-            phTimeDisplay.textContent = now.toLocaleDateString('en-US', options) + ' • ' + now.toLocaleTimeString('en-US', timeOptions);
-        }
-
-        // Cutoff warning: after 8:00:00 AM
-        if (lateWarning) {
-            const isLateTime = now.getHours() > 8 || (now.getHours() === 8 && (now.getMinutes() > 0 || now.getSeconds() > 0));
-            lateWarning.style.display = isLateTime ? 'inline-block' : 'none';
-        }
+    function isWeekendToday() {
+        const day = new Date().getDay();
+        return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
     }
 
-    updateDateTime();
-    setInterval(updateDateTime, 1000);
-
-    // ============================================
-    // SHOW ALERT
-    // ============================================
-
-    function showAlert(message, type = 'success') {
+    function showAlert(message, type = 'info') {
         if (!alertContainer) return;
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        alertDiv.innerHTML = `
-            <i class="fas fa-${type === 'success' ? 'check-circle' : (type === 'warning' ? 'exclamation-triangle' : 'exclamation-circle')}"></i>
-            ${message}
-        `;
-        alertContainer.appendChild(alertDiv);
+        const alertId = 'alert_' + Date.now();
+        const iconMap = {
+            'success': 'check-circle',
+            'error': 'exclamation-circle',
+            'warning': 'exclamation-triangle',
+            'info': 'info-circle'
+        };
+        const icon = iconMap[type] || 'info-circle';
 
+        const alertEl = document.createElement('div');
+        alertEl.className = `alert alert-${type}`;
+        alertEl.id = alertId;
+        alertEl.style.animation = 'slideDown 0.3s ease-out';
+        alertEl.innerHTML = `
+            <div style="display:flex; align-items:center; gap: 10px; width: 100%;">
+                <i class="fas fa-${icon}"></i>
+                <div style="flex:1;">${message}</div>
+                <button type="button" style="background:none; border:none; color:inherit; cursor:pointer; font-size:1.1rem;" onclick="this.parentElement.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        alertContainer.prepend(alertEl);
         setTimeout(() => {
-            alertDiv.style.opacity = '0';
-            setTimeout(() => alertDiv.remove(), 300);
+            if (document.getElementById(alertId)) {
+                alertEl.style.opacity = '0';
+                setTimeout(() => alertEl.remove(), 300);
+            }
         }, 5000);
     }
 
-    // ============================================
-    // LOCAL STORAGE CACHE HELPERS
-    // ============================================
+    function updateLiveClock() {
+        const now = new Date();
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        
+        if (dateBadge) {
+            dateBadge.innerHTML = `<i class="fas fa-calendar-alt"></i> ${now.toLocaleDateString('en-US', dateOptions)}`;
+        }
+        if (phTimeDisplay) {
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+            phTimeDisplay.textContent = now.toLocaleDateString('en-US', dateOptions) + ' • ' + now.toLocaleTimeString('en-US', timeOptions);
+        }
 
-    function getLocalAttendanceCache() {
+        // Cutoff warning (only on weekdays)
+        if (lateWarning) {
+            if (isWeekendToday()) {
+                lateWarning.style.display = 'none';
+            } else {
+                const isLateTime = now.getHours() > 8 || (now.getHours() === 8 && (now.getMinutes() > 0 || now.getSeconds() > 0));
+                lateWarning.style.display = isLateTime ? 'inline-block' : 'none';
+            }
+        }
+    }
+
+    updateLiveClock();
+    setInterval(updateLiveClock, 1000);
+
+    // ============================================
+    // DATA SYNC & CACHE
+    // ============================================
+    function getLocalTeacherAttendanceCache() {
         try {
-            const raw = localStorage.getItem('plsnhs_teacher_attendance_' + teacherId);
+            const raw = localStorage.getItem('hes_teacher_attendance_' + teacherId);
             return raw ? JSON.parse(raw) : [];
         } catch(e) {
             return [];
         }
     }
 
-    function saveLocalAttendanceCache(records) {
+    function saveLocalTeacherAttendanceCache(records) {
         try {
-            localStorage.setItem('plsnhs_teacher_attendance_' + teacherId, JSON.stringify(records));
+            localStorage.setItem('hes_teacher_attendance_' + teacherId, JSON.stringify(records));
         } catch(e) {}
     }
 
     function syncToAdminAttendance(record) {
         try {
-            const stored = localStorage.getItem('plsnhs_teacher_attendance');
+            const stored = localStorage.getItem('hes_teacher_attendance');
             let records = stored ? JSON.parse(stored) : [];
             const today = getLocalDateString();
             const timeInFmt = (record.time_in || record.timeIn) ? formatTime(record.time_in || record.timeIn) : '—';
@@ -241,7 +259,7 @@ import { supabase } from '../../supabase/config.js';
                 records.unshift({
                     id: Date.now(),
                     name: displayName,
-                    id_number: sessionUser.employee_id || ('PLSNHS-TCH-' + (teacherId ? String(teacherId).substring(0, 6).toUpperCase() : '001')),
+                    id_number: sessionUser.employee_id || ('HES-TCH-' + (teacherId ? String(teacherId).substring(0, 6).toUpperCase() : '001')),
                     dept: sessionUser.department || sessionUser.specialization || 'Faculty',
                     date: today,
                     timeIn: timeInFmt,
@@ -250,15 +268,11 @@ import { supabase } from '../../supabase/config.js';
                     remarks: record.status === 'Late' ? 'Late arrival' : 'On time'
                 });
             }
-            localStorage.setItem('plsnhs_teacher_attendance', JSON.stringify(records));
+            localStorage.setItem('hes_teacher_attendance', JSON.stringify(records));
         } catch(e) {}
     }
 
-    // ============================================
-    // LOAD ATTENDANCE DATA FROM SUPABASE
-    // ============================================
-
-    async function loadAttendanceData() {
+    async function loadFacultyAttendanceData() {
         const today = getLocalDateString();
         let loadedRecords = [];
 
@@ -271,35 +285,45 @@ import { supabase } from '../../supabase/config.js';
 
             if (!error && data) {
                 loadedRecords = data;
-                saveLocalAttendanceCache(data);
+                saveLocalTeacherAttendanceCache(data);
             } else {
-                console.warn('Using local attendance cache:', error?.message);
-                loadedRecords = getLocalAttendanceCache();
+                loadedRecords = getLocalTeacherAttendanceCache();
             }
         } catch(err) {
-            console.warn('Network error, falling back to cache:', err);
-            loadedRecords = getLocalAttendanceCache();
+            loadedRecords = getLocalTeacherAttendanceCache();
         }
 
-        attendanceHistory = loadedRecords;
+        facultyAttendanceHistory = loadedRecords;
+        facultyCurrentAttendance = loadedRecords.find(r => r.date === today) || null;
 
-        // Find today's record
-        currentAttendance = loadedRecords.find(r => r.date === today) || null;
-        console.log("📋 Today's attendance:", currentAttendance);
-
-        updateAttendanceUI();
-        renderHistory();
-        updateStats();
+        updateFacultyAttendanceUI();
+        renderFacultyHistory();
+        updateFacultyStats();
     }
 
-    // ============================================
-    // UPDATE ATTENDANCE UI
-    // ============================================
-
-    function updateAttendanceUI() {
+    function updateFacultyAttendanceUI() {
         if (!qrContainer) return;
 
-        if (!currentAttendance || (!currentAttendance.time_in && !currentAttendance.timeIn)) {
+        if (isWeekendToday()) {
+            if (attendanceInfo) attendanceInfo.style.display = 'none';
+            qrContainer.innerHTML = `
+                <div class="qr-container weekend-mode" style="border: 2px dashed #f59e0b; background: #fffbeb; padding: 32px 20px; border-radius: var(--radius); text-align: center;">
+                    <div style="font-size: 3.2rem; color: #d97706; margin-bottom: 12px;">
+                        <i class="fas fa-calendar-times"></i>
+                    </div>
+                    <h3 style="color: #92400e; font-size: 1.35rem; margin-bottom: 8px;">Weekend Notice (No Classes)</h3>
+                    <p style="color: #b45309; font-size: 0.95rem; max-width: 480px; margin: 0 auto 16px; line-height: 1.5;">
+                        Today is <strong>${new Date().toLocaleDateString('en-US', { weekday: 'long' })}</strong>. School attendance is strictly disabled on weekends. QR code generation and camera scanning are only active during official class days (Monday to Friday).
+                    </p>
+                    <div style="display: inline-flex; align-items: center; gap: 8px; background: #fef3c7; color: #92400e; font-weight: 600; padding: 8px 16px; border-radius: 24px; font-size: 0.88rem; border: 1px solid #fde68a;">
+                        <i class="fas fa-info-circle"></i> Attendance resumes on Monday at 7:00 AM
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        if (!facultyCurrentAttendance || (!facultyCurrentAttendance.time_in && !facultyCurrentAttendance.timeIn)) {
             if (attendanceInfo) attendanceInfo.style.display = 'none';
             qrContainer.innerHTML = `
                 <div class="qr-container">
@@ -319,9 +343,9 @@ import { supabase } from '../../supabase/config.js';
             return;
         }
 
-        const timeIn = currentAttendance.time_in || currentAttendance.timeIn;
-        const timeOut = currentAttendance.time_out || currentAttendance.timeOut;
-        const status = currentAttendance.status || 'Present';
+        const timeIn = facultyCurrentAttendance.time_in || facultyCurrentAttendance.timeIn;
+        const timeOut = facultyCurrentAttendance.time_out || facultyCurrentAttendance.timeOut;
+        const status = facultyCurrentAttendance.status || 'Present';
 
         if (attendanceInfo) {
             attendanceInfo.style.display = 'block';
@@ -371,14 +395,10 @@ import { supabase } from '../../supabase/config.js';
         }
     }
 
-    // ============================================
-    // RENDER ATTENDANCE HISTORY
-    // ============================================
-
-    function renderHistory() {
+    function renderFacultyHistory() {
         if (!historyList) return;
 
-        if (!attendanceHistory || attendanceHistory.length === 0) {
+        if (!facultyAttendanceHistory || facultyAttendanceHistory.length === 0) {
             historyList.innerHTML = `
                 <div class="no-data">
                     <i class="fas fa-calendar-alt"></i>
@@ -389,7 +409,7 @@ import { supabase } from '../../supabase/config.js';
             return;
         }
 
-        const recent = attendanceHistory.slice(0, 10);
+        const recent = facultyAttendanceHistory.slice(0, 10);
         let html = `
             <div class="table-container">
                 <table class="data-table" style="width: 100%; border-collapse: collapse;">
@@ -428,22 +448,18 @@ import { supabase } from '../../supabase/config.js';
         historyList.innerHTML = html;
     }
 
-    // ============================================
-    // UPDATE STATS
-    // ============================================
-
-    function updateStats() {
-        let total = attendanceHistory.length;
+    function updateFacultyStats() {
+        let total = facultyAttendanceHistory.length;
         let present = 0;
         let late = 0;
         let absent = 0;
 
-        attendanceHistory.forEach(item => {
+        facultyAttendanceHistory.forEach(item => {
             const st = (item.status || '').toLowerCase();
             if (st === 'present') present++;
             else if (st === 'late') late++;
             else if (st === 'absent') absent++;
-            else present++; // default to present if completed
+            else present++;
         });
 
         if (totalDays) totalDays.textContent = total;
@@ -453,18 +469,22 @@ import { supabase } from '../../supabase/config.js';
     }
 
     // ============================================
-    // GENERATE QR CODE
+    // GENERATE FACULTY QR CODE
     // ============================================
-
     window.generateQR = function(type) {
         if (!sessionUser) {
             showAlert('⚠️ Please login first', 'error');
             return;
         }
 
+        if (isWeekendToday()) {
+            showAlert('📅 School attendance is disabled on weekends (Saturday & Sunday).', 'warning');
+            return;
+        }
+
         const today = getLocalDateString();
-        const timeIn = currentAttendance ? (currentAttendance.time_in || currentAttendance.timeIn) : null;
-        const timeOut = currentAttendance ? (currentAttendance.time_out || currentAttendance.timeOut) : null;
+        const timeIn = facultyCurrentAttendance ? (facultyCurrentAttendance.time_in || facultyCurrentAttendance.timeIn) : null;
+        const timeOut = facultyCurrentAttendance ? (facultyCurrentAttendance.time_out || facultyCurrentAttendance.timeOut) : null;
 
         if (timeIn && timeOut) {
             showAlert('⚠️ Attendance is already completed for today', 'warning');
@@ -481,9 +501,8 @@ import { supabase } from '../../supabase/config.js';
             return;
         }
 
-        // Generate token payload
         const payload = {
-            system: 'PLSNHS_QR_ATTENDANCE',
+            system: 'HES_QR_ATTENDANCE',
             teacher_id: teacherId,
             teacher_name: displayName,
             action: type,
@@ -493,7 +512,6 @@ import { supabase } from '../../supabase/config.js';
 
         const qrDataString = JSON.stringify(payload);
         const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(qrDataString)}`;
-
         const actionTitle = type === 'time_in' ? 'Time In' : 'Time Out';
         const now = new Date();
         const isLateTime = now.getHours() > 8 || (now.getHours() === 8 && (now.getMinutes() > 0 || now.getSeconds() > 0));
@@ -528,22 +546,22 @@ import { supabase } from '../../supabase/config.js';
         showAlert(`✅ ${actionTitle} QR code generated! You can scan it or click Confirm to record.`, 'success');
     };
 
-    // ============================================
-    // RECORD ATTENDANCE FUNCTION
-    // ============================================
-
     window.recordAttendance = async function(type) {
+        if (isWeekendToday()) {
+            showAlert('📅 Cannot record attendance on Saturday/Sunday. School is in weekend recess.', 'warning');
+            return;
+        }
+
         const today = getLocalDateString();
         const currentTime = getLocalTimeString();
         const now = new Date();
         const isLate = now.getHours() > 8 || (now.getHours() === 8 && (now.getMinutes() > 0 || now.getSeconds() > 0));
-        const status = (type === 'time_in') ? (isLate ? 'Late' : 'Present') : (currentAttendance?.status || 'Present');
+        const status = (type === 'time_in') ? (isLate ? 'Late' : 'Present') : (facultyCurrentAttendance?.status || 'Present');
 
         try {
             let updatedRecord = null;
 
-            if (currentAttendance && currentAttendance.id) {
-                // Update existing record
+            if (facultyCurrentAttendance && facultyCurrentAttendance.id) {
                 const updates = {};
                 if (type === 'time_in') {
                     updates.time_in = currentTime;
@@ -555,20 +573,15 @@ import { supabase } from '../../supabase/config.js';
                 const { data, error } = await supabase
                     .from('attendance')
                     .update(updates)
-                    .eq('id', currentAttendance.id)
+                    .eq('id', facultyCurrentAttendance.id)
                     .select();
 
                 if (!error && data && data.length > 0) {
                     updatedRecord = data[0];
                 } else {
-                    // Update locally
-                    updatedRecord = {
-                        ...currentAttendance,
-                        ...updates
-                    };
+                    updatedRecord = { ...facultyCurrentAttendance, ...updates };
                 }
             } else {
-                // Insert new record
                 const newRow = {
                     teacher_id: teacherId,
                     date: today,
@@ -586,23 +599,21 @@ import { supabase } from '../../supabase/config.js';
                 if (!error && data && data.length > 0) {
                     updatedRecord = data[0];
                 } else {
-                    // Fallback locally with generated id
                     newRow.id = 'local_' + Date.now();
                     updatedRecord = newRow;
                 }
             }
 
-            // Update in-memory history and cache
-            const existingIdx = attendanceHistory.findIndex(r => r.date === today);
+            const existingIdx = facultyAttendanceHistory.findIndex(r => r.date === today);
             if (existingIdx >= 0) {
-                attendanceHistory[existingIdx] = updatedRecord;
+                facultyAttendanceHistory[existingIdx] = updatedRecord;
             } else {
-                attendanceHistory.unshift(updatedRecord);
+                facultyAttendanceHistory.unshift(updatedRecord);
             }
-            saveLocalAttendanceCache(attendanceHistory);
+            saveLocalTeacherAttendanceCache(facultyAttendanceHistory);
             syncToAdminAttendance(updatedRecord);
 
-            currentAttendance = updatedRecord;
+            facultyCurrentAttendance = updatedRecord;
 
             const timeFormatted = formatTime(currentTime);
             const actionTitle = type === 'time_in' ? 'Time In' : 'Time Out';
@@ -613,12 +624,12 @@ import { supabase } from '../../supabase/config.js';
                 scanResult.innerHTML = `<strong><i class="fas fa-check-circle"></i> Success!</strong> ${actionTitle} recorded for ${displayName} at ${timeFormatted} (Status: ${status}).`;
             }
 
-            updateAttendanceUI();
-            renderHistory();
-            updateStats();
+            updateFacultyAttendanceUI();
+            renderFacultyHistory();
+            updateFacultyStats();
 
         } catch (error) {
-            console.error('Error recording attendance:', error);
+            console.error('Error recording faculty attendance:', error);
             showAlert('❌ Failed to record attendance: ' + error.message, 'error');
         }
     };
@@ -626,7 +637,6 @@ import { supabase } from '../../supabase/config.js';
     // ============================================
     // QR SCANNER (CAMERA & IMAGE)
     // ============================================
-
     function loadJsQR() {
         return new Promise((resolve, reject) => {
             if (typeof window.jsQR !== 'undefined') {
@@ -642,6 +652,11 @@ import { supabase } from '../../supabase/config.js';
     }
 
     window.startCamera = async function() {
+        if (isWeekendToday()) {
+            showAlert('📅 Camera scanning is disabled on weekends (Saturday & Sunday).', 'warning');
+            return;
+        }
+
         try {
             await loadJsQR();
 
@@ -722,7 +737,6 @@ import { supabase } from '../../supabase/config.js';
             try {
                 parsed = JSON.parse(data);
             } catch(e) {
-                // Check url params
                 if (data.includes('token=')) {
                     const url = new URL(data);
                     const token = url.searchParams.get('token');
@@ -737,12 +751,11 @@ import { supabase } from '../../supabase/config.js';
             if (parsed && (parsed.action === 'time_in' || parsed.action === 'time_out')) {
                 showAlert(`✅ QR Code detected! Recording ${parsed.action === 'time_in' ? 'Time In' : 'Time Out'}...`, 'success');
                 window.recordAttendance(parsed.action);
-            } else if (parsed && parsed.system === 'PLSNHS_QR_ATTENDANCE') {
+            } else if (parsed && parsed.system === 'HES_QR_ATTENDANCE') {
                 const action = parsed.action || 'time_in';
                 window.recordAttendance(action);
             } else {
-                // If simple string containing time_in or time_out
-                const action = (data.toLowerCase().includes('time_out') || (currentAttendance && currentAttendance.time_in)) ? 'time_out' : 'time_in';
+                const action = (data.toLowerCase().includes('time_out') || (facultyCurrentAttendance && facultyCurrentAttendance.time_in)) ? 'time_out' : 'time_in';
                 showAlert(`✅ QR scanned! Recording ${action === 'time_in' ? 'Time In' : 'Time Out'}...`, 'success');
                 window.recordAttendance(action);
             }
@@ -752,14 +765,10 @@ import { supabase } from '../../supabase/config.js';
         }
     }
 
-    // ============================================
-    // TAB SWITCHING
-    // ============================================
-
     window.switchTab = function(tab) {
         const cameraTab = document.getElementById('cameraScannerTab');
         const uploadTab = document.getElementById('uploadScannerTab');
-        const tabs = document.querySelectorAll('.tab-btn');
+        const tabs = document.querySelectorAll('.scanner-header .tab-btn');
 
         tabs.forEach(t => t.classList.remove('active'));
 
@@ -774,12 +783,14 @@ import { supabase } from '../../supabase/config.js';
             if (isScanning) window.stopCamera();
         }
     };
-
-    // ============================================
-    // UPLOAD IMAGE SCANNER
-    // ============================================
+    window.switchScannerTab = window.switchTab;
 
     window.uploadImage = async function(input) {
+        if (isWeekendToday()) {
+            showAlert('📅 Image upload scanning is disabled on weekends (Saturday & Sunday).', 'warning');
+            return;
+        }
+
         const file = input.files[0];
         if (!file) return;
 
@@ -821,11 +832,10 @@ import { supabase } from '../../supabase/config.js';
     };
 
     // ============================================
-    // INITIAL LOAD
+    // INITIALIZATION
     // ============================================
+    loadFacultyAttendanceData();
 
-    loadAttendanceData();
-
-    console.log('✅ Teacher QR Attendance fully loaded with Supabase');
+    console.log('✅ Faculty QR Attendance fully initialized');
 
 })();

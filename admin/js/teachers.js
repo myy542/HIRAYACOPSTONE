@@ -118,6 +118,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <td>${statusBadge}</td>
                     <td>
                         <div class="action-btns">
+                            <a href="register_face.html?id=${teacher.id}" class="action-btn" title="Register / Re-scan Face Biometrics" style="color: #0f766e; background: #ccfbf1;">
+                                <i class="fas fa-camera"></i>
+                            </a>
                             <a href="view_teacher.html?id=${teacher.id}" class="action-btn view" title="View Teacher">
                                 <i class="fas fa-eye"></i>
                             </a>
@@ -193,7 +196,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     user_id: t.user_id,
                     fullname: fullName,
                     email: email,
-                    id_number: t.employee_id || 'PLSNHS-TCH-0000',
+                    id_number: t.employee_id || 'HES-TCH-0000',
                     specialization: t.specialization || 'General',
                     phone: t.phone || '',
                     created_at: t.created_at || (matchedUser ? matchedUser.created_at : new Date().toISOString()),
@@ -213,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         user_id: u.id,
                         fullname: fullName,
                         email: u.email,
-                        id_number: 'PLSNHS-TCH-PEND',
+                        id_number: 'HES-TCH-PEND',
                         specialization: 'Faculty',
                         phone: '',
                         created_at: u.created_at || new Date().toISOString(),

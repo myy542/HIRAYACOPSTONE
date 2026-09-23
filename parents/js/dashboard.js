@@ -1,6 +1,6 @@
 /**
  * Parents Dashboard - Supabase Dynamic Integration
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -91,8 +91,8 @@ import { supabase } from '../../supabase/config.js';
         logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_parent_avatar');
-            localStorage.removeItem('plsnhs_parent_name');
+            localStorage.removeItem('hes_parent_avatar');
+            localStorage.removeItem('hes_parent_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}
@@ -198,6 +198,20 @@ import { supabase } from '../../supabase/config.js';
                 if (subData) subjectsList = subData;
             } catch (err) {}
 
+            function isWeekend(dateStr) {
+                if (!dateStr) return false;
+                try {
+                    const d = new Date(dateStr + 'T00:00:00');
+                    const day = d.getDay();
+                    return day === 0 || day === 6;
+                } catch {
+                    return false;
+                }
+            }
+
+            // Strictly filter out any weekend attendance records
+            attendanceLogs = attendanceLogs.filter(a => !isWeekend(a.date));
+
             // Calculate and Render
             const enrichedChildren = enrichChildrenData(students, enrollments, attendanceLogs);
             
@@ -209,7 +223,7 @@ import { supabase } from '../../supabase/config.js';
             if (sidebarChildName) sidebarChildName.textContent = enrichedChildren[0]?.name || 'Student';
             
             if (enrichedChildren.length > 0) {
-                localStorage.setItem('plsnhs_parent_child_name', childNames);
+                localStorage.setItem('hes_parent_child_name', childNames);
             }
 
             updateStats(enrichedChildren, attendanceLogs);

@@ -1,5 +1,5 @@
 /**
- * PLSNHS Admin - View Student Profile (Supabase Dynamic Integration)
+ * HES Admin - View Student Profile (Supabase Dynamic Integration)
  */
 
 import { supabase } from '../../supabase/config.js';

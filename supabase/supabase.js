@@ -1,6 +1,6 @@
 /**
  * Supabase Helper Functions
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  * 
  * Kini nga file kay naghatag og helper functions para sa:
  * - Authentication (login, logout, register)

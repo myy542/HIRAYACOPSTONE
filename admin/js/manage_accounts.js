@@ -108,15 +108,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 let idNumber = null;
                 const roleLower = (u.role || '').toLowerCase();
                 if (roleLower === 'teacher') {
-                    idNumber = teacherMap.get(u.id) || `PLSNHS-TCH-${u.id.substring(0, 5).toUpperCase()}`;
+                    idNumber = teacherMap.get(u.id) || `HES-TCH-${u.id.substring(0, 5).toUpperCase()}`;
                 } else if (roleLower === 'student') {
-                    idNumber = (u.email ? studentMap.get(u.email.toLowerCase()) : null) || `PLSNHS-STU-${u.id.substring(0, 5).toUpperCase()}`;
+                    idNumber = (u.email ? studentMap.get(u.email.toLowerCase()) : null) || `HES-STU-${u.id.substring(0, 5).toUpperCase()}`;
                 } else if (roleLower === 'admin') {
-                    idNumber = `PLSNHS-ADM-${u.id.substring(0, 5).toUpperCase()}`;
+                    idNumber = `HES-ADM-${u.id.substring(0, 5).toUpperCase()}`;
                 } else if (roleLower === 'registrar') {
-                    idNumber = `PLSNHS-RGR-${u.id.substring(0, 5).toUpperCase()}`;
+                    idNumber = `HES-RGR-${u.id.substring(0, 5).toUpperCase()}`;
                 } else {
-                    idNumber = `PLSNHS-${(u.role || 'USR').substring(0, 3).toUpperCase()}-${u.id.substring(0, 5).toUpperCase()}`;
+                    idNumber = `HES-${(u.role || 'USR').substring(0, 3).toUpperCase()}-${u.id.substring(0, 5).toUpperCase()}`;
                 }
 
                 // Status logic: active users are 'approved' by default

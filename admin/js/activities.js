@@ -1,0 +1,661 @@
+// ===== SYSTEM ACTIVITIES & AUDIT LOGS JAVASCRIPT =====
+import { supabase } from '../../supabase/config.js';
+
+document.addEventListener('DOMContentLoaded', async function() {
+    'use strict';
+
+    // DOM Elements
+    const alertContainer = document.getElementById('alertContainer');
+    const refreshBtn = document.getElementById('refreshActivitiesBtn');
+    const exportBtn = document.getElementById('exportActivitiesBtn');
+    const searchInput = document.getElementById('activitySearchInput');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    const roleFilter = document.getElementById('roleFilterSelect');
+    const dateFilter = document.getElementById('dateFilterSelect');
+    const categoryChips = document.querySelectorAll('.category-chip');
+    const streamContainer = document.getElementById('activityStreamContainer');
+    const visibleCountBadge = document.getElementById('visibleCountBadge');
+    const loadMoreWrap = document.getElementById('loadMoreWrap');
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+    // KPI Counter Elements
+    const statTotalEl = document.getElementById('statTotalActivities');
+    const statEnrollEl = document.getElementById('statEnrollmentActivities');
+    const statAccountEl = document.getElementById('statAccountActivities');
+    const statSecurityEl = document.getElementById('statSecurityActivities');
+
+    // Chip Count Elements
+    const chipAllCount = document.getElementById('chipAllCount');
+    const chipEnrollCount = document.getElementById('chipEnrollCount');
+    const chipAccountCount = document.getElementById('chipAccountCount');
+    const chipAttendanceCount = document.getElementById('chipAttendanceCount');
+    const chipAdminCount = document.getElementById('chipAdminCount');
+    const chipSecurityCount = document.getElementById('chipSecurityCount');
+
+    // Modal Elements
+    const detailModal = document.getElementById('activityDetailModal');
+    const modalBody = document.getElementById('activityModalBody');
+    const closeDetailModalBtn = document.getElementById('closeDetailModalBtn');
+    const closeDetailModalBtn2 = document.getElementById('closeDetailModalBtn2');
+
+    // State
+    let allActivities = [];
+    let filteredActivities = [];
+    let currentCategory = 'all';
+    let searchQuery = '';
+    let selectedRole = '';
+    let selectedDateRange = 'all';
+    let displayLimit = 15;
+    const PAGE_SIZE = 15;
+
+    // Toast Alert Helper
+    function showAlert(message, type = 'info') {
+        if (!alertContainer) return;
+        const div = document.createElement('div');
+        div.className = `alert alert-${type}`;
+        div.style.cssText = `
+            padding: 12px 18px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            background: ${type === 'error' ? '#fee2e2' : type === 'success' ? '#dcfce7' : '#eff6ff'};
+            color: ${type === 'error' ? '#991b1b' : type === 'success' ? '#166534' : '#1e40af'};
+            border: 1px solid ${type === 'error' ? '#fecaca' : type === 'success' ? '#bbf7d0' : '#bfdbfe'};
+            transition: all 0.3s ease;
+        `;
+        const icon = type === 'error' ? 'fa-exclamation-circle' : type === 'success' ? 'fa-check-circle' : 'fa-info-circle';
+        div.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+        alertContainer.appendChild(div);
+
+        setTimeout(() => {
+            div.style.opacity = '0';
+            setTimeout(() => div.remove(), 300);
+        }, 4000);
+    }
+
+    // Relative Time Formatter
+    function getRelativeTime(dateString) {
+        if (!dateString) return 'Just now';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffSecs = Math.floor(diffMs / 1000);
+        const diffMins = Math.floor(diffSecs / 60);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffSecs < 60) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays === 1) return 'Yesterday';
+        if (diffDays < 7) return `${diffDays}d ago`;
+
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function formatExactDateTime(dateString) {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric',
+            hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true
+        });
+    }
+
+    // Grouping Date Header Helper
+    function getDateGroupKey(dateString) {
+        if (!dateString) return 'Recent';
+        const date = new Date(dateString);
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (date.toDateString() === today.toDateString()) return 'Today';
+        if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+        return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
+
+    // Fetch and aggregate live activities
+    async function loadActivities() {
+        if (streamContainer) {
+            streamContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-circle-notch fa-spin"></i>
+                    <h4>Loading Activities...</h4>
+                    <p>Fetching real-time audit logs from the database.</p>
+                </div>
+            `;
+        }
+
+        try {
+            const activities = [];
+
+            // 1. Fetch from activity_logs table if available
+            try {
+                const { data: logData, error: logErr } = await supabase
+                    .from('activity_logs')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(100);
+
+                if (!logErr && logData && logData.length > 0) {
+                    logData.forEach(l => {
+                        activities.push({
+                            id: `log-${l.id}`,
+                            type: l.type || (l.action?.toLowerCase().includes('enroll') ? 'enrollment' : 'admin_action'),
+                            title: l.action || 'System Action Logged',
+                            description: l.details || l.description || l.message || 'Administrative operation recorded in the system audit log.',
+                            actorName: l.user_name || l.fullname || 'Administrator',
+                            actorRole: (l.user_role || l.role || 'admin').toLowerCase(),
+                            actorEmail: l.user_email || l.email || '',
+                            date: l.created_at || l.timestamp || new Date().toISOString(),
+                            metadata: {
+                                ip: l.ip_address || 'Internal System',
+                                module: l.module || 'Admin Core',
+                                targetId: l.target_id || '-'
+                            }
+                        });
+                    });
+                }
+            } catch(e) {
+                console.warn('activity_logs table not accessible, synthesizing from entity records');
+            }
+
+            // 2. Fetch Enrollments
+            const { data: enrData } = await supabase
+                .from('enrollments')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(60);
+
+            if (enrData && enrData.length > 0) {
+                enrData.forEach(e => {
+                    const studentName = `${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Student Applicant';
+                    const gradeStr = e.grade_level || 'Grade Level Not Specified';
+                    const strandStr = e.strand ? ` • ${e.strand}` : '';
+                    const status = (e.status || 'Pending').toLowerCase();
+
+                    let actTitle = 'Enrollment Application Submitted';
+                    let actType = 'enrollment';
+                    if (status === 'approved' || status === 'enrolled') {
+                        actTitle = 'Enrollment Application Approved';
+                        actType = 'enrollment';
+                    } else if (status === 'rejected') {
+                        actTitle = 'Enrollment Application Rejected';
+                        actType = 'enrollment';
+                    }
+
+                    activities.push({
+                        id: `enr-${e.id}`,
+                        type: actType,
+                        title: actTitle,
+                        description: `Student <strong>${studentName}</strong> registered for <strong>${gradeStr}${strandStr}</strong>. Status is currently marked as <strong>${status.toUpperCase()}</strong>.`,
+                        actorName: studentName,
+                        actorRole: 'student',
+                        actorEmail: e.email || '',
+                        date: e.updated_at || e.created_at || new Date().toISOString(),
+                        actionLink: `view_enrollment.html?id=${e.id}`,
+                        actionText: 'View Enrollment',
+                        metadata: {
+                            'Reference Number': e.tracking_number || `HES-ENR-${e.id}`,
+                            'Grade & Strand': `${gradeStr}${strandStr}`,
+                            'Enrollment Status': status.toUpperCase(),
+                            'Contact Phone': e.phone || 'N/A'
+                        }
+                    });
+                });
+            }
+
+            // 3. Fetch User Accounts
+            const { data: uData } = await supabase
+                .from('users')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (uData && uData.length > 0) {
+                uData.forEach(u => {
+                    const fullName = `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'System User';
+                    const role = (u.role || 'user').toLowerCase();
+                    const isApproved = u.status === 'approved' || u.is_verified === true || !u.status;
+
+                    activities.push({
+                        id: `usr-${u.id}`,
+                        type: 'account',
+                        title: isApproved ? `User Account Active (${role.toUpperCase()})` : `New ${role.toUpperCase()} Account Registered`,
+                        description: `Account for <strong>${fullName}</strong> registered with email <code>${u.email}</code> and role <strong>${role.toUpperCase()}</strong>.`,
+                        actorName: fullName,
+                        actorRole: role,
+                        actorEmail: u.email,
+                        date: u.created_at || new Date().toISOString(),
+                        actionLink: `view_account.html?id=${u.id}`,
+                        actionText: 'View Account',
+                        metadata: {
+                            'Account Role': role.toUpperCase(),
+                            'Email': u.email,
+                            'Employee / Student ID': u.id_number || 'N/A',
+                            'Status': isApproved ? 'ACTIVE' : 'PENDING'
+                        }
+                    });
+                });
+            }
+
+            // 4. Fetch Attendance Records
+            try {
+                const { data: attData } = await supabase
+                    .from('attendance')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(30);
+
+                if (attData && attData.length > 0) {
+                    attData.forEach(a => {
+                        const status = (a.status || 'Present').toUpperCase();
+                        activities.push({
+                            id: `att-${a.id}`,
+                            type: 'attendance',
+                            title: `Student Attendance Recorded: ${status}`,
+                            description: `Attendance entry logged with status <strong>${status}</strong> on date <strong>${a.date || 'Today'}</strong>.`,
+                            actorName: a.student_name || 'Student Attendance',
+                            actorRole: 'teacher',
+                            actorEmail: '',
+                            date: a.created_at || a.date || new Date().toISOString(),
+                            actionLink: 'attendance.html',
+                            actionText: 'Open Attendance',
+                            metadata: {
+                                'Status': status,
+                                'Date': a.date || 'N/A',
+                                'Time Logged': a.time || 'N/A'
+                            }
+                        });
+                    });
+                }
+            } catch(e) {
+                console.warn('Attendance records skipped or not found');
+            }
+
+            // Sort all activities chronologically descending
+            activities.sort((a, b) => new Date(b.date) - new Date(a.date));
+            allActivities = activities;
+
+            updateKpiStats();
+            applyFilters();
+        } catch (err) {
+            console.error('Error loading activities:', err);
+            showAlert('Failed to load some activity logs. Please refresh.', 'error');
+            if (streamContainer) {
+                streamContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i>
+                        <h4>Unable to Load Activities</h4>
+                        <p>${err.message || 'Database connection error'}</p>
+                        <button type="button" class="btn-primary" onclick="window.location.reload()"><i class="fas fa-redo"></i> Try Again</button>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    // Update Top KPI Counters and Category Chip Counts
+    function updateKpiStats() {
+        const total = allActivities.length;
+        const enrollCount = allActivities.filter(a => a.type === 'enrollment').length;
+        const accountCount = allActivities.filter(a => a.type === 'account').length;
+        const attendanceCount = allActivities.filter(a => a.type === 'attendance').length;
+        const adminCount = allActivities.filter(a => a.type === 'admin_action').length;
+        const securityCount = allActivities.filter(a => a.type === 'security').length;
+
+        if (statTotalEl) statTotalEl.textContent = total;
+        if (statEnrollEl) statEnrollEl.textContent = enrollCount;
+        if (statAccountEl) statAccountEl.textContent = accountCount;
+        if (statSecurityEl) statSecurityEl.textContent = attendanceCount + adminCount + securityCount;
+
+        if (chipAllCount) chipAllCount.textContent = total;
+        if (chipEnrollCount) chipEnrollCount.textContent = enrollCount;
+        if (chipAccountCount) chipAccountCount.textContent = accountCount;
+        if (chipAttendanceCount) chipAttendanceCount.textContent = attendanceCount;
+        if (chipAdminCount) chipAdminCount.textContent = adminCount;
+        if (chipSecurityCount) chipSecurityCount.textContent = securityCount;
+    }
+
+    // Filter Logic
+    function applyFilters() {
+        const query = (searchQuery || '').toLowerCase().trim();
+        const role = (selectedRole || '').toLowerCase();
+        const dateRange = selectedDateRange;
+        const category = currentCategory;
+
+        const now = new Date();
+        const todayStr = now.toDateString();
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toDateString();
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        filteredActivities = allActivities.filter(act => {
+            // Category filter
+            if (category !== 'all') {
+                if (category === 'security' && (act.type === 'security' || act.type === 'admin_action')) {
+                    // Match security category
+                } else if (act.type !== category) {
+                    return false;
+                }
+            }
+
+            // Role filter
+            if (role && act.actorRole !== role) {
+                return false;
+            }
+
+            // Date range filter
+            if (dateRange !== 'all') {
+                const actDate = new Date(act.date);
+                if (dateRange === 'today' && actDate.toDateString() !== todayStr) return false;
+                if (dateRange === 'yesterday' && actDate.toDateString() !== yesterdayStr) return false;
+                if (dateRange === 'week' && actDate < oneWeekAgo) return false;
+                if (dateRange === 'month' && actDate < firstDayOfMonth) return false;
+            }
+
+            // Search query
+            if (query) {
+                const combined = `${act.title} ${act.description} ${act.actorName} ${act.actorEmail} ${act.actorRole} ${JSON.stringify(act.metadata || {})}`.toLowerCase();
+                if (!combined.includes(query)) return false;
+            }
+
+            return true;
+        });
+
+        displayLimit = PAGE_SIZE;
+        renderActivityStream();
+    }
+
+    // Render Stream
+    function renderActivityStream() {
+        if (!streamContainer) return;
+
+        if (visibleCountBadge) {
+            visibleCountBadge.textContent = `Showing ${Math.min(displayLimit, filteredActivities.length)} of ${filteredActivities.length} activities`;
+        }
+
+        if (filteredActivities.length === 0) {
+            streamContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-search-minus"></i>
+                    <h4>No Activities Found</h4>
+                    <p>No recorded activities matched your search criteria or active filters.</p>
+                    <button type="button" class="btn-secondary" id="resetFiltersBtn">
+                        <i class="fas fa-undo"></i> Reset Filters
+                    </button>
+                </div>
+            `;
+            const resetBtn = document.getElementById('resetFiltersBtn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    if (searchInput) searchInput.value = '';
+                    if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+                    if (roleFilter) roleFilter.value = '';
+                    if (dateFilter) dateFilter.value = 'all';
+                    categoryChips.forEach(c => c.classList.toggle('active', c.dataset.category === 'all'));
+                    currentCategory = 'all';
+                    searchQuery = '';
+                    selectedRole = '';
+                    selectedDateRange = 'all';
+                    applyFilters();
+                });
+            }
+            if (loadMoreWrap) loadMoreWrap.style.display = 'none';
+            return;
+        }
+
+        const itemsToShow = filteredActivities.slice(0, displayLimit);
+        let html = '';
+        let lastGroup = null;
+
+        const iconMap = {
+            enrollment: { icon: 'fa-file-signature', class: 'enrollment' },
+            account: { icon: 'fa-user-plus', class: 'account' },
+            approval: { icon: 'fa-user-check', class: 'approval' },
+            attendance: { icon: 'fa-calendar-check', class: 'attendance' },
+            admin_action: { icon: 'fa-shield-alt', class: 'system' },
+            security: { icon: 'fa-lock', class: 'security' },
+            system: { icon: 'fa-history', class: 'system' }
+        };
+
+        itemsToShow.forEach((act, index) => {
+            const groupKey = getDateGroupKey(act.date);
+            if (groupKey !== lastGroup) {
+                html += `<div class="activity-date-divider">${groupKey}</div>`;
+                lastGroup = groupKey;
+            }
+
+            const iconInfo = iconMap[act.type] || iconMap.system;
+            const actorInitial = (act.actorName || 'U').charAt(0).toUpperCase();
+            const relTime = getRelativeTime(act.date);
+            const exactTime = formatExactDateTime(act.date);
+
+            html += `
+                <div class="activity-item-card" data-index="${index}">
+                    <div class="activity-item-icon-box ${iconInfo.class}">
+                        <i class="fas ${iconInfo.icon}"></i>
+                    </div>
+                    <div class="activity-item-body">
+                        <div class="activity-item-top">
+                            <span class="activity-item-title">${act.title}</span>
+                            <span class="activity-item-time" title="${exactTime}">
+                                <i class="far fa-clock"></i> ${relTime}
+                            </span>
+                        </div>
+                        <div class="activity-item-desc">${act.description}</div>
+                        <div class="activity-item-meta">
+                            <span class="activity-user-pill">
+                                <span class="activity-user-avatar">${actorInitial}</span>
+                                <span>${act.actorName}</span>
+                            </span>
+                            <span class="activity-role-badge ${act.actorRole}">${act.actorRole}</span>
+                            ${act.actionLink ? `
+                                <a href="${act.actionLink}" class="activity-action-btn">
+                                    <i class="fas fa-arrow-up-right-from-square"></i> ${act.actionText || 'View'}
+                                </a>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        streamContainer.innerHTML = html;
+
+        // Attach click listeners to cards for opening detail modal
+        const cards = streamContainer.querySelectorAll('.activity-item-card');
+        cards.forEach(card => {
+            card.addEventListener('click', function(e) {
+                // Ignore clicks on direct link buttons
+                if (e.target.closest('.activity-action-btn')) return;
+                const idx = parseInt(this.dataset.index, 10);
+                const act = itemsToShow[idx];
+                if (act) showActivityDetailModal(act);
+            });
+        });
+
+        // Show/Hide Load More Button
+        if (loadMoreWrap) {
+            loadMoreWrap.style.display = displayLimit < filteredActivities.length ? 'block' : 'none';
+        }
+    }
+
+    // Modal Details Renderer
+    function showActivityDetailModal(act) {
+        if (!detailModal || !modalBody) return;
+
+        let metaHtml = '';
+        if (act.metadata && Object.keys(act.metadata).length > 0) {
+            for (const [k, v] of Object.entries(act.metadata)) {
+                metaHtml += `
+                    <div class="detail-item">
+                        <span class="detail-label">${k}</span>
+                        <span class="detail-value">${v}</span>
+                    </div>
+                `;
+            }
+        }
+
+        modalBody.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding: 14px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: #1B2A4A; color: #FFD700; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                    <i class="fas fa-history"></i>
+                </div>
+                <div>
+                    <h4 style="margin: 0 0 4px 0; font-size: 16px; font-weight: 700; color: #0f172a;">${act.title}</h4>
+                    <span class="activity-role-badge ${act.actorRole}">${act.actorRole}</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px; font-size: 14px; line-height: 1.6; color: #334155; padding: 12px 14px; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 10px;">
+                ${act.description}
+            </div>
+
+            <div class="activity-detail-grid">
+                <div class="detail-item">
+                    <span class="detail-label">Actor / Initiator</span>
+                    <span class="detail-value">${act.actorName}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Email Address</span>
+                    <span class="detail-value">${act.actorEmail || 'N/A'}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Exact Timestamp</span>
+                    <span class="detail-value">${formatExactDateTime(act.date)}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Event Category</span>
+                    <span class="detail-value" style="text-transform: capitalize;">${act.type}</span>
+                </div>
+                ${metaHtml}
+            </div>
+
+            ${act.actionLink ? `
+                <div style="text-align: right; margin-top: 10px;">
+                    <a href="${act.actionLink}" class="btn-primary" style="text-decoration: none;">
+                        <i class="fas fa-external-link-alt"></i> Navigate to ${act.actionText || 'Details'}
+                    </a>
+                </div>
+            ` : ''}
+        `;
+
+        detailModal.style.display = 'flex';
+    }
+
+    function closeDetailModal() {
+        if (detailModal) detailModal.style.display = 'none';
+    }
+
+    if (closeDetailModalBtn) closeDetailModalBtn.addEventListener('click', closeDetailModal);
+    if (closeDetailModalBtn2) closeDetailModalBtn2.addEventListener('click', closeDetailModal);
+    window.addEventListener('click', (e) => {
+        if (e.target === detailModal) closeDetailModal();
+    });
+
+    // Event Listeners
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            refreshBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Refreshing...';
+            refreshBtn.disabled = true;
+            await loadActivities();
+            refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            refreshBtn.disabled = false;
+            showAlert('System activities synchronized successfully!', 'success');
+        });
+    }
+
+    // Export CSV
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            if (filteredActivities.length === 0) {
+                showAlert('No activities to export.', 'error');
+                return;
+            }
+
+            const headers = ['Timestamp', 'Type', 'Title', 'Description', 'Actor Name', 'Role', 'Email'];
+            const rows = filteredActivities.map(a => [
+                `"${formatExactDateTime(a.date)}"`,
+                `"${a.type}"`,
+                `"${(a.title || '').replace(/"/g, '""')}"`,
+                `"${(a.description || '').replace(/<[^>]*>/g, '').replace(/"/g, '""')}"`,
+                `"${(a.actorName || '').replace(/"/g, '""')}"`,
+                `"${a.actorRole}"`,
+                `"${a.actorEmail || ''}"`
+            ]);
+
+            const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            link.setAttribute('download', `HES_Activities_Log_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showAlert('Activities exported to CSV successfully!', 'success');
+        });
+    }
+
+    // Search input
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            searchQuery = this.value;
+            if (clearSearchBtn) clearSearchBtn.style.display = searchQuery ? 'block' : 'none';
+            applyFilters();
+        });
+    }
+
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', function() {
+            if (searchInput) searchInput.value = '';
+            searchQuery = '';
+            this.style.display = 'none';
+            applyFilters();
+        });
+    }
+
+    // Role filter
+    if (roleFilter) {
+        roleFilter.addEventListener('change', function() {
+            selectedRole = this.value;
+            applyFilters();
+        });
+    }
+
+    // Date filter
+    if (dateFilter) {
+        dateFilter.addEventListener('change', function() {
+            selectedDateRange = this.value;
+            applyFilters();
+        });
+    }
+
+    // Category chips
+    categoryChips.forEach(chip => {
+        chip.addEventListener('click', function() {
+            categoryChips.forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            currentCategory = this.dataset.category || 'all';
+            applyFilters();
+        });
+    });
+
+    // Load More Button
+    if (loadMoreBtn) {
+        loadMoreBtn.addEventListener('click', function() {
+            displayLimit += PAGE_SIZE;
+            renderActivityStream();
+        });
+    }
+
+    // Initial Load
+    await loadActivities();
+});

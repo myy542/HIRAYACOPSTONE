@@ -1,6 +1,6 @@
 /**
  * Student Requirements - Supabase Integration
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -68,13 +68,6 @@ import { supabase } from '../../supabase/config.js';
             description: 'Official Certificate of Good Moral Character issued by previous school.',
             required: true,
             dbField: 'good_moral_url'
-        },
-        {
-            key: 'id_picture',
-            title: '2x2 Recent ID Pictures',
-            description: 'Recent 2x2 ID picture in white background with nametag (2 copies).',
-            required: false,
-            dbField: 'id_picture_url'
         }
     ];
 
@@ -139,8 +132,8 @@ import { supabase } from '../../supabase/config.js';
         logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_student_avatar');
-            localStorage.removeItem('plsnhs_student_name');
+            localStorage.removeItem('hes_student_avatar');
+            localStorage.removeItem('hes_student_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}
@@ -277,29 +270,32 @@ import { supabase } from '../../supabase/config.js';
             const statusClass = item.status === 'Verified' ? 'badge-verified' : 
                                item.status === 'Under Review' ? 'badge-review' : 'badge-missing';
             const statusIcon = item.status === 'Verified' ? '<i class="fas fa-check-circle"></i>' : 
-                              item.status === 'Under Review' ? '<i class="fas fa-clock"></i>' : '<i class="fas fa-exclamation-circle"></i>';
+                              item.status === 'Under Review' ? '<i class="fas fa-clock"></i>' : '<i class="fas fa-circle-exclamation"></i>';
 
             itemDiv.innerHTML = `
-                <div class="req-icon">
-                    <i class="fas ${item.isSubmitted ? 'fa-file-check' : 'fa-file-upload'}"></i>
+                <div class="req-icon ${item.isSubmitted ? 'submitted' : 'missing'}">
+                    <i class="fas ${item.isSubmitted ? 'fa-file-circle-check' : 'fa-file-arrow-up'}"></i>
                 </div>
                 <div class="req-content">
                     <div class="req-header">
-                        <h4>${item.title}</h4>
-                        <span class="req-badge ${statusClass}">${statusIcon} ${item.status}</span>
+                        <h4 class="req-title">${item.title}</h4>
+                        <span class="req-badge ${statusClass}">${statusIcon} <span>${item.status}</span></span>
                     </div>
                     <p class="req-desc">${item.description}</p>
                     ${item.fileUrl ? `
                         <div class="req-file-preview">
-                            <i class="fas fa-paperclip"></i>
-                            <a href="${item.fileUrl}" target="_blank" class="file-link">View Submitted Document</a>
+                            <a href="${item.fileUrl}" target="_blank" class="file-link" title="Open submitted document">
+                                <i class="fas fa-paperclip"></i>
+                                <span>View Submitted Document</span>
+                                <i class="fas fa-arrow-up-right-from-square file-link-ext"></i>
+                            </a>
                         </div>
                     ` : ''}
                 </div>
                 <div class="req-actions">
-                    <button type="button" class="btn-upload-req" data-key="${item.key}" data-label="${item.title}">
-                        <i class="fas ${item.isSubmitted ? 'fa-redo' : 'fa-upload'}"></i>
-                        ${item.isSubmitted ? 'Re-upload' : 'Upload'}
+                    <button type="button" class="btn-upload-req ${item.isSubmitted ? 'btn-upload-reupload' : 'btn-upload-primary'}" data-key="${item.key}" data-label="${item.title}">
+                        <i class="fas ${item.isSubmitted ? 'fa-arrow-rotate-right' : 'fa-cloud-arrow-up'}"></i>
+                        <span>${item.isSubmitted ? 'Re-upload' : 'Upload'}</span>
                     </button>
                 </div>
             `;

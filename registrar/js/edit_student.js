@@ -55,8 +55,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             e.preventDefault();
             localStorage.removeItem('currentUser');
             localStorage.removeItem('registrarName');
-            localStorage.removeItem('plsnhs_registrar_avatar');
-            localStorage.removeItem('plsnhs_registrar_name');
+            localStorage.removeItem('hes_registrar_avatar');
+            localStorage.removeItem('hes_registrar_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}
@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     .or(`student_id.eq.${studentId},email.eq.${emailVal}`);
 
                 // Notify other tabs in real-time
-                localStorage.setItem('plsnhs_student_updated', JSON.stringify({
+                localStorage.setItem('hes_student_updated', JSON.stringify({
                     id: studentId,
                     name: `${fName} ${lName}`.trim(),
                     timestamp: Date.now()

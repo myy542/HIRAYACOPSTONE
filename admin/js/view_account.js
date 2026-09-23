@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     .eq('user_id', user.id)
                     .maybeSingle();
 
-                idNumber = teacherRec?.employee_id || `PLSNHS-TCH-${user.id.substring(0, 5).toUpperCase()}`;
+                idNumber = teacherRec?.employee_id || `HES-TCH-${user.id.substring(0, 5).toUpperCase()}`;
 
                 // Fetch teacher's sections
                 const { data: sections } = await supabase
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     .eq('email', user.email)
                     .maybeSingle();
 
-                idNumber = studentRec?.lrn || `PLSNHS-STU-${user.id.substring(0, 5).toUpperCase()}`;
+                idNumber = studentRec?.lrn || `HES-STU-${user.id.substring(0, 5).toUpperCase()}`;
 
                 // Fetch enrollments & attendance
                 const [enrollmentsRes, attendanceRes] = await Promise.all([
@@ -143,14 +143,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                 roleStats.attendance = attendanceRes.count || 0;
                 roleStats.current_enrollment = (enrollmentsRes.data && enrollmentsRes.data.length > 0) ? enrollmentsRes.data[0] : null;
             } else if (roleLower === 'registrar') {
-                idNumber = `PLSNHS-RGR-${user.id.substring(0, 5).toUpperCase()}`;
+                idNumber = `HES-RGR-${user.id.substring(0, 5).toUpperCase()}`;
                 const { count: enrollmentsProcessed } = await supabase
                     .from('enrollments')
                     .select('*', { count: 'exact', head: true })
                     .eq('status', 'Approved');
                 roleStats.processed = enrollmentsProcessed || 0;
             } else {
-                idNumber = `PLSNHS-ADM-${user.id.substring(0, 5).toUpperCase()}`;
+                idNumber = `HES-ADM-${user.id.substring(0, 5).toUpperCase()}`;
                 const [usersCount, enrollmentsCount] = await Promise.all([
                     supabase.from('users').select('*', { count: 'exact', head: true }),
                     supabase.from('enrollments').select('*', { count: 'exact', head: true })
@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <div class="timeline-icon"><i class="fas fa-check-circle"></i></div>
                 <div class="timeline-content">
                     <div class="timeline-title">Account Verified & Active</div>
-                    <div class="timeline-time"><i class="far fa-clock"></i> Status: Active in PLSNHS System</div>
+                    <div class="timeline-time"><i class="far fa-clock"></i> Status: Active in HES System</div>
                 </div>
             </li>
         `;

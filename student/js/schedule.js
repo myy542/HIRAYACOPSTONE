@@ -1,6 +1,6 @@
 /**
  * Student Schedule - Supabase Integration
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -114,13 +114,29 @@ import { supabase } from '../../supabase/config.js';
         logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_student_avatar');
-            localStorage.removeItem('plsnhs_student_name');
+            localStorage.removeItem('hes_student_avatar');
+            localStorage.removeItem('hes_student_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}
             window.location.replace('../auth/login.html');
         });
+    }
+
+    function formatTime(timeStr) {
+        if (!timeStr) return '';
+        if (/am|pm/i.test(timeStr)) return timeStr.trim();
+        const parts = String(timeStr).split(':');
+        if (parts.length >= 2) {
+            let hour = parseInt(parts[0], 10);
+            const minute = parts[1].padStart(2, '0');
+            if (isNaN(hour)) return timeStr;
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            hour = hour % 12;
+            if (hour === 0) hour = 12;
+            return `${hour}:${minute} ${ampm}`;
+        }
+        return timeStr;
     }
 
     // ============================================
@@ -186,24 +202,68 @@ import { supabase } from '../../supabase/config.js';
             if (gradeDisplay) gradeDisplay.textContent = currentEnrollment?.grade_level || studentRow?.grade_level || 'Grade 11';
             if (schoolYearDisplay) schoolYearDisplay.textContent = currentEnrollment?.school_year || currentEnrollment?.last_school_year || '2025-2026';
 
-            // 4. Load schedules from Supabase
+            // 4. Load schedules, subjects, and users from Supabase
             try {
-                let sQuery = supabase.from('schedules').select('*');
-                if (sectionId) {
-                    sQuery = sQuery.eq('section_id', sectionId);
-                }
-                const { data: schedData } = await sQuery;
+                const [{ data: schedData }, { data: subjectsData }, { data: usersData }] = await Promise.all([
+                    supabase.from('schedules').select('*'),
+                    supabase.from('subjects').select('*'),
+                    supabase.from('users').select('id, first_name, last_name, email, role')
+                ]);
+
                 if (schedData && schedData.length > 0) {
-                    schedules = schedData;
+                    let filtered = schedData;
+                    if (sectionId) {
+                        const secFiltered = schedData.filter(s => s.section_id === sectionId);
+                        if (secFiltered.length > 0) filtered = secFiltered;
+                    }
+
+                    schedules = filtered.map(s => {
+                        // 1. Resolve Subject Name
+                        let subName = s.subject || s.subject_name || s.subject_title || s.name || s.title || s.subject_code;
+                        if (!subName && s.subject_id) {
+                            const foundSub = subjectsData?.find(sub => sub.id === s.subject_id || sub.code === s.subject_id);
+                            if (foundSub) {
+                                subName = foundSub.name || foundSub.title || foundSub.description;
+                            }
+                        }
+                        if (!subName || subName === 'undefined' || subName === 'null') {
+                            subName = 'General Subject';
+                        }
+
+                        // 2. Resolve Teacher Name
+                        let teacherName = s.teacher || s.teacher_name;
+                        if (!teacherName && s.teacher_id) {
+                            const foundUser = usersData?.find(u => u.id === s.teacher_id);
+                            if (foundUser) {
+                                teacherName = `${foundUser.first_name || ''} ${foundUser.last_name || ''}`.trim() || foundUser.email;
+                            }
+                        }
+                        if (!teacherName || teacherName === 'undefined' || teacherName === 'null') {
+                            teacherName = '';
+                        }
+
+                        return {
+                            id: s.id,
+                            day: s.day || 'Monday',
+                            subject: subName,
+                            teacher: teacherName,
+                            room: s.room || s.room_name || 'Room 101',
+                            start_time: s.start_time || '07:30',
+                            end_time: s.end_time || '08:30',
+                            section_id: s.section_id
+                        };
+                    });
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.warn('Error loading schedule rows:', e);
+            }
 
             // If empty, generate standard Grade 11 / 12 TVL-ICT schedule template
             if (schedules.length === 0) {
                 schedules = getDefaultSchedule(gradeDisplay?.textContent || 'Grade 11');
             }
 
-            renderScheduleUI();
+            renderScheduleUI(secName);
 
         } catch (error) {
             console.error('Error loading schedule data:', error);
@@ -213,13 +273,13 @@ import { supabase } from '../../supabase/config.js';
 
     function getDefaultSchedule(grade) {
         return [
-            { day: 'Monday', subject: 'Oral Communication', start_time: '07:30', end_time: '08:30', room: 'Room 201', teacher: 'Mrs. Santos' },
+            { day: 'Monday', subject: 'Oral Communication in Context', start_time: '07:30', end_time: '08:30', room: 'Room 201', teacher: 'Mrs. Santos' },
             { day: 'Monday', subject: 'General Mathematics', start_time: '08:30', end_time: '09:30', room: 'Room 201', teacher: 'Mr. Cruz' },
             { day: 'Monday', subject: 'Computer Systems Servicing', start_time: '10:00', end_time: '12:00', room: 'ICT Lab 1', teacher: 'Engr. Reyes' },
             { day: 'Tuesday', subject: 'Earth and Life Science', start_time: '07:30', end_time: '08:30', room: 'Science Lab', teacher: 'Ms. Garcia' },
             { day: 'Tuesday', subject: 'Komunikasyon at Pananaliksik', start_time: '08:30', end_time: '09:30', room: 'Room 201', teacher: 'G. Ramos' },
             { day: 'Tuesday', subject: 'Programming (Java/Web)', start_time: '10:00', end_time: '12:00', room: 'ICT Lab 2', teacher: 'Mr. Destinado' },
-            { day: 'Wednesday', subject: 'Oral Communication', start_time: '07:30', end_time: '08:30', room: 'Room 201', teacher: 'Mrs. Santos' },
+            { day: 'Wednesday', subject: 'Oral Communication in Context', start_time: '07:30', end_time: '08:30', room: 'Room 201', teacher: 'Mrs. Santos' },
             { day: 'Wednesday', subject: 'General Mathematics', start_time: '08:30', end_time: '09:30', room: 'Room 201', teacher: 'Mr. Cruz' },
             { day: 'Wednesday', subject: 'Physical Education 1', start_time: '10:00', end_time: '11:00', room: 'Gymnasium', teacher: 'Coach Perez' },
             { day: 'Thursday', subject: 'Earth and Life Science', start_time: '07:30', end_time: '08:30', room: 'Science Lab', teacher: 'Ms. Garcia' },
@@ -230,10 +290,10 @@ import { supabase } from '../../supabase/config.js';
         ];
     }
 
-    function renderScheduleUI() {
+    function renderScheduleUI(secName) {
         // Stats
-        const uniqueSubjs = [...new Set(schedules.map(s => s.subject))];
-        const uniqueTchs = [...new Set(schedules.map(s => s.teacher || s.teacher_name).filter(Boolean))];
+        const uniqueSubjs = [...new Set(schedules.map(s => s.subject).filter(Boolean))];
+        const uniqueTchs = [...new Set(schedules.map(s => s.teacher).filter(Boolean))];
 
         if (totalClasses) totalClasses.textContent = schedules.length;
         if (totalSubjects) totalSubjects.textContent = uniqueSubjs.length || 7;
@@ -247,23 +307,22 @@ import { supabase } from '../../supabase/config.js';
 
         if (todayName) todayName.textContent = currentDayName;
 
-        const todaysList = schedules.filter(s => s.day === currentDayName);
+        const todaysList = schedules.filter(s => (s.day || '').toLowerCase() === currentDayName.toLowerCase());
 
         if (todayClasses) {
             if (todaysList.length === 0) {
                 todayClasses.innerHTML = `
-                    <div class="empty-classes">
-                        <i class="fas fa-calendar-day"></i>
-                        <p>No classes scheduled for today.</p>
+                    <div class="empty-classes" style="padding: 12px; color: #64748b; font-size: 0.9rem;">
+                        <i class="fas fa-calendar-day"></i> No classes scheduled for today.
                     </div>
                 `;
             } else {
                 todayClasses.innerHTML = todaysList.map(c => `
                     <div class="today-class-card">
-                        <div class="class-time"><i class="far fa-clock"></i> ${c.start_time} - ${c.end_time}</div>
+                        <div class="class-time"><i class="far fa-clock"></i> ${formatTime(c.start_time)} - ${formatTime(c.end_time)}</div>
                         <div class="class-subject">${c.subject}</div>
                         <div class="class-meta">
-                            <span><i class="fas fa-map-marker-alt"></i> ${c.room || 'Room 201'}</span>
+                            <span><i class="fas fa-map-marker-alt"></i> ${c.room || 'Room 101'}</span>
                             ${c.teacher ? `<span><i class="fas fa-chalkboard-teacher"></i> ${c.teacher}</span>` : ''}
                         </div>
                     </div>
@@ -274,11 +333,12 @@ import { supabase } from '../../supabase/config.js';
         // Weekly schedule table
         if (scheduleBody) {
             const timeMap = [
-                '07:30 - 08:30',
-                '08:30 - 09:30',
-                '09:30 - 10:00 (Recess)',
-                '10:00 - 11:00',
-                '11:00 - 12:00'
+                '07:00 - 08:00',
+                '08:00 - 09:00',
+                '09:00 - 10:00',
+                '10:00 - 10:30 (Recess)',
+                '10:30 - 11:30',
+                '11:30 - 12:30'
             ];
 
             scheduleBody.innerHTML = timeMap.map(slot => {
@@ -294,33 +354,67 @@ import { supabase } from '../../supabase/config.js';
                     `;
                 }
 
-                const startTime = slot.split(' - ')[0];
+                const startTimeRaw = slot.split(' - ')[0].trim();
+                const startHour = parseInt(startTimeRaw.split(':')[0], 10);
 
                 const dayCells = daysOrder.map(day => {
-                    const match = schedules.find(s => s.day === day && s.start_time?.startsWith(startTime.substring(0, 4)));
+                    const match = schedules.find(s => {
+                        if ((s.day || '').toLowerCase() !== day.toLowerCase()) return false;
+                        const sHour = parseInt(String(s.start_time).split(':')[0], 10);
+                        return sHour === startHour;
+                    });
+
                     if (match) {
                         return `
                             <td class="schedule-cell active">
                                 <div class="subj-name">${match.subject}</div>
-                                <div class="subj-room"><i class="fas fa-door-open"></i> ${match.room || 'Room 201'}</div>
+                                <div class="subj-room"><i class="fas fa-door-open"></i> ${match.room || 'Room 101'}</div>
+                                ${match.teacher ? `<div class="subj-teacher" style="font-size: 0.75rem; color: #64748b; margin-top: 2px;"><i class="fas fa-user"></i> ${match.teacher}</div>` : ''}
                             </td>
                         `;
                     }
                     return `<td class="schedule-cell empty">--</td>`;
                 }).join('');
 
+                const formattedSlot = `${formatTime(slot.split(' - ')[0])} - ${formatTime(slot.split(' - ')[1])}`;
+
                 return `
                     <tr>
-                        <td class="time-col"><strong>${slot}</strong></td>
+                        <td class="time-col"><strong>${formattedSlot}</strong></td>
                         ${dayCells}
                     </tr>
                 `;
             }).join('');
         }
 
-        // Summary lists
+        // Summary lists & badges
+        const subjectCountBadge = document.getElementById('subjectCountBadge');
+        const teacherCountBadge = document.getElementById('teacherCountBadge');
+
+        if (subjectCountBadge) subjectCountBadge.textContent = uniqueSubjs.length;
+        if (teacherCountBadge) teacherCountBadge.textContent = uniqueTchs.length;
+
         if (subjectsList) {
             subjectsList.innerHTML = uniqueSubjs.map(s => `<li><i class="fas fa-book"></i> ${s}</li>`).join('');
+        }
+
+        if (teachersList) {
+            if (uniqueTchs.length === 0) {
+                teachersList.innerHTML = `<li><i class="fas fa-chalkboard-teacher"></i> Faculty Teachers</li>`;
+            } else {
+                teachersList.innerHTML = uniqueTchs.map(t => `<li><i class="fas fa-chalkboard-teacher"></i> ${t}</li>`).join('');
+            }
+        }
+
+        if (sectionInfo) {
+            sectionInfo.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; font-size: 0.9rem; color: #334155;">
+                    <div><strong>Section:</strong> ${secName || 'Section 11 - C'}</div>
+                    <div><strong>Grade Level:</strong> ${gradeDisplay?.textContent || 'Grade 11'}</div>
+                    <div><strong>School Year:</strong> ${schoolYearDisplay?.textContent || '2025-2026'}</div>
+                    <div><strong>Total Classes:</strong> ${schedules.length} scheduled</div>
+                </div>
+            `;
         }
     }
 

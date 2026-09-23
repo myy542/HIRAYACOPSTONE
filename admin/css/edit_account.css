@@ -355,34 +355,54 @@
 .password-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
+    gap: 12px;
+    padding: 14px 18px;
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1.5px solid #e2e8f0;
+    margin-bottom: 18px;
+    transition: all 0.25s ease;
+    cursor: pointer;
+}
+
+.password-header:hover {
+    border-color: #cbd5e1;
     background: #f8fafc;
-    border-radius: 8px;
-    border: 1px solid #e9edf4;
-    margin-bottom: 16px;
 }
 
 .password-header input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: #1B2A4A;
+    width: 19px;
+    height: 19px;
+    accent-color: #0b2b4a;
     cursor: pointer;
 }
 
 .password-header label {
     font-size: 14px;
-    font-weight: 500;
-    color: #1e293b;
+    font-weight: 600;
+    color: #0f172a;
     cursor: pointer;
 }
 
 .password-fields {
     display: none;
+    animation: fadeInPwd 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.password-fields.active {
+.password-fields.active,
+.password-fields.show {
     display: block;
+}
+
+@keyframes fadeInPwd {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Alert Styles */

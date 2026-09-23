@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Section - PLSNHS</title>
+    <title>Create Section - HES, Hiraya Enrollment System</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Fonts -->
@@ -11,7 +12,23 @@
     <!-- CSS Files -->
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/create_section.css">
+    <link rel="stylesheet" href="../css/chatbot.css">
+    <style>
+        /* Additional inline styles for the strand field */
+        .strand-group {
+            transition: all 0.3s ease;
+        }
+
+        .strand-group.hidden {
+            display: none;
+        }
+
+        .strand-group .form-hint {
+            margin-top: 6px;
+        }
+    </style>
 </head>
+
 <body>
     <div class="app-container">
         <!-- Sidebar -->
@@ -19,11 +36,12 @@
             <div class="sidebar-header">
                 <div class="logo">
                     <div class="logo-icon">
-                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo"
+                            onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
                     </div>
-                    <div class="logo-text">PLS<span>NHS</span></div>
+                    <div class="logo-text">H.<span>E.S</span></div>
                 </div>
-                <div class="school-badge">Placido L. Señor NHS</div>
+                <div class="school-badge">Hiraya Enrollment System</div>
             </div>
 
             <div class="admin-profile">
@@ -89,11 +107,8 @@
                     <form id="sectionForm">
                         <div class="form-group">
                             <label class="form-label">Section Name <span class="required">*</span></label>
-                            <input type="text" 
-                                   name="section_name" 
-                                   id="section_name"
-                                   placeholder="e.g., Section A, St. John, 11-STEM A" 
-                                   value="Section A">
+                            <input type="text" name="section_name" id="section_name"
+                                placeholder="e.g., Section A, St. John, 11-STEM A" value="Section A">
                             <div class="form-hint">
                                 <i class="fas fa-info-circle"></i>
                                 Enter a descriptive name for the section
@@ -113,13 +128,29 @@
                             </select>
                         </div>
 
+                        <!-- NEW: Strand field (shown only for Grade 11 & 12) -->
+                        <div class="form-group strand-group hidden" id="strandGroup">
+                            <label class="form-label">Strand <span class="required">*</span></label>
+                            <select name="strand" id="strand">
+                                <option value="">Select Strand</option>
+                                <option value="STEM">STEM - Science, Technology, Engineering & Mathematics</option>
+                                <option value="ABM">ABM - Accountancy, Business & Management</option>
+                                <option value="HUMSS">HUMSS - Humanities & Social Sciences</option>
+                                <option value="GAS">GAS - General Academic Strand</option>
+                                <option value="TVL">TVL - Technical-Vocational-Livelihood</option>
+                                <option value="Sports">Sports</option>
+                                <option value="Arts">Arts & Design</option>
+                            </select>
+                            <div class="form-hint">
+                                <i class="fas fa-info-circle"></i>
+                                Select the strand for this senior high section
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label class="form-label">Class Adviser <span class="required">*</span></label>
-                            <input type="text" 
-                                   name="adviser_name" 
-                                   id="adviser_name"
-                                   placeholder="e.g., Maria Santos" 
-                                   required>
+                            <input type="text" name="adviser_name" id="adviser_name" placeholder="e.g., Maria Santos"
+                                required>
                             <div class="form-hint">
                                 <i class="fas fa-info-circle"></i>
                                 Type the full name of the class adviser
@@ -130,12 +161,18 @@
                         <div class="quick-add-section">
                             <h4><i class="fas fa-bolt"></i> Quick Add Common Sections</h4>
                             <div class="quick-buttons" id="quickButtons">
-                                <button type="button" class="quick-btn" data-section="Section A" data-grade="7">Grade 7 - Section A</button>
-                                <button type="button" class="quick-btn" data-section="Section B" data-grade="7">Grade 7 - Section B</button>
-                                <button type="button" class="quick-btn" data-section="STEM A" data-grade="11">Grade 11 - STEM A</button>
-                                <button type="button" class="quick-btn" data-section="STEM B" data-grade="11">Grade 11 - STEM B</button>
-                                <button type="button" class="quick-btn" data-section="TVL A" data-grade="11">Grade 11 - TVL A</button>
-                                <button type="button" class="quick-btn" data-section="HUMSS A" data-grade="11">Grade 11 - HUMSS A</button>
+                                <button type="button" class="quick-btn" data-section="Section A" data-grade="7">Grade 7
+                                    - Section A</button>
+                                <button type="button" class="quick-btn" data-section="Section B" data-grade="7">Grade 7
+                                    - Section B</button>
+                                <button type="button" class="quick-btn" data-section="STEM A" data-grade="11"
+                                    data-strand="STEM">Grade 11 - STEM A</button>
+                                <button type="button" class="quick-btn" data-section="STEM B" data-grade="11"
+                                    data-strand="STEM">Grade 11 - STEM B</button>
+                                <button type="button" class="quick-btn" data-section="TVL A" data-grade="11"
+                                    data-strand="TVL">Grade 11 - TVL A</button>
+                                <button type="button" class="quick-btn" data-section="HUMSS A" data-grade="11"
+                                    data-strand="HUMSS">Grade 11 - HUMSS A</button>
                             </div>
                             <div class="form-hint" style="margin-top: 8px;">
                                 <i class="fas fa-info-circle"></i>
@@ -176,5 +213,136 @@
 
     <script src="js/admin_avatar_sync.js"></script>
     <script type="module" src="js/create_section.js"></script>
+    <script src="../js/chatbot.js"></script>
+
+    <!-- Inline script for strand toggle & preview (works alongside your existing create_section.js) -->
+    <script>
+        (function () {
+            // DOM elements
+            const gradeSelect = document.getElementById('grade_id');
+            const strandGroup = document.getElementById('strandGroup');
+            const strandSelect = document.getElementById('strand');
+            const sectionNameInput = document.getElementById('section_name');
+            const adviserInput = document.getElementById('adviser_name');
+            const previewName = document.getElementById('previewName');
+            const previewDetails = document.getElementById('previewDetails');
+
+            // Helper: update preview card
+            function updatePreview() {
+                const sectionName = sectionNameInput.value.trim() || 'Section Name';
+                const gradeVal = gradeSelect.value;
+                const adviser = adviserInput.value.trim();
+                let details = '';
+
+                if (gradeVal) {
+                    const gradeNum = parseInt(gradeVal);
+                    if (gradeNum >= 11 && gradeNum <= 12) {
+                        // Senior high: include strand
+                        const strand = strandSelect.value;
+                        if (strand) {
+                            details = `Grade ${gradeVal} · ${strand}`;
+                        } else {
+                            details = `Grade ${gradeVal} · Strand not set`;
+                        }
+                    } else {
+                        details = `Grade ${gradeVal}`;
+                    }
+                } else {
+                    details = 'No grade selected';
+                }
+
+                if (adviser) {
+                    details += ` · Adviser: ${adviser}`;
+                } else {
+                    details += ` · No Adviser Assigned`;
+                }
+
+                previewName.textContent = sectionName;
+                previewDetails.textContent = details;
+            }
+
+            // Toggle strand visibility based on grade selection
+            function toggleStrandField() {
+                const gradeVal = gradeSelect.value;
+                if (gradeVal === '11' || gradeVal === '12') {
+                    strandGroup.classList.remove('hidden');
+                    // Optionally set required attribute when visible
+                    strandSelect.setAttribute('required', 'required');
+                } else {
+                    strandGroup.classList.add('hidden');
+                    strandSelect.removeAttribute('required');
+                    // Reset strand value when hiding (so it doesn't get submitted)
+                    strandSelect.value = '';
+                }
+                updatePreview();
+            }
+
+            // Attach event listeners
+            gradeSelect.addEventListener('change', toggleStrandField);
+            strandSelect.addEventListener('change', updatePreview);
+            sectionNameInput.addEventListener('input', updatePreview);
+            adviserInput.addEventListener('input', updatePreview);
+
+            // Quick-add buttons: set grade, section name, and optionally strand
+            const quickButtons = document.querySelectorAll('.quick-btn');
+            quickButtons.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const section = this.getAttribute('data-section');
+                    const grade = this.getAttribute('data-grade');
+                    const strand = this.getAttribute('data-strand');
+
+                    if (section) sectionNameInput.value = section;
+                    if (grade) {
+                        gradeSelect.value = grade;
+                        // Manually trigger change to show/hide strand
+                        gradeSelect.dispatchEvent(new Event('change'));
+                    }
+                    if (strand) {
+                        strandSelect.value = strand;
+                        // ensure strand is visible if grade is 11/12
+                        if (grade === '11' || grade === '12') {
+                            strandGroup.classList.remove('hidden');
+                        }
+                    } else {
+                        // if quick button doesn't specify strand, clear it
+                        strandSelect.value = '';
+                    }
+                    updatePreview();
+                });
+            });
+
+            // Initialize on page load (set preview, hide strand if needed)
+            (function init() {
+                // If grade already selected (e.g., from browser back), adjust
+                const initialGrade = gradeSelect.value;
+                if (initialGrade === '11' || initialGrade === '12') {
+                    strandGroup.classList.remove('hidden');
+                    strandSelect.setAttribute('required', 'required');
+                } else {
+                    strandGroup.classList.add('hidden');
+                    strandSelect.removeAttribute('required');
+                }
+                updatePreview();
+            })();
+
+            // Make sure form submission includes strand if needed, but your existing JS may handle it.
+            // Also we must ensure that if grade is 11/12 and no strand is selected, the form doesn't submit.
+            // We'll add a small validation hook.
+            const form = document.getElementById('sectionForm');
+            form.addEventListener('submit', function (e) {
+                const gradeVal = gradeSelect.value;
+                if (gradeVal === '11' || gradeVal === '12') {
+                    if (!strandSelect.value) {
+                        e.preventDefault();
+                        alert('Please select a strand for Grade 11 or 12.');
+                        strandSelect.focus();
+                        return false;
+                    }
+                }
+                // You can also add other validations if needed.
+            });
+        })();
+    </script>
 </body>
+
 </html>

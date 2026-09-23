@@ -1,5 +1,5 @@
 /**
- * PLSNHS Logout - Clear session and redirect to login page
+ * HES Logout - Clear session and redirect to login page
  */
 
 (function() {
@@ -78,16 +78,16 @@
 
         // 1. Clear localStorage
         localStorage.removeItem('currentUser');
-        localStorage.removeItem('plsnhs_admin_name');
-        localStorage.removeItem('plsnhs_student_name');
-        localStorage.removeItem('plsnhs_teacher_name');
-        localStorage.removeItem('plsnhs_registrar_name');
-        localStorage.removeItem('plsnhs_parent_name');
-        localStorage.removeItem('plsnhs_admin_avatar');
-        localStorage.removeItem('plsnhs_student_avatar');
-        localStorage.removeItem('plsnhs_teacher_avatar');
-        localStorage.removeItem('plsnhs_registrar_avatar');
-        localStorage.removeItem('plsnhs_parent_avatar');
+        localStorage.removeItem('hes_admin_name');
+        localStorage.removeItem('hes_student_name');
+        localStorage.removeItem('hes_teacher_name');
+        localStorage.removeItem('hes_registrar_name');
+        localStorage.removeItem('hes_parent_name');
+        localStorage.removeItem('hes_admin_avatar');
+        localStorage.removeItem('hes_student_avatar');
+        localStorage.removeItem('hes_teacher_avatar');
+        localStorage.removeItem('hes_registrar_avatar');
+        localStorage.removeItem('hes_parent_avatar');
         console.log('✅ localStorage cleared');
 
         // 2. Clear sessionStorage

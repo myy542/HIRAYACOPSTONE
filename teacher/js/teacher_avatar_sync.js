@@ -1,4 +1,4 @@
-// ===== PLSNHS TEACHER AVATAR & INITIALS SYNC =====
+// ===== HES TEACHER AVATAR & INITIALS SYNC =====
 (function() {
     function getTeacherInitials(name) {
         if (!name || typeof name !== 'string') return 'T';
@@ -11,8 +11,8 @@
 
     function syncTeacherAvatarAndName() {
         try {
-            const savedName = localStorage.getItem('plsnhs_teacher_name');
-            const savedAvatar = localStorage.getItem('plsnhs_teacher_avatar');
+            const savedName = localStorage.getItem('hes_teacher_name');
+            const savedAvatar = localStorage.getItem('hes_teacher_avatar');
 
             if (savedName) {
                 document.querySelectorAll('.teacher-name, #teacherName').forEach(el => {

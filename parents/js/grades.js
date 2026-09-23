@@ -1,6 +1,6 @@
 /**
  * Parents Grades - Supabase Dynamic Integration
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -84,8 +84,8 @@ import { supabase } from '../../supabase/config.js';
         logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_parent_avatar');
-            localStorage.removeItem('plsnhs_parent_name');
+            localStorage.removeItem('hes_parent_avatar');
+            localStorage.removeItem('hes_parent_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}
@@ -220,7 +220,7 @@ import { supabase } from '../../supabase/config.js';
             if (sidebarChildName) sidebarChildName.textContent = registeredChildren[0]?.name || 'Student';
 
             if (registeredChildren.length > 0) {
-                localStorage.setItem('plsnhs_parent_child_name', childNames);
+                localStorage.setItem('hes_parent_child_name', childNames);
             }
 
             renderAll();

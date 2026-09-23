@@ -110,8 +110,8 @@ import { supabase } from '../../supabase/config.js';
             console.log('🚪 Registrar logging out...');
             localStorage.removeItem('currentUser');
             localStorage.removeItem('registrarName');
-            localStorage.removeItem('plsnhs_registrar_avatar');
-            localStorage.removeItem('plsnhs_registrar_name');
+            localStorage.removeItem('hes_registrar_avatar');
+            localStorage.removeItem('hes_registrar_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {
@@ -530,7 +530,7 @@ import { supabase } from '../../supabase/config.js';
 
         // Cross-tab / same browser immediate synchronization
         window.addEventListener('storage', (e) => {
-            if (e.key === 'plsnhs_latest_notification' && e.newValue) {
+            if (e.key === 'hes_latest_notification' && e.newValue) {
                 try {
                     const data = JSON.parse(e.newValue);
                     if (!data.role || data.role === 'registrar') {

@@ -1,4 +1,4 @@
-// ===== PLSNHS ADMIN AVATAR & INITIALS SYNC =====
+// ===== HES ADMIN AVATAR & INITIALS SYNC =====
 (function() {
     function getAdminInitials(name) {
         if (!name || typeof name !== 'string') return 'A';
@@ -34,10 +34,10 @@
 
             // 2. Check saved admin name if not set
             if (!adminDisplayName) {
-                adminDisplayName = localStorage.getItem('plsnhs_admin_name') || 'Admin';
+                adminDisplayName = localStorage.getItem('hes_admin_name') || 'Admin';
             }
 
-            const savedAvatar = localStorage.getItem('plsnhs_admin_avatar');
+            const savedAvatar = localStorage.getItem('hes_admin_avatar');
 
             document.querySelectorAll('.admin-name').forEach(el => {
                 el.textContent = adminDisplayName;

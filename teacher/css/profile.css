@@ -68,36 +68,45 @@ body {
 .logo {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 12px;
+    margin-bottom: 4px;
 }
 
 .logo-icon {
-    background: var(--accent);
-    color: var(--primary);
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
-    font-weight: 800;
-    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .logo-text {
-    font-size: 1.4rem;
-    font-weight: 700;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #fff;
 }
+
 .logo-text span {
-    color: var(--accent);
+    color: #facc15;
 }
 
 .school-badge {
-    font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.5);
-    margin-top: 4px;
+    font-size: 11px;
+    opacity: 0.85;
+    letter-spacing: 0.3px;
     padding-left: 4px;
-    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.8);
 }
 
 /* Teacher Profile */
@@ -183,7 +192,14 @@ body {
     color: rgba(255, 255, 255, 0.6);
     text-decoration: none;
     font-size: 0.9rem;
+    white-space: nowrap;
     transition: var(--transition);
+}
+
+.nav-items a span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .nav-items a i {
@@ -1023,25 +1039,54 @@ body {
         width: 70px;
         padding: 1rem 0;
     }
+    .sidebar-header {
+        padding: 0 0.5rem 1rem;
+        display: flex;
+        justify-content: center;
+    }
+    .sidebar .logo {
+        justify-content: center;
+        margin-bottom: 0;
+    }
     .sidebar .logo-text,
     .sidebar .school-badge,
     .sidebar .teacher-name,
     .sidebar .teacher-role,
     .sidebar .nav-section-title,
     .sidebar .nav-items a span {
-        display: none;
+        display: none !important;
+    }
+    .sidebar .teacher-profile {
+        padding: 0.8rem 0;
+    }
+    .sidebar .teacher-avatar {
+        width: 44px;
+        height: 44px;
+        margin: 0 auto;
+    }
+    .sidebar .avatar-initial {
+        width: 44px;
+        height: 44px;
+        font-size: 1.1rem;
+    }
+    .sidebar .nav-menu {
+        padding: 0.5rem;
     }
     .sidebar .nav-items a {
         justify-content: center;
-        padding: 0.6rem;
+        padding: 0.75rem 0.5rem;
+        font-size: 0 !important;
+        gap: 0;
     }
     .sidebar .nav-items a i {
-        font-size: 1.2rem;
+        font-size: 1.25rem !important;
+        width: auto;
+        margin: 0;
     }
     .main-content {
         margin-left: 70px;
         max-width: calc(100% - 70px);
-        padding: 1.5rem;
+        padding: 1.25rem;
     }
     .academic-grid {
         grid-template-columns: 1fr 1fr;
@@ -1316,4 +1361,131 @@ body {
     max-width: 100%;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== ACCOUNT INFORMATION CARD & EDIT TOGGLE ===== */
+.account-info-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 24px;
+    transition: all 0.3s ease;
+}
+
+.card-header-with-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 20px;
+}
+
+.card-header-with-action h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0b2b4a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-edit-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 16px;
+    background: #f1f5f9;
+    color: #0b2b4a;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-edit-toggle:hover {
+    background: #e2e8f0;
+    color: #071e34;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.btn-edit-toggle i {
+    font-size: 0.85rem;
+    color: #0b2b4a;
+}
+
+.btn-edit-toggle.is-editing {
+    background: #fee2e2;
+    color: #dc2626;
+    border-color: #fca5a5;
+}
+
+.btn-edit-toggle.is-editing i {
+    color: #dc2626;
+}
+
+/* Account Info View Grid */
+.account-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px 24px;
+}
+
+.account-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.account-info-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.account-info-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+}
+
+.account-info-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+    word-break: break-word;
+}
+
+.account-info-value:empty::before,
+.account-info-value.empty::before {
+    content: "Not provided";
+    color: #94a3b8;
+    font-style: italic;
+    font-weight: 400;
+}
+
+/* Account Info Edit Container */
+.account-info-edit-container {
+    animation: fadeIn 0.25s ease-in-out;
+}
+
+.account-info-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f1f5f9;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
 }

@@ -1,6 +1,6 @@
 /**
- * PLSNHS Login - Seamless Supabase Authentication & Session Management
- * Placido L. Señor National High School
+ * HES Login - Seamless Supabase Authentication & Session Management
+ * HES, Hiraya Enrollment System
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -71,23 +71,11 @@ import { supabase } from '../../supabase/config.js';
         window.location.replace(targetRoute);
     }
 
-    // ============================================
-    // AUTO-REDIRECT IF ALREADY LOGGED IN
-    // ============================================
-
+    // Clear any active session when visiting login page to enforce explicit login for all users
     try {
-        const existingUserStr = localStorage.getItem('currentUser');
-        if (existingUserStr) {
-            const user = JSON.parse(existingUserStr);
-            if (user && user.role && user.email) {
-                console.log('✅ Active session found:', user.email, '| Role:', user.role);
-                redirectToDashboard(user.role);
-                return;
-            }
-        }
-    } catch (e) {
-        console.warn('⚠️ Invalid session data cleared');
         localStorage.removeItem('currentUser');
+    } catch (e) {
+        console.warn('⚠️ Error resetting session on login page load', e);
     }
 
     // ============================================
@@ -101,7 +89,7 @@ import { supabase } from '../../supabase/config.js';
         return null;
     }
 
-    const savedEmail = getCookie('user_email') || localStorage.getItem('plsnhs_remembered_email');
+    const savedEmail = getCookie('user_email') || localStorage.getItem('hes_remembered_email');
     if (savedEmail && emailInput) {
         emailInput.value = savedEmail;
         if (rememberCheck) rememberCheck.checked = true;
@@ -324,24 +312,24 @@ import { supabase } from '../../supabase/config.js';
 
                 // Save portal-specific display names
                 if (userRole === 'student') {
-                    localStorage.setItem('plsnhs_student_name', fullName);
+                    localStorage.setItem('hes_student_name', fullName);
                 } else if (userRole === 'admin') {
-                    localStorage.setItem('plsnhs_admin_name', fullName);
+                    localStorage.setItem('hes_admin_name', fullName);
                 } else if (userRole === 'teacher') {
-                    localStorage.setItem('plsnhs_teacher_name', fullName);
+                    localStorage.setItem('hes_teacher_name', fullName);
                 } else if (userRole === 'registrar') {
-                    localStorage.setItem('plsnhs_registrar_name', fullName);
+                    localStorage.setItem('hes_registrar_name', fullName);
                 } else if (userRole === 'parent') {
-                    localStorage.setItem('plsnhs_parent_name', fullName);
+                    localStorage.setItem('hes_parent_name', fullName);
                 }
 
                 // 5. Handle Remember Me
                 if (remember) {
                     document.cookie = `user_email=${rawEmail}; path=/; max-age=${60 * 60 * 24 * 30}`;
-                    localStorage.setItem('plsnhs_remembered_email', rawEmail);
+                    localStorage.setItem('hes_remembered_email', rawEmail);
                 } else {
                     document.cookie = 'user_email=; path=/; max-age=0';
-                    localStorage.removeItem('plsnhs_remembered_email');
+                    localStorage.removeItem('hes_remembered_email');
                 }
 
                 // 6. Provide Visual Feedback & Redirect

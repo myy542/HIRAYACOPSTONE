@@ -1,5 +1,5 @@
 /**
- * PLSNHS Admin - Enrollments Management (Supabase Dynamic Integration)
+ * HES Admin - Enrollments Management (Supabase Dynamic Integration)
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -360,6 +360,8 @@ import { EmailNotificationService } from '../../js/email_service.js';
                         <button class="btn-notify-missing" 
                                 data-student-name="${enrollment.fullname}"
                                 data-user-id="${enrollment.user_id || ''}"
+                                data-student-id="${enrollment.student_id || enrollment.id || ''}"
+                                data-email="${enrollment.email || ''}"
                                 data-missing-list='${JSON.stringify(enrollment.missing_list)}'
                                 style="background: #0b2b4a; color: #FFD700; border: none; padding: 3px 8px; border-radius: 6px; font-size: 11px; cursor: pointer;">
                             <i class="fas fa-bell"></i> Notify
@@ -433,8 +435,10 @@ import { EmailNotificationService } from '../../js/email_service.js';
                 e.stopPropagation();
                 const studentName = this.dataset.studentName;
                 const userId = this.dataset.userId;
+                const studentId = this.dataset.studentId;
+                const email = this.dataset.email;
                 const missingList = JSON.parse(this.dataset.missingList || '[]');
-                notifyMissing(studentName, missingList, userId);
+                notifyMissing(studentName, missingList, userId, studentId, email);
             });
         });
     }
@@ -559,10 +563,13 @@ import { EmailNotificationService } from '../../js/email_service.js';
                 .eq('id', id);
 
             // 5. Insert notification for student with login credentials
-            const credsMsg = `Congratulations ${firstName}! Your enrollment application for ${gradeName} (${strand || 'General'}) S.Y. ${item.school_year || '2026-2027'} has been approved.\n\nYour Student Portal Login Credentials:\n• Username (Email): ${email}\n• Password: ${lastName}\n\nYou can now log in to the PLSNHS Student Portal.`;
+            const credsMsg = `Congratulations ${firstName}! Your enrollment application for ${gradeName} (${strand || 'General'}) S.Y. ${item.school_year || '2026-2027'} has been approved.\n\nYour Student Portal Login Credentials:\n• Username (Email): ${email}\n• Password: ${lastName}\n\nYou can now log in to the HES Student Portal.`;
 
+            const targetStudentId = studentUserId || studentTableId || null;
             await supabase.from('notifications').insert([{
-                user_id: studentUserId || studentTableId || null,
+                user_id: targetStudentId,
+                student_id: studentTableId || null,
+                recipient_email: email,
                 role: 'student',
                 title: '🎉 Enrollment Approved!',
                 message: credsMsg,
@@ -572,6 +579,23 @@ import { EmailNotificationService } from '../../js/email_service.js';
                 is_read: false,
                 created_at: new Date().toISOString()
             }]);
+
+            if (targetStudentId) {
+                try {
+                    const k = `hes_notifications_${targetStudentId}`;
+                    const raw = localStorage.getItem(k);
+                    let list = raw ? JSON.parse(raw) : [];
+                    list.unshift({
+                        id: 'notif_' + Date.now(),
+                        type: 'action',
+                        title: '🎉 Enrollment Approved!',
+                        message: credsMsg,
+                        time: 'Just now',
+                        read: false
+                    });
+                    localStorage.setItem(k, JSON.stringify(list.slice(0, 30)));
+                } catch(e) {}
+            }
 
             const credsPayload = {
                 email,
@@ -722,15 +746,38 @@ import { EmailNotificationService } from '../../js/email_service.js';
 
                 // 2. Insert notification
                 try {
+                    const targetId = item?.user_id || item?.student_id || item?.id || null;
+                    const rejMsg = `Notice for ${studentName}: Your enrollment application was not approved. Reason: ${reason}`;
                     await supabase.from('notifications').insert([{
-                        user_id: item?.user_id || null,
+                        user_id: targetId,
+                        student_id: item?.student_id || item?.id || null,
+                        recipient_email: item?.email || null,
                         role: 'student',
                         title: 'Enrollment Application Update',
-                        message: `Notice for ${studentName}: Your enrollment application was not approved. Reason: ${reason}`,
+                        message: rejMsg,
                         type: 'enrollment',
+                        enrollment_id: id,
                         read: false,
+                        is_read: false,
                         created_at: new Date().toISOString()
                     }]);
+
+                    if (targetId) {
+                        try {
+                            const k = `hes_notifications_${targetId}`;
+                            const raw = localStorage.getItem(k);
+                            let list = raw ? JSON.parse(raw) : [];
+                            list.unshift({
+                                id: 'notif_' + Date.now(),
+                                type: 'alert',
+                                title: 'Enrollment Application Update',
+                                message: rejMsg,
+                                time: 'Just now',
+                                read: false
+                            });
+                            localStorage.setItem(k, JSON.stringify(list.slice(0, 30)));
+                        } catch(e) {}
+                    }
                 } catch(nErr) {}
 
                 showAlert(`✅ Enrollment for ${studentName} has been rejected. Notification sent.`, 'success');
@@ -795,7 +842,7 @@ import { EmailNotificationService } from '../../js/email_service.js';
         }
     };
 
-    async function notifyMissing(studentName, missingList, userId) {
+    async function notifyMissing(studentName, missingList, userId, studentId, email) {
         const missingText = missingList.map(req => `• ${req}`).join('\n');
         
         if (!confirm(`Send notification to ${studentName} about missing requirements?\n\nRequired documents:\n${missingText}`)) {
@@ -803,15 +850,38 @@ import { EmailNotificationService } from '../../js/email_service.js';
         }
 
         try {
+            const targetId = userId || studentId || null;
+            const notifMsg = `Dear ${studentName}, please submit your missing document requirements:\n${missingText}`;
+
             await supabase.from('notifications').insert([{
-                user_id: userId || null,
+                user_id: targetId,
+                student_id: studentId || null,
+                recipient_email: email || null,
                 role: 'student',
                 title: 'Missing Enrollment Documents',
-                message: `Dear ${studentName}, please submit your missing document requirements:\n${missingText}`,
+                message: notifMsg,
                 type: 'document_reminder',
                 read: false,
+                is_read: false,
                 created_at: new Date().toISOString()
             }]);
+
+            if (targetId) {
+                try {
+                    const k = `hes_notifications_${targetId}`;
+                    const raw = localStorage.getItem(k);
+                    let list = raw ? JSON.parse(raw) : [];
+                    list.unshift({
+                        id: 'notif_' + Date.now(),
+                        type: 'reminder',
+                        title: 'Missing Enrollment Documents',
+                        message: notifMsg,
+                        time: 'Just now',
+                        read: false
+                    });
+                    localStorage.setItem(k, JSON.stringify(list.slice(0, 30)));
+                } catch(e) {}
+            }
 
             showAlert(`✅ Notification sent successfully to ${studentName}!`, 'success');
         } catch (error) {

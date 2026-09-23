@@ -1,83 +1,53 @@
 /**
- * Teacher Schedule - Firebase Integration
+ * Teacher Schedule Script
+ * Dynamic Supabase Integration
+ * Matches the mobile app teacher schedule fetching & rendering architecture
  */
 
-import { auth, db } from '../../firebase/config.js';
-import { 
-    onAuthStateChanged,
-    signOut 
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-import {
-    collection,
-    query,
-    where,
-    getDocs,
-    orderBy,
-    doc,
-    getDoc,
-    onSnapshot
-} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { supabase } from '../../supabase/config.js';
 
-(function() {
+document.addEventListener('DOMContentLoaded', async function() {
     'use strict';
 
-    console.log('📅 Teacher Schedule ready');
+    console.log('📅 Teacher Schedule (Supabase) ready');
 
-    // ============================================
-    // DOM ELEMENTS
-    // ============================================
-
+    // DOM Elements - Header & Profile
     const teacherName = document.getElementById('teacherName');
     const teacherInitial = document.getElementById('teacherInitial');
     const logoutBtn = document.getElementById('logoutBtn');
-
-    // Stats
-    const totalClasses = document.getElementById('totalClasses');
-    const totalSections = document.getElementById('totalSections');
-    const totalSubjects = document.getElementById('totalSubjects');
-    const freePeriods = document.getElementById('freePeriods');
-
-    // Schedule table body
-    const scheduleBody = document.getElementById('scheduleBody');
-    const weekDisplay = document.getElementById('weekDisplay');
-    const weekRange = document.getElementById('weekRange');
-
-    // Summary
-    const sectionsList = document.getElementById('sectionsList');
-    const subjectsList = document.getElementById('subjectsList');
-    const advisoryList = document.getElementById('advisoryList');
-
-    // Alert container
+    const dateBadge = document.getElementById('dateBadge');
     const alertContainer = document.getElementById('alertContainer');
+    const btnRefresh = document.getElementById('btnRefresh');
 
-    // ============================================
-    // STATE
-    // ============================================
+    // DOM Elements - Stats
+    const totalClassesStat = document.getElementById('totalClasses');
+    const totalSectionsStat = document.getElementById('totalSections');
+    const totalSubjectsStat = document.getElementById('totalSubjects');
+    const freePeriodsStat = document.getElementById('freePeriods');
 
-    let currentUser = null;
-    let userData = null;
-    let schedules = [];
-    let advisorySections = [];
-    let timeSlots = [];
-    let weeklySchedule = {};
-    let uniqueSections = {};
-    let uniqueSubjects = {};
-    let totalClassesCount = 0;
+    // DOM Elements - Views & Controls
+    const scheduleContainer = document.getElementById('scheduleContainer');
+    const timetableContainer = document.getElementById('timetableContainer');
+    const searchInput = document.getElementById('searchScheduleInput');
+    const dayFilterChips = document.querySelectorAll('.day-chip');
+    const viewToggleBtns = document.querySelectorAll('.btn-view-toggle');
 
-    const daysOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-    const gradeOrder = ['Grade 7', 'Grade 8', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
-
-    // ============================================
-    // SESSION CHECK & AUTH
-    // ============================================
-
+    // State
     let sessionUser = null;
+    let teacherRecord = null;
+    let schedules = [];
+    let activeDayFilter = 'all';
+    let currentViewMode = 'cards'; // 'cards' or 'grid'
+
+    // ============================================
+    // 1. AUTH & SESSION CHECK
+    // ============================================
     try {
         const stored = localStorage.getItem('currentUser');
-        if (stored) {
-            sessionUser = JSON.parse(stored);
-        }
-    } catch(e) {}
+        if (stored) sessionUser = JSON.parse(stored);
+    } catch(e) {
+        console.error('Error reading currentUser:', e);
+    }
 
     if (!sessionUser) {
         console.warn('⚠️ No active teacher session, redirecting...');
@@ -85,497 +55,447 @@ import {
         return;
     }
 
-    if (sessionUser.role && sessionUser.role !== 'teacher') {
-        const routes = {
-            'admin': '../admin/dashboard.html',
-            'student': '../student/dashboard.html',
-            'parent': '../parents/dashboard.html',
-            'registrar': '../registrar/dashboard.html'
-        };
-        window.location.replace(routes[sessionUser.role] || '../auth/login.html');
-        return;
+    const currentUserId = sessionUser.id || sessionUser.uid;
+    const userEmail = sessionUser.email || '';
+    const userFullName = sessionUser.firstName 
+        ? `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim()
+        : (sessionUser.displayName || sessionUser.name || 'Faculty Teacher');
+
+    if (teacherName) teacherName.textContent = userFullName;
+    if (typeof window.syncTeacherAvatarAndName === 'function') {
+        window.syncTeacherAvatarAndName();
+    } else if (teacherInitial) {
+        teacherInitial.textContent = (userFullName || 'T').charAt(0).toUpperCase();
     }
 
-    currentUser = { uid: sessionUser.uid, email: sessionUser.email };
-    const displayName = (sessionUser.firstName ? `${sessionUser.firstName} ${sessionUser.lastName || ''}`.trim() : (sessionUser.email ? sessionUser.email.split('@')[0] : 'Teacher'));
-    if (teacherName) teacherName.textContent = displayName;
-    if (teacherInitial) teacherInitial.textContent = displayName.charAt(0).toUpperCase();
-
-    // ============================================
-    // LOGOUT
-    // ============================================
-
     if (logoutBtn) {
-        logoutBtn.addEventListener('click', async function(e) {
+        logoutBtn.addEventListener('click', async (e) => {
             e.preventDefault();
-            console.log('🚪 Teacher logging out...');
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_teacher_avatar');
-            localStorage.removeItem('plsnhs_teacher_name');
+            try { await supabase.auth.signOut(); } catch(err) {}
             window.location.replace('../auth/login.html');
         });
     }
 
-    // ============================================
-    // LOAD USER DATA
-    // ============================================
-
-    async function loadUserData(userId) {
-        try {
-            const userDoc = await getDoc(doc(db, 'users', userId));
-            if (userDoc.exists()) {
-                userData = userDoc.data();
-                console.log('📋 User data loaded:', userData);
-            }
-        } catch (error) {
-            console.error('Error loading user data:', error);
-        }
-    }
-
-    // ============================================
-    // LOAD ADVISORY SECTIONS
-    // ============================================
-
-    async function loadAdvisorySections(userId) {
-        try {
-            const sectionsRef = collection(db, 'sections');
-            const q = query(sectionsRef, where('adviserId', '==', userId));
-            const snapshot = await getDocs(q);
-            
-            advisorySections = [];
-            snapshot.forEach((doc) => {
-                advisorySections.push({ id: doc.id, ...doc.data() });
-            });
-            
-            console.log('📋 Advisory sections loaded:', advisorySections.length);
-        } catch (error) {
-            console.error('Error loading advisory sections:', error);
-            advisorySections = [];
-        }
-    }
-
-    // ============================================
-    // LOAD TIME SLOTS
-    // ============================================
-
-    async function loadTimeSlots() {
-        try {
-            const timeSlotsRef = collection(db, 'timeSlots');
-            const q = query(timeSlotsRef, orderBy('startTime', 'asc'));
-            const snapshot = await getDocs(q);
-            
-            timeSlots = [];
-            snapshot.forEach((doc) => {
-                timeSlots.push({ id: doc.id, ...doc.data() });
-            });
-            
-            console.log('⏰ Time slots loaded:', timeSlots.length);
-        } catch (error) {
-            console.error('Error loading time slots:', error);
-            timeSlots = [];
-        }
-    }
-
-    // ============================================
-    // LOAD SCHEDULE
-    // ============================================
-
-    async function loadSchedule(userId) {
-        try {
-            const classSchedulesRef = collection(db, 'classSchedules');
-            const q = query(
-                classSchedulesRef,
-                where('teacherId', '==', userId),
-                where('status', '==', 'active')
-            );
-            const snapshot = await getDocs(q);
-            
-            schedules = [];
-            snapshot.forEach((doc) => {
-                schedules.push({ id: doc.id, ...doc.data() });
-            });
-            
-            console.log('📅 Schedule loaded:', schedules.length);
-            
-            // Organize schedule
-            organizeSchedule();
-            
-            // Update UI
-            updateStats();
-            renderScheduleTable();
-            updateSummary();
-            
-            // Set up real-time listener
-            setupScheduleListener(userId);
-            
-        } catch (error) {
-            console.error('Error loading schedule:', error);
-            schedules = [];
-            showAlert('❌ Error loading schedule: ' + error.message, 'error');
-        }
-    }
-
-    // ============================================
-    // SETUP SCHEDULE LISTENER
-    // ============================================
-
-    function setupScheduleListener(userId) {
-        const classSchedulesRef = collection(db, 'classSchedules');
-        const q = query(
-            classSchedulesRef,
-            where('teacherId', '==', userId),
-            where('status', '==', 'active')
-        );
-
-        onSnapshot(q, (snapshot) => {
-            schedules = [];
-            snapshot.forEach((doc) => {
-                schedules.push({ id: doc.id, ...doc.data() });
-            });
-            organizeSchedule();
-            updateStats();
-            renderScheduleTable();
-            updateSummary();
-        }, (error) => {
-            console.error('Error listening to schedule:', error);
-        });
-    }
-
-    // ============================================
-    // ORGANIZE SCHEDULE
-    // ============================================
-
-    function organizeSchedule() {
-        weeklySchedule = {};
-        uniqueSections = {};
-        uniqueSubjects = {};
-        totalClassesCount = 0;
-
-        // Initialize weekly schedule structure
-        daysOrder.forEach(day => {
-            weeklySchedule[day] = {};
-            timeSlots.forEach(slot => {
-                weeklySchedule[day][slot.id] = null;
-            });
-        });
-
-        // Populate schedules
-        schedules.forEach(schedule => {
-            const day = schedule.dayName || schedule.day;
-            const timeSlotId = schedule.timeSlotId;
-            const sectionId = schedule.sectionId;
-            const sectionName = schedule.sectionName || 'Unknown Section';
-            const gradeName = schedule.gradeName || 'N/A';
-            const subjectName = schedule.subjectName || 'Unknown Subject';
-            const subjectId = schedule.subjectId;
-            
-            if (day && timeSlotId) {
-                const isAdvisory = advisorySections.some(a => a.id === sectionId);
-                
-                weeklySchedule[day][timeSlotId] = {
-                    subjectName: subjectName,
-                    subjectId: subjectId,
-                    sectionName: sectionName,
-                    sectionId: sectionId,
-                    gradeName: gradeName,
-                    room: schedule.room || 'N/A',
-                    startTime: schedule.startTime || 'N/A',
-                    endTime: schedule.endTime || 'N/A',
-                    isAdvisory: isAdvisory
-                };
-                
-                totalClassesCount++;
-                
-                // Track unique sections
-                if (sectionId) {
-                    uniqueSections[sectionId] = sectionName + ' - ' + gradeName;
-                }
-                
-                // Track unique subjects
-                if (subjectId) {
-                    uniqueSubjects[subjectId] = subjectName;
-                }
-            }
-        });
-    }
-
-    // ============================================
-    // UPDATE STATS
-    // ============================================
-
-    function updateStats() {
-        totalClasses.textContent = totalClassesCount;
-        totalSections.textContent = Object.keys(uniqueSections).length;
-        totalSubjects.textContent = Object.keys(uniqueSubjects).length;
-        
-        const totalSlots = timeSlots.length * daysOrder.length;
-        const free = totalSlots - totalClassesCount;
-        freePeriods.textContent = free > 0 ? free : 0;
-    }
-
-    // ============================================
-    // RENDER SCHEDULE TABLE
-    // ============================================
-
-    function renderScheduleTable() {
-        if (!scheduleBody) return;
-
-        // Update week display
-        updateWeekDisplay();
-
-        if (timeSlots.length === 0) {
-            scheduleBody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="no-data-cell">
-                        <div class="no-data">
-                            <i class="fas fa-clock"></i>
-                            <h3>No time slots configured</h3>
-                            <p>Please contact the administrator.</p>
-                        </div>
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        scheduleBody.innerHTML = timeSlots.map(slot => {
-            const startTime = slot.startTime || 'N/A';
-            const endTime = slot.endTime || 'N/A';
-            const timeDisplay = `${formatTime(startTime)} - ${formatTime(endTime)}`;
-
-            return `
-                <tr>
-                    <td class="time-column">${timeDisplay}</td>
-                    ${daysOrder.map(day => {
-                        const classData = weeklySchedule[day]?.[slot.id] || null;
-                        const advisoryClass = classData && classData.isAdvisory ? 'advisory' : '';
-
-                        if (classData) {
-                            return `
-                                <td>
-                                    <div class="schedule-cell">
-                                        <div class="class-item ${advisoryClass}">
-                                            <div class="section-name">
-                                                <i class="fas fa-users"></i> 
-                                                ${classData.sectionName}
-                                            </div>
-                                            <div class="subject-name">
-                                                <i class="fas fa-book-open"></i>
-                                                ${classData.subjectName}
-                                            </div>
-                                            <div class="grade-name">
-                                                <i class="fas fa-graduation-cap"></i>
-                                                ${classData.gradeName}
-                                            </div>
-                                            ${classData.room && classData.room !== 'N/A' ? `
-                                                <div class="room-badge">
-                                                    <i class="fas fa-door-open"></i> ${classData.room}
-                                                </div>
-                                            ` : ''}
-                                        </div>
-                                    </div>
-                                </td>
-                            `;
-                        } else {
-                            return `
-                                <td>
-                                    <div class="schedule-cell">
-                                        <div class="empty-cell">
-                                            <i class="fas fa-minus-circle"></i> Free
-                                        </div>
-                                    </div>
-                                </td>
-                            `;
-                        }
-                    }).join('')}
-                </tr>
-            `;
-        }).join('');
-    }
-
-    // ============================================
-    // UPDATE WEEK DISPLAY
-    // ============================================
-
-    function updateWeekDisplay() {
-        const today = new Date();
-        const startOfWeek = new Date(today);
-        startOfWeek.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
-        
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 4);
-        
-        const options = { month: 'short', day: 'numeric', year: 'numeric' };
-        const startStr = startOfWeek.toLocaleDateString('en-US', options);
-        const endStr = endOfWeek.toLocaleDateString('en-US', options);
-        
-        if (weekRange) {
-            weekRange.textContent = `${startStr} - ${endStr}`;
-        }
-    }
-
-    // ============================================
-    // UPDATE SUMMARY
-    // ============================================
-
-    function updateSummary() {
-        // Sections
-        const sectionsArray = Object.values(uniqueSections);
-        if (sectionsList) {
-            if (sectionsArray.length === 0) {
-                sectionsList.innerHTML = `<div class="no-data-message"><i class="fas fa-info-circle"></i> No sections assigned</div>`;
-            } else {
-                sectionsList.innerHTML = sectionsArray.map(section => `
-                    <span class="summary-tag">
-                        <i class="fas fa-layer-group"></i>
-                        ${section}
-                    </span>
-                `).join('');
-            }
-        }
-
-        // Subjects
-        const subjectsArray = Object.values(uniqueSubjects);
-        if (subjectsList) {
-            if (subjectsArray.length === 0) {
-                subjectsList.innerHTML = `<div class="no-data-message"><i class="fas fa-info-circle"></i> No subjects assigned</div>`;
-            } else {
-                subjectsList.innerHTML = subjectsArray.map(subject => `
-                    <span class="summary-tag">
-                        <i class="fas fa-book-open"></i>
-                        ${subject}
-                    </span>
-                `).join('');
-            }
-        }
-
-        // Advisory
-        if (advisoryList) {
-            if (advisorySections.length === 0) {
-                advisoryList.innerHTML = `<div class="no-data-message"><i class="fas fa-info-circle"></i> No advisory classes</div>`;
-            } else {
-                advisoryList.innerHTML = advisorySections.map(section => `
-                    <span class="summary-tag advisory">
-                        <i class="fas fa-users"></i>
-                        ${section.sectionName || section.name || 'Unknown'} - ${section.gradeName || section.grade || 'N/A'}
-                    </span>
-                `).join('');
-            }
-        }
-    }
-
-    // ============================================
-    // WEEK NAVIGATION
-    // ============================================
-
-    window.changeWeek = function(direction) {
-        // For demo, just show a toast
-        showToast('📅 Week navigation feature coming soon!', 'info');
-    };
-
-    // ============================================
-    // HELPERS
-    // ============================================
-
-    function formatTime(timeStr) {
-        if (!timeStr || timeStr === 'N/A') return 'N/A';
-        try {
-            const [hours, minutes] = timeStr.split(':');
-            const h = parseInt(hours);
-            const ampm = h >= 12 ? 'PM' : 'AM';
-            const h12 = h % 12 || 12;
-            return `${h12}:${minutes} ${ampm}`;
-        } catch {
-            return timeStr;
-        }
-    }
-
-    // ============================================
-    // SET CURRENT DATE
-    // ============================================
-
-    const dateBadge = document.querySelector('.date-badge');
+    // Set Live Header Date
     if (dateBadge) {
         const now = new Date();
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         dateBadge.innerHTML = `<i class="fas fa-calendar-alt"></i> ${now.toLocaleDateString('en-US', options)}`;
     }
 
-    // ============================================
-    // TOAST SYSTEM
-    // ============================================
-
-    function showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        const colors = {
-            success: '#10b981',
-            info: '#0b2b4a',
-            warning: '#f59e0b',
-            error: '#ef4444'
-        };
-        toast.style.cssText = `
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: ${colors[type] || colors.info};
-            color: white;
-            padding: 14px 28px;
-            border-radius: 14px;
-            font-weight: 500;
-            font-size: 0.95rem;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
-            z-index: 9999;
-            animation: slideInToast 0.4s ease;
-            max-width: 400px;
+    // Toast Alert Helper
+    function showAlert(type, message, duration = 4000) {
+        if (!alertContainer) return;
+        const icon = type === 'success' ? 'fa-check-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-times-circle';
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.style.cssText = `
             display: flex;
             align-items: center;
             gap: 10px;
-            cursor: default;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            font-size: 13.5px;
+            font-weight: 500;
+            background: ${type === 'success' ? '#dcfce7' : type === 'warning' ? '#fef3c7' : '#fee2e2'};
+            color: ${type === 'success' ? '#166534' : type === 'warning' ? '#92400e' : '#991b1b'};
+            border: 1px solid ${type === 'success' ? '#bbf7d0' : type === 'warning' ? '#fde68a' : '#fecaca'};
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            animation: fadeIn 0.2s ease-out;
         `;
-        toast.textContent = message;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(40px)';
-            toast.style.transition = 'all 0.3s ease';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    }
-
-    // Add toast styles
-    if (!document.getElementById('toast-styles')) {
-        const style = document.createElement('style');
-        style.id = 'toast-styles';
-        style.textContent = `
-            @keyframes slideInToast {
-                from { transform: translateX(60px); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    // ============================================
-    // ALERT SYSTEM
-    // ============================================
-
-    function showAlert(message, type = 'success') {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        alertDiv.innerHTML = `
-            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-            ${message}
-        `;
-        alertContainer.appendChild(alertDiv);
+        alertDiv.innerHTML = `<i class="fas ${icon}"></i> <div style="flex:1;">${message}</div>`;
+        alertContainer.prepend(alertDiv);
 
         setTimeout(() => {
             alertDiv.style.opacity = '0';
+            alertDiv.style.transition = 'opacity 0.3s ease';
             setTimeout(() => alertDiv.remove(), 300);
-        }, 5000);
+        }, duration);
     }
 
-    console.log('✅ Teacher Schedule ready!');
+    // ============================================
+    // 2. TIME FORMATTER (Matches mobile formatTime)
+    // ============================================
+    const formatTime = (t) => {
+        if (!t) return 'N/A';
+        if (t.includes('AM') || t.includes('PM')) return t;
+        const [h, m] = t.split(':');
+        const hour = parseInt(h, 10);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const h12 = hour % 12 || 12;
+        return `${h12}:${m} ${ampm}`;
+    };
 
-})();
+    // Calculate duration in hours/minutes
+    const getDurationText = (startStr, endStr) => {
+        if (!startStr || !endStr) return '';
+        try {
+            const [sh, sm] = startStr.split(':').map(Number);
+            const [eh, em] = endStr.split(':').map(Number);
+            const totalMins = (eh * 60 + em) - (sh * 60 + sm);
+            if (totalMins > 0) {
+                const hrs = Math.floor(totalMins / 60);
+                const mins = totalMins % 60;
+                if (hrs > 0 && mins > 0) return `${hrs}h ${mins}m`;
+                if (hrs > 0) return `${hrs} hr${hrs > 1 ? 's' : ''}`;
+                return `${mins} mins`;
+            }
+        } catch(e) {}
+        return '';
+    };
+
+    // ============================================
+    // 3. LOAD SCHEDULE DATA (Matching Mobile App Flow)
+    // ============================================
+    async function loadSchedule() {
+        if (scheduleContainer) {
+            scheduleContainer.innerHTML = `
+                <div style="text-align: center; padding: 48px 20px; color: #64748b;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 32px; color: #1B2A4A; margin-bottom: 12px;"></i>
+                    <p style="font-size: 14px; margin: 0;">Loading your assigned schedule from database...</p>
+                </div>
+            `;
+        }
+
+        try {
+            // 1. Fetch user & teacher record
+            let targetUserId = currentUserId;
+            if (userEmail) {
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('email', userEmail)
+                    .maybeSingle();
+
+                if (userData) targetUserId = userData.id;
+            }
+
+            // 2. Fetch teacher data
+            const { data: teacherData, error: tErr } = await supabase
+                .from('teachers')
+                .select('*')
+                .or(`user_id.eq.${targetUserId},id.eq.${targetUserId}`)
+                .maybeSingle();
+
+            if (!teacherData) {
+                console.warn('Teacher record not found in database.');
+                renderEmptyState('No teacher record found. Please ensure your teacher profile is registered.');
+                return;
+            }
+
+            teacherRecord = teacherData;
+            console.log('👨‍🏫 Teacher found:', teacherRecord.id);
+
+            // 3. Fetch schedules for this teacher
+            const { data: scheduleRows, error: sErr } = await supabase
+                .from('schedules')
+                .select('*')
+                .eq('teacher_id', teacherRecord.id);
+
+            if (sErr) throw sErr;
+
+            if (!scheduleRows || scheduleRows.length === 0) {
+                schedules = [];
+                updateStats();
+                renderScheduleCards();
+                renderTimetableGrid();
+                return;
+            }
+
+            // 4. Fetch related subjects & sections in parallel
+            const subjectIds = [...new Set(scheduleRows.map(s => s.subject_id).filter(Boolean))];
+            const sectionIds = [...new Set(scheduleRows.map(s => s.section_id).filter(Boolean))];
+
+            const subjectMap = {};
+            const sectionMap = {};
+
+            const promises = [];
+
+            if (subjectIds.length > 0) {
+                promises.push(
+                    supabase.from('subjects').select('id, name, code, grade_level').in('id', subjectIds)
+                        .then(({ data: subs }) => {
+                            (subs || []).forEach(s => { subjectMap[s.id] = s; });
+                        })
+                );
+            }
+
+            if (sectionIds.length > 0) {
+                promises.push(
+                    supabase.from('sections').select('id, name, grade_level, strand, room').in('id', sectionIds)
+                        .then(({ data: secs }) => {
+                            (secs || []).forEach(s => { sectionMap[s.id] = s; });
+                        })
+                );
+            }
+
+            await Promise.all(promises);
+
+            // 5. Map & format schedules exactly like the mobile app
+            schedules = scheduleRows.map(s => {
+                const sub = subjectMap[s.subject_id] || {};
+                const sec = sectionMap[s.section_id] || {};
+
+                return {
+                    id: s.id,
+                    day: s.day || 'Monday',
+                    time_start: formatTime(s.start_time),
+                    time_end: formatTime(s.end_time),
+                    start_raw: s.start_time || '00:00:00',
+                    end_raw: s.end_time || '00:00:00',
+                    duration: getDurationText(s.start_time, s.end_time),
+                    subject_name: sub.name || 'Unknown Subject',
+                    subject_code: sub.code || '',
+                    section_name: sec.name || 'No Section',
+                    grade_level: sec.grade_level || sub.grade_level || '',
+                    room: s.room || sec.room || 'N/A'
+                };
+            });
+
+            console.log(`✅ Loaded ${schedules.length} schedule classes`);
+
+            updateStats();
+            renderScheduleCards();
+            renderTimetableGrid();
+
+        } catch (err) {
+            console.error('❌ Error loading schedule:', err);
+            showAlert('error', `Failed to load schedule: ${err.message || 'Unknown error'}`);
+            renderEmptyState('Failed to load schedule from database.');
+        }
+    }
+
+    // ============================================
+    // 4. GROUP & RENDER SCHEDULE CARDS (App Layout)
+    // ============================================
+    const groupByDay = (items) => {
+        const grouped = {};
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        days.forEach(d => { grouped[d] = []; });
+        
+        items.forEach(s => {
+            if (!grouped[s.day]) grouped[s.day] = [];
+            grouped[s.day].push(s);
+        });
+        return grouped;
+    };
+
+    function renderScheduleCards() {
+        if (!scheduleContainer) return;
+
+        const search = (searchInput ? searchInput.value : '').toLowerCase().trim();
+
+        let filtered = schedules.filter(s => {
+            if (activeDayFilter !== 'all' && s.day.toLowerCase() !== activeDayFilter.toLowerCase()) {
+                return false;
+            }
+            if (search) {
+                const mSub = (s.subject_name || '').toLowerCase().includes(search);
+                const mCode = (s.subject_code || '').toLowerCase().includes(search);
+                const mSec = (s.section_name || '').toLowerCase().includes(search);
+                const mRoom = (s.room || '').toLowerCase().includes(search);
+                const mDay = (s.day || '').toLowerCase().includes(search);
+                return mSub || mCode || mSec || mRoom || mDay;
+            }
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            renderEmptyState(search ? 'No classes matched your search filter.' : 'No schedule assigned yet.');
+            return;
+        }
+
+        const grouped = groupByDay(filtered);
+        const daysWithClasses = Object.keys(grouped).filter(d => grouped[d].length > 0);
+
+        if (daysWithClasses.length === 0) {
+            renderEmptyState('No classes scheduled for the selected day.');
+            return;
+        }
+
+        let html = '';
+
+        daysWithClasses.forEach(day => {
+            const classesForDay = grouped[day].sort((a, b) => (a.start_raw || '').localeCompare(b.start_raw || ''));
+            const count = classesForDay.length;
+
+            html += `
+                <div class="day-section">
+                    <div class="day-section-header">
+                        <div class="day-section-title">
+                            <i class="fas fa-calendar-day" style="color: #1B2A4A;"></i> ${day}
+                        </div>
+                        <span class="day-badge-count">
+                            ${count} class${count !== 1 ? 'es' : ''}
+                        </span>
+                    </div>
+
+                    <div class="schedule-cards-grid">
+                        ${classesForDay.map(s => `
+                            <div class="schedule-item-card">
+                                <!-- Time block on left -->
+                                <div class="time-container">
+                                    <div class="time-start">${s.time_start}</div>
+                                    <div class="time-end">${s.time_end}</div>
+                                    ${s.duration ? `<span class="duration-pill">${s.duration}</span>` : ''}
+                                </div>
+
+                                <!-- Schedule info on right -->
+                                <div class="schedule-info">
+                                    <div class="subject-header-row">
+                                        <h4 class="subject-name" title="${s.subject_name}">${s.subject_name}</h4>
+                                        ${s.subject_code ? `<span class="subject-code-badge">${s.subject_code}</span>` : ''}
+                                    </div>
+                                    <div class="section-text">
+                                        <i class="fas fa-graduation-cap"></i>
+                                        <span>${s.section_name}${s.grade_level ? ` • ${s.grade_level}` : ''}</span>
+                                    </div>
+                                    ${s.room && s.room !== 'N/A' ? `
+                                        <div class="room-text">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <span>Room ${s.room}</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        });
+
+        scheduleContainer.innerHTML = html;
+    }
+
+    // ============================================
+    // 5. TIMETABLE GRID VIEW (Web View Mode)
+    // ============================================
+    function renderTimetableGrid() {
+        if (!timetableContainer) return;
+
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const grouped = groupByDay(schedules);
+
+        let html = `
+            <table class="timetable-table">
+                <thead>
+                    <tr>
+                        ${days.map(d => `<th><i class="fas fa-calendar-day"></i> ${d}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        ${days.map(d => {
+                            const dayClasses = grouped[d].sort((a, b) => (a.start_raw || '').localeCompare(b.start_raw || ''));
+                            if (dayClasses.length === 0) {
+                                return `
+                                    <td>
+                                        <div style="text-align: center; color: #cbd5e1; padding: 20px 0; font-size: 11px;">
+                                            <i class="fas fa-coffee" style="font-size: 16px; margin-bottom: 4px;"></i>
+                                            <div>No classes</div>
+                                        </div>
+                                    </td>
+                                `;
+                            }
+                            return `
+                                <td>
+                                    ${dayClasses.map(c => `
+                                        <div class="cell-class-block">
+                                            <strong>${c.subject_name}</strong>
+                                            <div style="font-size:10.5px; color:#475569;">${c.section_name} • Rm ${c.room}</div>
+                                            <span class="cell-time-span"><i class="fas fa-clock"></i> ${c.time_start} - ${c.time_end}</span>
+                                        </div>
+                                    `).join('')}
+                                </td>
+                            `;
+                        }).join('')}
+                    </tr>
+                </tbody>
+            </table>
+        `;
+
+        timetableContainer.innerHTML = html;
+    }
+
+    function renderEmptyState(message = 'No schedule assigned yet.') {
+        if (!scheduleContainer) return;
+        scheduleContainer.innerHTML = `
+            <div class="empty-schedule-card">
+                <i class="fas fa-calendar-alt empty-icon"></i>
+                <h3>No Schedule Assigned</h3>
+                <p>${message}</p>
+            </div>
+        `;
+    }
+
+    // ============================================
+    // 6. STATISTICS CALCULATOR
+    // ============================================
+    function updateStats() {
+        const total = schedules.length;
+        const uniqueSecs = new Set(schedules.map(s => s.section_name).filter(Boolean)).size;
+        const uniqueSubs = new Set(schedules.map(s => s.subject_name).filter(Boolean)).size;
+        
+        // Approximate available free periods out of standard 30 slots/week (6 periods/day * 5 days)
+        const freeSlots = Math.max(0, 30 - total);
+
+        if (totalClassesStat) totalClassesStat.textContent = total;
+        if (totalSectionsStat) totalSectionsStat.textContent = uniqueSecs;
+        if (totalSubjectsStat) totalSubjectsStat.textContent = uniqueSubs;
+        if (freePeriodsStat) freePeriodsStat.textContent = freeSlots;
+    }
+
+    // ============================================
+    // 7. EVENT HANDLERS & FILTERS
+    // ============================================
+
+    // Day Filter Chips
+    dayFilterChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            dayFilterChips.forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            activeDayFilter = chip.dataset.day || 'all';
+            renderScheduleCards();
+        });
+    });
+
+    // View Mode Toggle (Cards vs Grid)
+    viewToggleBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            viewToggleBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentViewMode = btn.dataset.view;
+
+            if (currentViewMode === 'cards') {
+                if (scheduleContainer) scheduleContainer.style.display = 'block';
+                if (timetableContainer) timetableContainer.style.display = 'none';
+            } else {
+                if (scheduleContainer) scheduleContainer.style.display = 'none';
+                if (timetableContainer) timetableContainer.style.display = 'block';
+            }
+        });
+    });
+
+    // Search Box
+    if (searchInput) {
+        searchInput.addEventListener('input', renderScheduleCards);
+    }
+
+    // Refresh Button
+    if (btnRefresh) {
+        btnRefresh.addEventListener('click', async () => {
+            const icon = btnRefresh.querySelector('i');
+            if (icon) icon.classList.add('fa-spin');
+            await loadSchedule();
+            setTimeout(() => {
+                if (icon) icon.classList.remove('fa-spin');
+                showAlert('success', 'Schedule updated successfully.');
+            }, 500);
+        });
+    }
+
+    // Initialize
+    await loadSchedule();
+});

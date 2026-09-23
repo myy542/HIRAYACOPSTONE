@@ -376,9 +376,9 @@
 }
 
 .form-header h3 {
-    font-size: 16px;
-    font-weight: 600;
-    color: #1e293b;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1B2A4A;
     margin: 0;
 }
 
@@ -406,6 +406,7 @@
     font-size: 14px;
     font-family: inherit;
     transition: all 0.2s;
+    box-sizing: border-box;
 }
 
 .form-group input:focus {
@@ -415,7 +416,8 @@
 }
 
 .form-group input:disabled {
-    background: #f1f5f9;
+    background: #ffffff;
+    border-color: #e2e8f0;
     cursor: not-allowed;
 }
 
@@ -423,10 +425,11 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
+    align-items: start;
 }
 
 .btn-submit {
-    padding: 10px 28px;
+    padding: 10px 24px;
     background: #1B2A4A;
     color: #fff;
     border: none;
@@ -439,19 +442,21 @@
     gap: 8px;
     font-family: inherit;
     transition: all 0.2s;
+    margin-top: 10px;
 }
 
-.btn-submit:hover {
+.btn-submit:hover:not(:disabled) {
     background: #14223a;
     box-shadow: 0 4px 12px rgba(27, 42, 74, 0.25);
 }
 
 .btn-submit:disabled {
-    opacity: 0.5;
+    background: #64748b;
+    opacity: 0.85;
     cursor: not-allowed;
 }
 
-/* Password Section */
+/* ===== PASSWORD SECTION ===== */
 .password-section {
     margin-top: 4px;
 }
@@ -459,12 +464,11 @@
 .password-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
-    background: #f8fafc;
-    border-radius: 8px;
-    border: 1px solid #e9edf4;
-    margin-bottom: 16px;
+    gap: 8px;
+    margin-bottom: 18px;
+    background: transparent;
+    border: none;
+    padding: 0;
 }
 
 .password-header input[type="checkbox"] {
@@ -472,12 +476,13 @@
     height: 18px;
     accent-color: #1B2A4A;
     cursor: pointer;
+    border-radius: 4px;
 }
 
 .password-header label {
-    font-size: 14px;
+    font-size: 14.5px;
     font-weight: 500;
-    color: #1e293b;
+    color: #334155;
     cursor: pointer;
 }
 
@@ -485,6 +490,7 @@
     display: none;
 }
 
+.password-fields.active,
 .password-fields.show {
     display: block;
 }
@@ -495,9 +501,9 @@
 }
 
 .password-strength-bar {
-    height: 6px;
+    height: 4px;
     background: #e2e8f0;
-    border-radius: 3px;
+    border-radius: 2px;
     overflow: hidden;
     margin-bottom: 6px;
 }
@@ -505,22 +511,28 @@
 .password-strength-fill {
     height: 100%;
     width: 0%;
-    transition: width 0.3s, background 0.3s;
-    border-radius: 3px;
+    transition: width 0.3s, background-color 0.3s;
+    border-radius: 2px;
 }
 
 .password-strength-text {
     font-size: 12px;
-    color: #64748b;
+    color: #475569;
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
+    font-weight: 500;
+}
+
+.password-strength-text i {
+    font-size: 13px;
+    color: #0f172a;
 }
 
 /* Password Requirements */
 .password-requirements {
-    margin-top: 8px;
-    padding: 10px 14px;
+    margin-top: 10px;
+    padding: 12px 16px;
     background: #fef2f2;
     border-radius: 8px;
     border-left: 4px solid #ef4444;
@@ -528,10 +540,18 @@
 }
 
 .password-requirements small {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-weight: 600;
-    color: #991b1b;
-    margin-bottom: 4px;
+    color: #1e293b;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.password-requirements small i {
+    color: #0f172a;
+    font-size: 12px;
 }
 
 .password-requirements ul {
@@ -541,15 +561,17 @@
 }
 
 .password-requirements li {
-    color: #991b1b;
-    margin: 3px 0;
+    color: #dc2626;
+    margin: 4px 0;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    font-size: 12px;
 }
 
 .password-requirements li i {
-    width: 16px;
+    font-size: 8px;
+    color: #dc2626;
 }
 
 .password-requirements li.valid {
@@ -559,6 +581,7 @@
 
 .password-requirements li.valid i {
     color: #10b981;
+    font-size: 10px;
 }
 
 /* Modal */
@@ -1022,4 +1045,131 @@
         flex-direction: column;
         align-items: stretch;
     }
+}
+
+/* ===== ACCOUNT INFORMATION CARD & EDIT TOGGLE ===== */
+.account-info-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 24px;
+    transition: all 0.3s ease;
+}
+
+.card-header-with-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 20px;
+}
+
+.card-header-with-action h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0b2b4a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-edit-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 16px;
+    background: #f1f5f9;
+    color: #0b2b4a;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.btn-edit-toggle:hover {
+    background: #e2e8f0;
+    color: #071e34;
+    border-color: #cbd5e1;
+    transform: translateY(-1px);
+}
+
+.btn-edit-toggle i {
+    font-size: 0.85rem;
+    color: #0b2b4a;
+}
+
+.btn-edit-toggle.is-editing {
+    background: #fee2e2;
+    color: #dc2626;
+    border-color: #fca5a5;
+}
+
+.btn-edit-toggle.is-editing i {
+    color: #dc2626;
+}
+
+/* Account Info View Grid */
+.account-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px 24px;
+}
+
+.account-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.account-info-item.full-width {
+    grid-column: 1 / -1;
+}
+
+.account-info-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+}
+
+.account-info-value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+    word-break: break-word;
+}
+
+.account-info-value:empty::before,
+.account-info-value.empty::before {
+    content: "Not provided";
+    color: #94a3b8;
+    font-style: italic;
+    font-weight: 400;
+}
+
+/* Account Info Edit Container */
+.account-info-edit-container {
+    animation: fadeIn 0.25s ease-in-out;
+}
+
+.account-info-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #f1f5f9;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
 }

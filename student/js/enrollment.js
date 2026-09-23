@@ -1,9 +1,10 @@
 /**
  * Student Enrollment Form - Supabase Integration
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  */
 
 import { supabase } from '../../supabase/config.js';
+import { EmailNotificationService } from '../../js/email_service.js';
 
 // ============================================================
 // REQUIREMENTS DATA
@@ -130,7 +131,7 @@ function getStudentTypeOptions(gradeName) {
         'Grade 9': { 'continuing': 'Continuing Student', 'transferee': 'Transferee (From another school)' },
         'Grade 10': { 'continuing': 'Continuing Student', 'transferee': 'Transferee (From another school)' },
         'Grade 11': {
-            'same_school': 'From PLSNHS Junior High',
+            'same_school': 'From HES Junior High',
             'different_school': 'From a different school (Transferee)'
         },
         'Grade 12': { 'continuing': 'Continuing Student (From Grade 11)', 'transferee': 'Transferee (From another school)' }
@@ -405,7 +406,7 @@ async function submitEnrollment(e) {
         const guardianAddress = document.getElementById('guardianAddress')?.value.trim() || '';
 
         const enrolledStudentType = document.getElementById('student_type')?.value || studentType || (gradeName.includes('7') ? 'New Student' : 'Continuing');
-        const previousSchool = document.getElementById('previousSchool')?.value.trim() || (enrolledStudentType === 'Transferee' ? 'Previous School' : 'Placido L. Señor National High School');
+        const previousSchool = document.getElementById('previousSchool')?.value.trim() || (enrolledStudentType === 'Transferee' ? 'Previous School' : 'Hiraya Enrollment System');
         const previousGrade = document.getElementById('previousGrade')?.value.trim() || 'N/A';
         const studentId = sessionUser?.id || sessionUser?.uid || null;
 
@@ -475,7 +476,7 @@ async function submitEnrollment(e) {
 
         // 3. Dispatch storage event for instant cross-tab synchronization
         try {
-            localStorage.setItem('plsnhs_latest_notification', JSON.stringify({
+            localStorage.setItem('hes_latest_notification', JSON.stringify({
                 role: 'registrar',
                 title: notifTitle,
                 message: notifMessage,
@@ -485,18 +486,75 @@ async function submitEnrollment(e) {
             }));
         } catch(storageErr) {}
 
-        showAlert('✅ Enrollment submitted successfully! The registrar has been notified.', 'success');
+        // 4. Prepare Gmail confirmation data & Show Confirmation Modal
+        const trackingRef = `HES-ENR-${(createdEnrollmentId ? createdEnrollmentId.toString().slice(0, 8) : Date.now().toString().slice(-6)).toUpperCase()}`;
+        const emailConfirmPayload = {
+            studentName: studentFullName,
+            firstName,
+            lastName,
+            email: userEmail,
+            gradeLevel: gradeName,
+            strand: strand || null,
+            studentType: enrolledStudentType,
+            schoolYear: schoolYear || '2026-2027',
+            trackingId: trackingRef
+        };
 
-        setTimeout(() => {
-            if (sessionUser) {
-                window.location.href = 'dashboard.html';
-            } else {
-                showAlert('Redirecting to login page...', 'success');
-                setTimeout(() => {
+        const emailData = EmailNotificationService.buildEnrollmentConfirmationEmail(emailConfirmPayload);
+
+        const modal = document.getElementById('enrollmentConfirmationModal');
+        const trackingEl = document.getElementById('confirmTrackingId');
+        const nameEl = document.getElementById('confirmStudentName');
+        const emailEl = document.getElementById('confirmEmail');
+        const gradeEl = document.getElementById('confirmGradeStrand');
+        const syEl = document.getElementById('confirmSY');
+
+        if (trackingEl) trackingEl.textContent = trackingRef;
+        if (nameEl) nameEl.textContent = studentFullName;
+        if (emailEl) emailEl.textContent = userEmail;
+        if (gradeEl) gradeEl.textContent = `${gradeName}${strand ? ' - ' + strand : ''}`;
+        if (syEl) syEl.textContent = schoolYear || '2026-2027';
+
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+
+        const gmailBtn = document.getElementById('sendEnrollmentGmailBtn');
+        const copyReceiptBtn = document.getElementById('copyEnrollmentReceiptBtn');
+        const mailtoBtn = document.getElementById('sendMailtoReceiptBtn');
+        const doneBtn = document.getElementById('doneEnrollmentBtn');
+
+        if (gmailBtn) {
+            gmailBtn.onclick = () => {
+                EmailNotificationService.sendViaGmailWeb(emailData);
+                showAlert(`📧 Opening Gmail compose for ${userEmail}...`, 'success');
+            };
+        }
+
+        if (copyReceiptBtn) {
+            copyReceiptBtn.onclick = async () => {
+                const ok = await EmailNotificationService.copyEmailText(emailData);
+                if (ok) showAlert('📋 Enrollment receipt copied to clipboard!', 'success');
+            };
+        }
+
+        if (mailtoBtn) {
+            mailtoBtn.onclick = () => {
+                EmailNotificationService.sendViaMailto(emailData);
+            };
+        }
+
+        if (doneBtn) {
+            doneBtn.onclick = () => {
+                if (sessionUser) {
+                    window.location.href = 'dashboard.html';
+                } else {
                     window.location.href = '../auth/login.html';
-                }, 1000);
-            }
-        }, 1200);
+                }
+            };
+        }
+
+        showAlert('✅ Enrollment submitted successfully! You can send your confirmation receipt to Gmail.', 'success');
 
     } catch (error) {
         console.error('❌ Error submitting enrollment:', error);
@@ -517,8 +575,8 @@ if (logoutBtn) {
     logoutBtn.addEventListener('click', async function(e) {
         e.preventDefault();
         localStorage.removeItem('currentUser');
-        localStorage.removeItem('plsnhs_student_avatar');
-        localStorage.removeItem('plsnhs_student_name');
+        localStorage.removeItem('hes_student_avatar');
+        localStorage.removeItem('hes_student_name');
         try {
             await supabase.auth.signOut();
         } catch(err) {}

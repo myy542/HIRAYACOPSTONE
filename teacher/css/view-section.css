@@ -68,36 +68,45 @@ body {
 .logo {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 12px;
+    margin-bottom: 4px;
 }
 
 .logo-icon {
-    background: var(--accent);
-    color: var(--primary);
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
-    font-weight: 800;
-    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .logo-text {
-    font-size: 1.4rem;
-    font-weight: 700;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #fff;
 }
+
 .logo-text span {
-    color: var(--accent);
+    color: #facc15;
 }
 
 .school-badge {
-    font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.5);
-    margin-top: 4px;
+    font-size: 11px;
+    opacity: 0.85;
+    letter-spacing: 0.3px;
     padding-left: 4px;
-    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.8);
 }
 
 /* Teacher Profile */
@@ -183,7 +192,14 @@ body {
     color: rgba(255, 255, 255, 0.6);
     text-decoration: none;
     font-size: 0.9rem;
+    white-space: nowrap;
     transition: var(--transition);
+}
+
+.nav-items a span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .nav-items a i {
@@ -669,25 +685,54 @@ body {
         width: 70px;
         padding: 1rem 0;
     }
+    .sidebar-header {
+        padding: 0 0.5rem 1rem;
+        display: flex;
+        justify-content: center;
+    }
+    .sidebar .logo {
+        justify-content: center;
+        margin-bottom: 0;
+    }
     .sidebar .logo-text,
     .sidebar .school-badge,
     .sidebar .teacher-name,
     .sidebar .teacher-role,
     .sidebar .nav-section-title,
     .sidebar .nav-items a span {
-        display: none;
+        display: none !important;
+    }
+    .sidebar .teacher-profile {
+        padding: 0.8rem 0;
+    }
+    .sidebar .teacher-avatar {
+        width: 44px;
+        height: 44px;
+        margin: 0 auto;
+    }
+    .sidebar .avatar-initial {
+        width: 44px;
+        height: 44px;
+        font-size: 1.1rem;
+    }
+    .sidebar .nav-menu {
+        padding: 0.5rem;
     }
     .sidebar .nav-items a {
         justify-content: center;
-        padding: 0.6rem;
+        padding: 0.75rem 0.5rem;
+        font-size: 0 !important;
+        gap: 0;
     }
     .sidebar .nav-items a i {
-        font-size: 1.2rem;
+        font-size: 1.25rem !important;
+        width: auto;
+        margin: 0;
     }
     .main-content {
         margin-left: 70px;
         max-width: calc(100% - 70px);
-        padding: 1.5rem;
+        padding: 1.25rem;
     }
     .section-header {
         flex-direction: column;
@@ -726,4 +771,92 @@ body {
     .action-btns {
         flex-direction: column;
     }
+}
+
+/* ===== SECTION ATTENDANCE STYLES ===== */
+.att-status-group {
+    display: inline-flex;
+    background: var(--gray-100);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 3px;
+    border: 1px solid var(--gray-200);
+}
+
+.att-status-btn {
+    border: none;
+    background: transparent;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.att-status-btn:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.att-status-btn.active.btn-present {
+    background: #10b981;
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.att-status-btn.active.btn-late {
+    background: #f59e0b;
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
+.att-status-btn.active.btn-absent {
+    background: #ef4444;
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.att-status-btn.active.btn-excused {
+    background: #0ea5e9;
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(14, 165, 233, 0.3);
+}
+
+.att-status-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.att-time-input, .att-remarks-input {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--gray-800);
+    outline: none;
+    transition: var(--transition);
+    background: #fff;
+}
+
+.att-time-input:focus, .att-remarks-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(11, 43, 74, 0.1);
+}
+
+.att-time-input:disabled, .att-remarks-input:disabled {
+    background: var(--gray-100);
+    cursor: not-allowed;
+}
+
+.tab-btn {
+    transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+    filter: brightness(0.95);
 }

@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ? `${uRow.first_name || ''} ${uRow.last_name || ''}`.trim() || (uRow.full_name || uRow.name || '')
                 : (tRow ? (tRow.fullname || tRow.name || '') : '');
             const email = uRow ? (uRow.email || '') : (tRow ? (tRow.email || '') : '');
-            const idNum = (tRow && (tRow.employee_id || tRow.id_number)) || 'PLSNHS-TCH-000001';
+            const idNum = (tRow && (tRow.employee_id || tRow.id_number)) || 'HES-TCH-000001';
             const phone = (tRow && tRow.phone) || (uRow && uRow.phone) || '';
             const spec = (tRow && (tRow.specialization || tRow.subject)) || '';
             const addr = (tRow && tRow.address) || (uRow && uRow.address) || '';
@@ -361,7 +361,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         .from('teachers')
                         .insert([{
                             user_id: currentUserId,
-                            employee_id: employeeId || `PLSNHS-TCH-${Math.floor(100000 + Math.random() * 900000)}`,
+                            employee_id: employeeId || `HES-TCH-${Math.floor(100000 + Math.random() * 900000)}`,
                             specialization: specialization,
                             phone: phone,
                             address: address

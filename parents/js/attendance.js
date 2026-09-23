@@ -1,6 +1,6 @@
 /**
  * Parents Attendance - Supabase Integration
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  * Matching Student Attendance Design & Filtering with Child Name Visibility
  */
 
@@ -129,8 +129,8 @@ import { supabase } from '../../supabase/config.js';
         logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_parent_avatar');
-            localStorage.removeItem('plsnhs_parent_name');
+            localStorage.removeItem('hes_parent_avatar');
+            localStorage.removeItem('hes_parent_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}
@@ -292,10 +292,10 @@ import { supabase } from '../../supabase/config.js';
             if (sidebarChildName) sidebarChildName.textContent = registeredChildren[0]?.name || 'Student';
 
             if (registeredChildren.length > 0) {
-                localStorage.setItem('plsnhs_parent_child_name', childNames);
+                localStorage.setItem('hes_parent_child_name', childNames);
             }
 
-            rawAttendanceRecords = records;
+            rawAttendanceRecords = records.filter(r => !isWeekend(r.date));
             updateChildInfoCard();
             applyFilters();
 
@@ -365,6 +365,7 @@ import { supabase } from '../../supabase/config.js';
     function generateRealisticAttendanceForChildren(children) {
         const logs = [];
         const todayObj = new Date();
+        const todayStr = todayObj.toISOString().split('T')[0];
         const schoolDaysToGenerate = 30; // 30 records matching screenshot
 
         children.forEach((child, childIdx) => {
@@ -388,7 +389,7 @@ import { supabase } from '../../supabase/config.js';
                 let timeOut = '04:30 PM';
                 let remarks = 'On time';
 
-                if (dayOffset === 1) {
+                if (dateStr === todayStr && dayOfWeek !== 0 && dayOfWeek !== 6) {
                     timeIn = '07:36 AM';
                     timeOut = '04:30 PM';
                     status = 'Present';
@@ -453,6 +454,9 @@ import { supabase } from '../../supabase/config.js';
         const currentMonthIdx = new Date().getMonth();
 
         filteredRecords = rawAttendanceRecords.filter(record => {
+            // Strictly exclude any weekend records (Saturday / Sunday)
+            if (isWeekend(record.date)) return false;
+
             // Student Filter
             if (selStudent !== 'all' && String(record.student_id) !== String(selStudent)) {
                 return false;
@@ -549,7 +553,20 @@ import { supabase } from '../../supabase/config.js';
     // ============================================
 
     function renderTodayHighlight(records) {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const isWeekend = now.getDay() === 0 || now.getDay() === 6;
+
+        if (isWeekend) {
+            if (todayStatusBadgeContainer) {
+                todayStatusBadgeContainer.innerHTML = `<span class="status-badge status-weekend" style="background: #e0f2fe; color: #0369a1; font-weight: 600; padding: 6px 14px; border-radius: 20px; border: 1px solid #bae6fd;"><i class="fas fa-calendar-times"></i> Weekend (No Classes)</span>`;
+            }
+            if (todayTimeIn) todayTimeIn.textContent = '—';
+            if (todayTimeOut) todayTimeOut.textContent = '—';
+            if (todayRemarks) todayRemarks.textContent = 'No classes scheduled on weekends (Saturday & Sunday).';
+            return;
+        }
+
+        const todayStr = now.toISOString().split('T')[0];
         const todayRecord = records.find(r => r.date === todayStr);
 
         if (!todayRecord) {
@@ -558,7 +575,7 @@ import { supabase } from '../../supabase/config.js';
             }
             if (todayTimeIn) todayTimeIn.textContent = '—';
             if (todayTimeOut) todayTimeOut.textContent = '—';
-            if (todayRemarks) todayRemarks.textContent = 'No attendance recorded for today yet.';
+            if (todayRemarks) todayRemarks.textContent = 'Attendance has not been recorded by the teacher for today yet.';
             return;
         }
 
@@ -692,7 +709,7 @@ import { supabase } from '../../supabase/config.js';
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement('a');
         link.setAttribute('href', encodedUri);
-        link.setAttribute('download', `PLSNHS_Attendance_${parentDisplayName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute('download', `HES_Attendance_${parentDisplayName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

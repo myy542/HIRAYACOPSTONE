@@ -1,6 +1,6 @@
 /**
  * Teacher Profile - Supabase Integration
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -118,8 +118,8 @@ import { supabase } from '../../supabase/config.js';
             e.preventDefault();
             console.log('🚪 Teacher logging out...');
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_teacher_avatar');
-            localStorage.removeItem('plsnhs_teacher_name');
+            localStorage.removeItem('hes_teacher_avatar');
+            localStorage.removeItem('hes_teacher_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}
@@ -232,12 +232,12 @@ import { supabase } from '../../supabase/config.js';
         const lastName = data.last_name || data.lastName || '';
         const fullName = `${firstName} ${lastName}`.trim() || data.displayName || data.name || (data.email ? data.email.split('@')[0] : 'Teacher');
         const initials = getTeacherInitials(fullName);
-        const email = data.email || sessionUser.email || 'teacher@plsnhs.edu.ph';
-        const empId = data.employee_id || data.id_number || data.idNumber || `PLSNHS-TEA-${String(data.id || '00021').substring(0, 5).toUpperCase()}`;
+        const email = data.email || sessionUser.email || 'teacher@hes.edu.ph';
+        const empId = data.employee_id || data.id_number || data.idNumber || `HES-TEA-${String(data.id || '00021').substring(0, 5).toUpperCase()}`;
         const createdAt = data.created_at || data.createdAt || '2026-06-01';
 
         try {
-            localStorage.setItem('plsnhs_teacher_name', fullName);
+            localStorage.setItem('hes_teacher_name', fullName);
         } catch(e) {}
 
         // Populate elements
@@ -253,11 +253,11 @@ import { supabase } from '../../supabase/config.js';
         if (memberSince) memberSince.textContent = formatDate(createdAt);
         if (daysActive) daysActive.textContent = calculateDaysActive(createdAt);
 
-        // Edit form fields
-        if (editFirstname && !editFirstname.value) editFirstname.value = firstName;
-        if (editLastname && !editLastname.value) editLastname.value = lastName;
-        if (editPhone && !editPhone.value) editPhone.value = data.phone || data.contact_number || '';
-        if (editDepartment && !editDepartment.value) editDepartment.value = data.department || data.specialization || 'Senior High School';
+        // Render Account Information View Mode Fields
+        renderTeacherAccountInfoView(data, fullName, email, empId);
+
+        // Populate edit form fields
+        populateTeacherEditForm(data, firstName, lastName);
 
         // Badges
         if (emailVerifiedBadge) {
@@ -269,18 +269,84 @@ import { supabase } from '../../supabase/config.js';
                     <i class="fas fa-check-circle"></i> Verified Teacher Account
                 </div>
                 <div class="verification-info">
-                    <p><i class="fas fa-check-circle" style="color: #28a745;"></i> Your faculty email address is registered and verified in the DepEd PLSNHS system.</p>
+                    <p><i class="fas fa-check-circle" style="color: #28a745;"></i> Your faculty email address is registered and verified in the DepEd HES system.</p>
                 </div>
             `;
         }
 
         // Avatar check
-        const effectiveAvatar = localStorage.getItem('plsnhs_teacher_avatar') || data.profile_picture || data.profilePicture;
+        const effectiveAvatar = localStorage.getItem('hes_teacher_avatar') || data.profile_picture || data.profilePicture;
         if (effectiveAvatar) {
             applyTeacherAvatarToDOM(effectiveAvatar);
         } else {
             renderDefaultTeacherAvatar(fullName);
         }
+    }
+
+    function renderTeacherAccountInfoView(data, fullName, email, empId) {
+        const viewTeacherFullName = document.getElementById('viewTeacherFullName');
+        const viewTeacherEmail = document.getElementById('viewTeacherEmail');
+        const viewTeacherEmployeeId = document.getElementById('viewTeacherEmployeeId');
+        const viewTeacherGender = document.getElementById('viewTeacherGender');
+        const viewTeacherPhone = document.getElementById('viewTeacherPhone');
+        const viewTeacherDepartment = document.getElementById('viewTeacherDepartment');
+        const viewTeacherAddress = document.getElementById('viewTeacherAddress');
+
+        if (viewTeacherFullName) viewTeacherFullName.textContent = fullName || '-';
+        if (viewTeacherEmail) viewTeacherEmail.textContent = email || '-';
+        if (viewTeacherEmployeeId) viewTeacherEmployeeId.textContent = empId || 'HES-TEA-00021';
+        if (viewTeacherGender) viewTeacherGender.textContent = data?.gender || sessionUser?.gender || 'Not specified';
+        if (viewTeacherPhone) viewTeacherPhone.textContent = data?.phone || data?.contact_number || sessionUser?.phone || 'Not provided';
+        if (viewTeacherDepartment) viewTeacherDepartment.textContent = data?.department || data?.specialization || sessionUser?.department || 'Senior High School Faculty';
+        if (viewTeacherAddress) viewTeacherAddress.textContent = data?.address || sessionUser?.address || 'Not provided';
+    }
+
+    function populateTeacherEditForm(data, firstName, lastName) {
+        const editGender = document.getElementById('editGender');
+        const editAddress = document.getElementById('editAddress');
+
+        if (editFirstname) editFirstname.value = firstName || sessionUser.firstName || '';
+        if (editLastname) editLastname.value = lastName || sessionUser.lastName || '';
+        if (editGender) editGender.value = data?.gender || sessionUser.gender || '';
+        if (editPhone) editPhone.value = data?.phone || data?.contact_number || sessionUser.phone || '';
+        if (editAddress) editAddress.value = data?.address || sessionUser.address || '';
+        if (editDepartment) editDepartment.value = data?.department || data?.specialization || sessionUser.department || 'Senior High School';
+    }
+
+    // ============================================
+    // EDIT TOGGLE HANDLER (View Mode vs Edit Mode)
+    // ============================================
+    const editTeacherInfoToggleBtn = document.getElementById('editTeacherInfoToggleBtn');
+    const teacherInfoViewContainer = document.getElementById('teacherInfoViewContainer');
+    const teacherInfoEditContainer = document.getElementById('teacherInfoEditContainer');
+    const cancelTeacherEditBtn = document.getElementById('cancelTeacherEditBtn');
+
+    function setTeacherEditMode(isEditing) {
+        if (!teacherInfoViewContainer || !teacherInfoEditContainer || !editTeacherInfoToggleBtn) return;
+        if (isEditing) {
+            teacherInfoViewContainer.style.display = 'none';
+            teacherInfoEditContainer.style.display = 'block';
+            editTeacherInfoToggleBtn.innerHTML = '<i class="fas fa-times"></i> Cancel';
+            editTeacherInfoToggleBtn.classList.add('is-editing');
+        } else {
+            teacherInfoViewContainer.style.display = 'block';
+            teacherInfoEditContainer.style.display = 'none';
+            editTeacherInfoToggleBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+            editTeacherInfoToggleBtn.classList.remove('is-editing');
+        }
+    }
+
+    if (editTeacherInfoToggleBtn) {
+        editTeacherInfoToggleBtn.addEventListener('click', function() {
+            const isCurrentlyEditing = teacherInfoEditContainer && teacherInfoEditContainer.style.display !== 'none';
+            setTeacherEditMode(!isCurrentlyEditing);
+        });
+    }
+
+    if (cancelTeacherEditBtn) {
+        cancelTeacherEditBtn.addEventListener('click', function() {
+            setTeacherEditMode(false);
+        });
     }
 
     // ============================================
@@ -296,7 +362,9 @@ import { supabase } from '../../supabase/config.js';
 
             const newFirst = editFirstname ? editFirstname.value.trim() : '';
             const newLast = editLastname ? editLastname.value.trim() : '';
+            const newGender = document.getElementById('editGender')?.value || '';
             const newPhone = editPhone ? editPhone.value.trim() : '';
+            const newAddr = document.getElementById('editAddress')?.value.trim() || '';
             const newDept = editDepartment ? editDepartment.value.trim() : '';
 
             if (!newFirst || !newLast) {
@@ -319,7 +387,9 @@ import { supabase } from '../../supabase/config.js';
                         let uUpdate = supabase.from('users').update({
                             first_name: newFirst,
                             last_name: newLast,
+                            gender: newGender,
                             phone: newPhone,
+                            address: newAddr,
                             updated_at: new Date().toISOString()
                         });
                         if (userUid) {
@@ -338,9 +408,13 @@ import { supabase } from '../../supabase/config.js';
                 if (userEmail || userUid) {
                     try {
                         let tUpdate = supabase.from('teachers').update({
+                            first_name: newFirst,
+                            last_name: newLast,
+                            gender: newGender,
                             department: newDept,
                             specialization: newDept,
                             contact_number: newPhone,
+                            address: newAddr,
                             updated_at: new Date().toISOString()
                         });
                         if (userUid) {
@@ -360,27 +434,43 @@ import { supabase } from '../../supabase/config.js';
                 if (sessionUser) {
                     sessionUser.firstName = newFirst;
                     sessionUser.lastName = newLast;
+                    sessionUser.displayName = newFullName;
                     sessionUser.phone = newPhone;
+                    sessionUser.address = newAddr;
                     sessionUser.department = newDept;
+                    sessionUser.gender = newGender;
                     localStorage.setItem('currentUser', JSON.stringify(sessionUser));
                 }
-                localStorage.setItem('plsnhs_teacher_name', newFullName);
+                localStorage.setItem('hes_teacher_name', newFullName);
 
-                // 4. Update UI
+                if (userData) {
+                    userData.first_name = newFirst;
+                    userData.last_name = newLast;
+                    userData.gender = newGender;
+                    userData.phone = newPhone;
+                    userData.address = newAddr;
+                    userData.department = newDept;
+                }
+
+                // 4. Update UI & View Mode
                 if (profileName) profileName.textContent = newFullName;
                 if (teacherName) teacherName.textContent = newFullName;
                 const newInit = getTeacherInitials(newFullName);
                 if (profileInitial) profileInitial.textContent = newInit;
                 if (teacherInitial) teacherInitial.textContent = newInit;
 
-                showAlert('✅ Profile information updated successfully!', 'success');
+                const empId = teacherData?.employee_id || userData?.employee_id || 'HES-TEA-00021';
+                renderTeacherAccountInfoView(userData, newFullName, userEmail, empId);
+                setTeacherEditMode(false);
+
+                showAlert('✅ Account information updated successfully!', 'success');
             } catch (err) {
                 console.error('Error updating teacher profile:', err);
                 showAlert('❌ Failed to update profile: ' + err.message, 'error');
             } finally {
                 if (saveTeacherProfileBtn) {
                     saveTeacherProfileBtn.disabled = false;
-                    saveTeacherProfileBtn.innerHTML = '<i class="fas fa-save"></i> Save Profile Changes';
+                    saveTeacherProfileBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
                 }
             }
         });
@@ -621,7 +711,7 @@ import { supabase } from '../../supabase/config.js';
     window.removeProfilePic = async function() {
         if (confirm('Remove your profile picture and restore your name initials?')) {
             try {
-                localStorage.removeItem('plsnhs_teacher_avatar');
+                localStorage.removeItem('hes_teacher_avatar');
             } catch(e) {}
             const displayName = userData?.first_name ? `${userData.first_name} ${userData.last_name || ''}`.trim() : (sessionUser.firstName || 'Teacher');
             renderDefaultTeacherAvatar(displayName);
@@ -652,7 +742,7 @@ import { supabase } from '../../supabase/config.js';
                 reader.onload = async function(evt) {
                     const base64Image = evt.target.result;
                     try {
-                        localStorage.setItem('plsnhs_teacher_avatar', base64Image);
+                        localStorage.setItem('hes_teacher_avatar', base64Image);
                     } catch(e) {}
                     applyTeacherAvatarToDOM(base64Image);
                     showAlert('✅ Profile picture updated successfully!', 'success');
@@ -697,12 +787,12 @@ import { supabase } from '../../supabase/config.js';
 
     let teacherDocs = [];
     try {
-        const savedTDocs = localStorage.getItem('plsnhs_teacher_documents');
+        const savedTDocs = localStorage.getItem('hes_teacher_documents');
         if (savedTDocs) {
             teacherDocs = JSON.parse(savedTDocs);
         } else {
             teacherDocs = [...defaultTeacherDocs];
-            localStorage.setItem('plsnhs_teacher_documents', JSON.stringify(teacherDocs));
+            localStorage.setItem('hes_teacher_documents', JSON.stringify(teacherDocs));
         }
     } catch(e) {
         teacherDocs = [...defaultTeacherDocs];
@@ -710,7 +800,7 @@ import { supabase } from '../../supabase/config.js';
 
     function persistTeacherDocs() {
         try {
-            localStorage.setItem('plsnhs_teacher_documents', JSON.stringify(teacherDocs));
+            localStorage.setItem('hes_teacher_documents', JSON.stringify(teacherDocs));
         } catch(e) {}
     }
 

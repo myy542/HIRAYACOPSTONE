@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile - PLSNHS</title>
+    <title>My Profile - HES, Hiraya Enrollment System</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Fonts -->
@@ -11,6 +11,7 @@
     <!-- CSS Files -->
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/profile.css">
+    <link rel="stylesheet" href="../css/chatbot.css">
 </head>
 <body>
     <!-- Mobile Menu Toggle -->
@@ -26,9 +27,9 @@
                     <div class="logo-icon">
                         <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
                     </div>
-                    <div class="logo-text">PLS<span>NHS</span></div>
+                    <div class="logo-text">H.<span>E.S</span></div>
                 </div>
-                <div class="school-badge">Placido L. Señor NHS</div>
+                <div class="school-badge">Hiraya Enrollment System</div>
             </div>
 
             <div class="admin-profile">
@@ -58,6 +59,8 @@
                     <ul class="nav-items">
                         <li><a href="manage_accounts.html"><i class="fas fa-users-cog"></i> Accounts</a></li>
                         <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Attendance</a></li>
+                        <li><a href="register_face.html"><i class="fas fa-camera"></i> Face Registration</a></li>
+                        <li><a href="activities.html"><i class="fas fa-history"></i> Activities</a></li>
                     </ul>
                 </div>
 
@@ -125,7 +128,7 @@
                             <div class="info-icon"><i class="fas fa-id-card"></i></div>
                             <div class="info-content">
                                 <div class="info-label">ID Number</div>
-                                <div class="info-value" id="profileIdNumber">PLSNHS-ADM-00001</div>
+                                <div class="info-value" id="profileIdNumber">HES-ADM-00001</div>
                             </div>
                         </div>
 
@@ -274,40 +277,102 @@
                         </form>
                     </div>
 
-                    <!-- Edit Profile Form -->
-                    <div class="form-card">
-                        <div class="form-header">
-                            <i class="fas fa-user-edit"></i>
-                            <h3>Edit Profile Information</h3>
-                        </div>
-                        <form id="profileForm">
-                            <div class="form-group">
-                                <label class="form-label">Full Name <span class="required">*</span></label>
-                                <input type="text" name="fullname" id="fullname" value="Admin User" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">ID Number</label>
-                                <input type="text" name="id_number" id="idNumber" value="PLSNHS-ADM-00001" placeholder="Enter your ID number">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Contact Number</label>
-                                <input type="tel" name="phone" id="phone" value="09123456789" placeholder="09XXXXXXXXX">
-                                <small style="color: #64748b; display: block; margin-top: 5px;">
-                                    <i class="fas fa-info-circle"></i> Philippine mobile number format: 09XXXXXXXXX (11 digits)
-                                </small>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Role</label>
-                                <input type="text" value="Administrator" disabled>
-                            </div>
-
-                            <button type="submit" name="update_profile" class="btn-submit">
-                                <i class="fas fa-save"></i> Update Profile
+                    <!-- Account Information Card (View & Edit Modes) -->
+                    <div class="account-info-card" id="accountInfoCard">
+                        <div class="card-header-with-action">
+                            <h3><i class="fas fa-id-card"></i> Account Information</h3>
+                            <button type="button" class="btn-edit-toggle" id="editAdminInfoToggleBtn">
+                                <i class="fas fa-edit"></i> Edit
                             </button>
-                        </form>
+                        </div>
+
+                        <!-- VIEW MODE -->
+                        <div class="account-info-view" id="adminInfoViewContainer">
+                            <div class="account-info-grid">
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Full Name</span>
+                                    <span class="account-info-value" id="viewAdminFullName">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Email Address</span>
+                                    <span class="account-info-value" id="viewAdminEmail">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Admin ID</span>
+                                    <span class="account-info-value" id="viewAdminEmployeeId">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Gender</span>
+                                    <span class="account-info-value" id="viewAdminGender">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Contact Number</span>
+                                    <span class="account-info-value" id="viewAdminPhone">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">System Role / Access</span>
+                                    <span class="account-info-value" id="viewAdminRole">System Administrator</span>
+                                </div>
+                                <div class="account-info-item full-width">
+                                    <span class="account-info-label">Complete Home Address</span>
+                                    <span class="account-info-value" id="viewAdminAddress">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- EDIT MODE (Form) -->
+                        <div class="account-info-edit-container" id="adminInfoEditContainer" style="display: none;">
+                            <form id="profileForm">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                                    <div class="form-group">
+                                        <label class="form-label">First Name <span class="required" style="color: #ef4444;">*</span></label>
+                                        <input type="text" name="first_name" id="editAdminFirstName" placeholder="First name" required style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Last Name <span class="required" style="color: #ef4444;">*</span></label>
+                                        <input type="text" name="last_name" id="editAdminLastName" placeholder="Last name" required style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                                    </div>
+                                </div>
+
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px;">
+                                    <div class="form-group">
+                                        <label class="form-label">Gender</label>
+                                        <select name="gender" id="editAdminGender" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; background: #fff;">
+                                            <option value="">Select Gender</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Prefer not to say">Prefer not to say</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">ID Number</label>
+                                        <input type="text" name="id_number" id="idNumber" placeholder="HES-ADM-00001" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                                    </div>
+                                </div>
+
+                                <div class="form-group" style="margin-top: 14px;">
+                                    <label class="form-label">Contact Number</label>
+                                    <input type="tel" name="phone" id="phone" placeholder="09XXXXXXXXX" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                                    <small style="color: #64748b; display: block; margin-top: 5px;">
+                                        <i class="fas fa-info-circle"></i> Philippine mobile number format: 09XXXXXXXXX (11 digits)
+                                    </small>
+                                </div>
+
+                                <div class="form-group" style="margin-top: 14px;">
+                                    <label class="form-label">Complete Home Address</label>
+                                    <textarea name="address" id="editAdminAddress" rows="2" placeholder="Barangay, City/Municipality, Province" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; resize: vertical;"></textarea>
+                                </div>
+
+                                <div class="account-info-actions">
+                                    <button type="button" class="btn-secondary" id="cancelAdminEditBtn" style="padding: 9px 18px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; color: #475569; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                    <button type="submit" name="update_profile" class="btn-submit" id="saveAdminProfileBtn" style="padding: 9px 22px; background: #0b2b4a; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 0.92rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                                        <i class="fas fa-save"></i> Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
 
                     <!-- Change Password Form -->
@@ -372,13 +437,6 @@
                                 </div>
                             </form>
                         </div>
-                        
-                        <div class="info-box" style="margin-top: 15px; background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 8px; display: flex; align-items: center; gap: 12px;">
-                            <i class="fas fa-shield-alt" style="color: #f59e0b;"></i>
-                            <div style="font-size: 13px; color: #92400e;">
-                                <strong>2FA Protection:</strong> Since 2FA is enabled, you'll need to verify your identity via email when changing your password.
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -441,5 +499,6 @@
 
     <script src="js/admin_avatar_sync.js"></script>
     <script type="module" src="js/profile.js"></script>
+    <script src="../js/chatbot.js"></script>
 </body>
 </html>

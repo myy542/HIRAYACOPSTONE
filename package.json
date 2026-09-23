@@ -1,7 +1,7 @@
 {
-  "name": "plsnhs-enrollment",
+  "name": "hes-enrollment",
   "version": "1.0.0",
-  "description": "Placido L. Señor National High School Enrollment System",
+  "description": "Hiraya Enrollment System",
   "main": "final.js",
   "type": "module",
   "scripts": {

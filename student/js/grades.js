@@ -1,6 +1,6 @@
 /**
  * Student Grades - Supabase Integration
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -113,8 +113,8 @@ import { supabase } from '../../supabase/config.js';
         logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_student_avatar');
-            localStorage.removeItem('plsnhs_student_name');
+            localStorage.removeItem('hes_student_avatar');
+            localStorage.removeItem('hes_student_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}

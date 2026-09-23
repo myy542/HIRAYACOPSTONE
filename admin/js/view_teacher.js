@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             const fullName = userRecord ? `${userRecord.first_name || ''} ${userRecord.last_name || ''}`.trim() : (teacherRecord?.fullname || 'Faculty Teacher');
             const email = userRecord?.email || teacherRecord?.email || 'N/A';
-            const employeeId = teacherRecord?.employee_id || 'PLSNHS-TCH-0000';
+            const employeeId = teacherRecord?.employee_id || 'HES-TCH-0000';
             const createdAt = teacherRecord?.created_at || userRecord?.created_at || new Date().toISOString();
             const initial = fullName.charAt(0).toUpperCase() || 'T';
             const daysActive = calculateDaysActive(createdAt);

@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Generate random unique employee ID
                 const randomNum = Math.floor(100000 + Math.random() * 900000);
-                const employeeId = `PLSNHS-TCH-${randomNum}`;
+                const employeeId = `HES-TCH-${randomNum}`;
 
                 // Insert into teachers table
                 const { error: teacherErr } = await supabase

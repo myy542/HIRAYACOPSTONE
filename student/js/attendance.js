@@ -1,6 +1,6 @@
 /**
  * Student Attendance - Supabase Integration
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  * Exclusive attendance tracking for active logged-in student
  */
 
@@ -220,8 +220,8 @@ import { supabase } from '../../supabase/config.js';
         logoutBtn.addEventListener('click', async function (e) {
             e.preventDefault();
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_student_avatar');
-            localStorage.removeItem('plsnhs_student_name');
+            localStorage.removeItem('hes_student_avatar');
+            localStorage.removeItem('hes_student_name');
             try {
                 await supabase.auth.signOut();
             } catch (err) {}
@@ -233,24 +233,43 @@ import { supabase } from '../../supabase/config.js';
     // GENERATE / CACHED ATTENDANCE RECORDS
     // ============================================
 
+    function isWeekend(dateStr) {
+        if (!dateStr) return false;
+        try {
+            const d = new Date(dateStr + 'T00:00:00');
+            const day = d.getDay();
+            return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
+        } catch {
+            return false;
+        }
+    }
+
     function getInitialOrCachedAttendance(studentName, lrn, grade, section) {
         try {
             // Check student-specific local cache
-            const cacheKey = `plsnhs_student_attendance_${lrn}`;
+            const cacheKey = `hes_student_attendance_${lrn}`;
             const cached = localStorage.getItem(cacheKey);
             if (cached) {
                 const parsed = JSON.parse(cached);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    return parsed;
+                    // Strictly purge any weekend dates that might have been stored previously
+                    const cleansed = parsed.filter(item => !isWeekend(item.date));
+                    if (cleansed.length > 0) {
+                        try {
+                            localStorage.setItem(cacheKey, JSON.stringify(cleansed));
+                        } catch(e) {}
+                        return cleansed;
+                    }
                 }
             }
 
             // Check admin / teacher synced logs
-            const storedAdminAtt = localStorage.getItem('plsnhs_student_attendance');
+            const storedAdminAtt = localStorage.getItem('hes_student_attendance');
             if (storedAdminAtt) {
                 const parsed = JSON.parse(storedAdminAtt);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                    const myMatches = parsed.filter(item => {
+                    const cleansed = parsed.filter(item => !isWeekend(item.date));
+                    const myMatches = cleansed.filter(item => {
                         const matchLRN = item.lrn && String(item.lrn) === String(lrn);
                         const matchName = item.name && item.name.toLowerCase() === studentName.toLowerCase();
                         return matchLRN || matchName;
@@ -267,7 +286,7 @@ import { supabase } from '../../supabase/config.js';
         // Generate fresh deterministic attendance records
         const fresh = generateExclusiveStudentAttendance(studentName, lrn, grade, section);
         try {
-            localStorage.setItem(`plsnhs_student_attendance_${lrn}`, JSON.stringify(fresh));
+            localStorage.setItem(`hes_student_attendance_${lrn}`, JSON.stringify(fresh));
         } catch (e) {}
         return fresh;
     }
@@ -275,6 +294,7 @@ import { supabase } from '../../supabase/config.js';
     function generateExclusiveStudentAttendance(studentName, lrn, grade, section) {
         const logs = [];
         const todayObj = new Date();
+        const todayStr = todayObj.toISOString().split('T')[0];
         const schoolDaysToGenerate = 30; // Last 30 school days
         let count = 0;
         let dayOffset = 0;
@@ -285,7 +305,7 @@ import { supabase } from '../../supabase/config.js';
             dayOffset++;
 
             const dayOfWeek = d.getDay();
-            // Skip weekends (0 = Sunday, 6 = Saturday)
+            // Strictly skip weekends (0 = Sunday, 6 = Saturday)
             if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
             const dateStr = d.toISOString().split('T')[0];
@@ -299,8 +319,8 @@ import { supabase } from '../../supabase/config.js';
             let timeOut = '04:30 PM';
             let remarks = 'On time';
 
-            if (dayOffset === 1) {
-                // Today
+            if (dateStr === todayStr && dayOfWeek !== 0 && dayOfWeek !== 6) {
+                // Only if today is an active weekday
                 timeIn = '07:18 AM';
                 timeOut = '04:30 PM';
                 status = 'Present';
@@ -439,10 +459,10 @@ import { supabase } from '../../supabase/config.js';
             }
 
             if (onlineRecords.length > 0) {
-                rawAttendanceRecords = onlineRecords;
+                rawAttendanceRecords = onlineRecords.filter(r => !isWeekend(r.date));
             } else {
                 // Ensure records match the latest profile/enrollment info
-                rawAttendanceRecords = getInitialOrCachedAttendance(studentDisplayName, lrnVal, gradeVal, sectionVal);
+                rawAttendanceRecords = getInitialOrCachedAttendance(studentDisplayName, lrnVal, gradeVal, sectionVal).filter(r => !isWeekend(r.date));
             }
 
             applyFilters();
@@ -465,6 +485,9 @@ import { supabase } from '../../supabase/config.js';
         const currentMonthIdx = new Date().getMonth();
 
         filteredRecords = rawAttendanceRecords.filter(record => {
+            // Strictly exclude any weekend records (Saturday / Sunday)
+            if (isWeekend(record.date)) return false;
+
             const rDate = new Date(record.date + 'T00:00:00');
             const rMonth = isNaN(rDate.getTime()) ? -1 : rDate.getMonth();
 
@@ -553,7 +576,20 @@ import { supabase } from '../../supabase/config.js';
     // ============================================
 
     function renderTodayHighlight(records) {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const isWeekend = now.getDay() === 0 || now.getDay() === 6;
+
+        if (isWeekend) {
+            if (todayStatusBadgeContainer) {
+                todayStatusBadgeContainer.innerHTML = `<span class="status-badge status-weekend" style="background: #e0f2fe; color: #0369a1; font-weight: 600; padding: 6px 14px; border-radius: 20px; border: 1px solid #bae6fd;"><i class="fas fa-calendar-times"></i> Weekend (No Classes)</span>`;
+            }
+            if (todayTimeIn) todayTimeIn.textContent = '—';
+            if (todayTimeOut) todayTimeOut.textContent = '—';
+            if (todayRemarks) todayRemarks.textContent = 'No classes scheduled on weekends (Saturday & Sunday).';
+            return;
+        }
+
+        const todayStr = now.toISOString().split('T')[0];
         const todayRecord = records.find(r => r.date === todayStr);
 
         if (!todayRecord) {
@@ -562,7 +598,7 @@ import { supabase } from '../../supabase/config.js';
             }
             if (todayTimeIn) todayTimeIn.textContent = '—';
             if (todayTimeOut) todayTimeOut.textContent = '—';
-            if (todayRemarks) todayRemarks.textContent = 'No attendance recorded for today yet.';
+            if (todayRemarks) todayRemarks.textContent = 'Your teacher has not recorded attendance for today yet.';
             return;
         }
 
@@ -685,7 +721,7 @@ import { supabase } from '../../supabase/config.js';
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement('a');
         link.setAttribute('href', encodedUri);
-        link.setAttribute('download', `PLSNHS_Attendance_${studentDisplayName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute('download', `HES_Attendance_${studentDisplayName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

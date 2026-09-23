@@ -93,8 +93,8 @@ import { supabase } from '../../supabase/config.js';
             e.preventDefault();
             console.log('🚪 Teacher logging out...');
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_teacher_avatar');
-            localStorage.removeItem('plsnhs_teacher_name');
+            localStorage.removeItem('hes_teacher_avatar');
+            localStorage.removeItem('hes_teacher_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}

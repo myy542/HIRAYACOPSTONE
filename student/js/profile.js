@@ -1,6 +1,6 @@
 /**
  * Student Profile - Supabase Integration
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -100,8 +100,8 @@ import { supabase } from '../../supabase/config.js';
         logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_student_avatar');
-            localStorage.removeItem('plsnhs_student_name');
+            localStorage.removeItem('hes_student_avatar');
+            localStorage.removeItem('hes_student_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}
@@ -202,7 +202,7 @@ import { supabase } from '../../supabase/config.js';
         const initials = getStudentInitials(studentFullName);
 
         try {
-            localStorage.setItem('plsnhs_student_name', studentFullName);
+            localStorage.setItem('hes_student_name', studentFullName);
         } catch(e) {}
 
         if (studentName) studentName.textContent = studentFullName;
@@ -216,7 +216,7 @@ import { supabase } from '../../supabase/config.js';
         if (modalInitial) modalInitial.textContent = initials;
 
         // Profile picture
-        const effectiveAvatar = localStorage.getItem('plsnhs_student_avatar');
+        const effectiveAvatar = localStorage.getItem('hes_student_avatar');
         if (effectiveAvatar) {
             applyStudentAvatarToDOM(effectiveAvatar);
         } else {
@@ -265,24 +265,121 @@ import { supabase } from '../../supabase/config.js';
             if (schoolYearValue) schoolYearValue.textContent = 'N/A';
         }
 
-        // Populate edit personal information form
+        // Render Account Information View Mode Fields
+        renderAccountInfoView();
+
+        // Populate edit personal information form inputs
+        populateEditForm();
+    }
+
+    function renderAccountInfoView() {
+        const viewStudentFullName = document.getElementById('viewStudentFullName');
+        const viewStudentEmail = document.getElementById('viewStudentEmail');
+        const viewStudentLrn = document.getElementById('viewStudentLrn');
+        const viewStudentGender = document.getElementById('viewStudentGender');
+        const viewStudentBirthdate = document.getElementById('viewStudentBirthdate');
+        const viewStudentPhone = document.getElementById('viewStudentPhone');
+        const viewStudentParentName = document.getElementById('viewStudentParentName');
+        const viewStudentParentPhone = document.getElementById('viewStudentParentPhone');
+        const viewStudentAddress = document.getElementById('viewStudentAddress');
+
+        const fName = studentData?.first_name || userData?.first_name || sessionUser.firstName || '';
+        const lName = studentData?.last_name || userData?.last_name || sessionUser.lastName || '';
+        const fullName = `${fName} ${lName}`.trim() || sanitizeStudentName('', sessionUser.email);
+        
+        if (viewStudentFullName) viewStudentFullName.textContent = fullName || '-';
+        if (viewStudentEmail) viewStudentEmail.textContent = sessionUser.email || '-';
+        if (viewStudentLrn) viewStudentLrn.textContent = studentData?.lrn || enrollmentData?.lrn || 'Not Assigned';
+        if (viewStudentGender) viewStudentGender.textContent = studentData?.gender || enrollmentData?.gender || userData?.gender || 'Not specified';
+        
+        if (viewStudentBirthdate) {
+            const rawDob = studentData?.birthdate || studentData?.dob || enrollmentData?.birthdate || enrollmentData?.dob || userData?.birthdate;
+            if (rawDob) {
+                try {
+                    const d = new Date(rawDob);
+                    viewStudentBirthdate.textContent = d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                } catch(e) {
+                    viewStudentBirthdate.textContent = rawDob;
+                }
+            } else {
+                viewStudentBirthdate.textContent = 'Not specified';
+            }
+        }
+
+        if (viewStudentPhone) viewStudentPhone.textContent = studentData?.contact_number || userData?.phone || enrollmentData?.contact_number || 'Not provided';
+        if (viewStudentParentName) viewStudentParentName.textContent = studentData?.parent_name || enrollmentData?.guardian_name || enrollmentData?.mother_name || enrollmentData?.father_name || 'Not provided';
+        if (viewStudentParentPhone) viewStudentParentPhone.textContent = studentData?.parent_contact || enrollmentData?.guardian_contact || 'Not provided';
+        if (viewStudentAddress) viewStudentAddress.textContent = studentData?.address || userData?.address || enrollmentData?.address || 'Not provided';
+    }
+
+    function populateEditForm() {
+        const editStudentFirstName = document.getElementById('editStudentFirstName');
+        const editStudentLastName = document.getElementById('editStudentLastName');
+        const editStudentGender = document.getElementById('editStudentGender');
+        const editStudentBirthdate = document.getElementById('editStudentBirthdate');
         const editStudentPhone = document.getElementById('editStudentPhone');
         const editStudentAddress = document.getElementById('editStudentAddress');
         const editParentName = document.getElementById('editParentName');
         const editParentPhone = document.getElementById('editParentPhone');
 
-        if (editStudentPhone && !editStudentPhone.value) {
-            editStudentPhone.value = studentData?.contact_number || userData?.phone || enrollmentData?.contact_number || '';
+        const fNameVal = studentData?.first_name || userData?.first_name || sessionUser.firstName || '';
+        const lNameVal = studentData?.last_name || userData?.last_name || sessionUser.lastName || '';
+
+        if (editStudentFirstName) editStudentFirstName.value = fNameVal;
+        if (editStudentLastName) editStudentLastName.value = lNameVal;
+        if (editStudentGender) editStudentGender.value = studentData?.gender || enrollmentData?.gender || userData?.gender || '';
+        
+        if (editStudentBirthdate) {
+            const rawDob = studentData?.birthdate || studentData?.dob || enrollmentData?.birthdate || enrollmentData?.dob || userData?.birthdate || '';
+            if (rawDob) {
+                try {
+                    editStudentBirthdate.value = new Date(rawDob).toISOString().split('T')[0];
+                } catch(e) {
+                    editStudentBirthdate.value = rawDob;
+                }
+            }
         }
-        if (editStudentAddress && !editStudentAddress.value) {
-            editStudentAddress.value = studentData?.address || userData?.address || enrollmentData?.address || '';
+        if (editStudentPhone) editStudentPhone.value = studentData?.contact_number || userData?.phone || enrollmentData?.contact_number || '';
+        if (editStudentAddress) editStudentAddress.value = studentData?.address || userData?.address || enrollmentData?.address || '';
+        if (editParentName) editParentName.value = studentData?.parent_name || enrollmentData?.guardian_name || enrollmentData?.mother_name || enrollmentData?.father_name || '';
+        if (editParentPhone) editParentPhone.value = studentData?.parent_contact || enrollmentData?.guardian_contact || '';
+    }
+
+    // ============================================
+    // EDIT TOGGLE HANDLER (View Mode vs Edit Mode)
+    // ============================================
+    const editInfoToggleBtn = document.getElementById('editInfoToggleBtn');
+    const infoViewContainer = document.getElementById('infoViewContainer');
+    const infoEditContainer = document.getElementById('infoEditContainer');
+    const cancelStudentEditBtn = document.getElementById('cancelStudentEditBtn');
+
+    function setEditMode(isEditing) {
+        if (!infoViewContainer || !infoEditContainer || !editInfoToggleBtn) return;
+        if (isEditing) {
+            populateEditForm();
+            infoViewContainer.style.display = 'none';
+            infoEditContainer.style.display = 'block';
+            editInfoToggleBtn.innerHTML = '<i class="fas fa-times"></i> Cancel';
+            editInfoToggleBtn.classList.add('is-editing');
+        } else {
+            infoViewContainer.style.display = 'block';
+            infoEditContainer.style.display = 'none';
+            editInfoToggleBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+            editInfoToggleBtn.classList.remove('is-editing');
         }
-        if (editParentName && !editParentName.value) {
-            editParentName.value = studentData?.parent_name || enrollmentData?.guardian_name || enrollmentData?.mother_name || enrollmentData?.father_name || '';
-        }
-        if (editParentPhone && !editParentPhone.value) {
-            editParentPhone.value = studentData?.parent_contact || enrollmentData?.guardian_contact || '';
-        }
+    }
+
+    if (editInfoToggleBtn) {
+        editInfoToggleBtn.addEventListener('click', function() {
+            const isCurrentlyEditing = infoEditContainer && infoEditContainer.style.display !== 'none';
+            setEditMode(!isCurrentlyEditing);
+        });
+    }
+
+    if (cancelStudentEditBtn) {
+        cancelStudentEditBtn.addEventListener('click', function() {
+            setEditMode(false);
+        });
     }
 
     // ============================================
@@ -295,10 +392,19 @@ import { supabase } from '../../supabase/config.js';
         editStudentProfileForm.addEventListener('submit', async function(e) {
             e.preventDefault();
 
+            const firstName = document.getElementById('editStudentFirstName')?.value.trim() || '';
+            const lastName = document.getElementById('editStudentLastName')?.value.trim() || '';
+            const gender = document.getElementById('editStudentGender')?.value || '';
+            const birthdate = document.getElementById('editStudentBirthdate')?.value || null;
             const phone = document.getElementById('editStudentPhone')?.value.trim() || '';
             const address = document.getElementById('editStudentAddress')?.value.trim() || '';
             const parentName = document.getElementById('editParentName')?.value.trim() || '';
             const parentPhone = document.getElementById('editParentPhone')?.value.trim() || '';
+
+            if (!firstName || !lastName) {
+                showAlert('First name and last name are required.', 'error');
+                return;
+            }
 
             if (saveStudentProfileBtn) {
                 saveStudentProfileBtn.disabled = true;
@@ -313,6 +419,10 @@ import { supabase } from '../../supabase/config.js';
                 if (studentData?.id || userEmail) {
                     try {
                         let sUpdate = supabase.from('students').update({
+                            first_name: firstName,
+                            last_name: lastName,
+                            gender: gender,
+                            birthdate: birthdate,
                             contact_number: phone,
                             address: address,
                             parent_name: parentName,
@@ -335,6 +445,8 @@ import { supabase } from '../../supabase/config.js';
                 if (userUid || userEmail) {
                     try {
                         let uUpdate = supabase.from('users').update({
+                            first_name: firstName,
+                            last_name: lastName,
                             phone: phone,
                             address: address,
                             updated_at: new Date().toISOString()
@@ -351,28 +463,47 @@ import { supabase } from '../../supabase/config.js';
                     }
                 }
 
-                // 3. Update local session
+                // 3. Update local session & memory
+                const fullName = `${firstName} ${lastName}`.trim();
                 if (sessionUser) {
+                    sessionUser.firstName = firstName;
+                    sessionUser.lastName = lastName;
+                    sessionUser.displayName = fullName;
                     sessionUser.phone = phone;
                     sessionUser.address = address;
                     localStorage.setItem('currentUser', JSON.stringify(sessionUser));
                 }
+                localStorage.setItem('hes_student_name', fullName);
 
                 if (studentData) {
+                    studentData.first_name = firstName;
+                    studentData.last_name = lastName;
+                    studentData.gender = gender;
+                    studentData.birthdate = birthdate;
                     studentData.contact_number = phone;
                     studentData.address = address;
                     studentData.parent_name = parentName;
                     studentData.parent_contact = parentPhone;
                 }
 
-                showAlert('✅ Personal information saved successfully!', 'success');
+                // 4. Update UI labels and View Mode
+                if (studentName) studentName.textContent = fullName;
+                if (profileName) profileName.textContent = fullName;
+                const initials = getStudentInitials(fullName);
+                if (studentInitial) studentInitial.textContent = initials;
+                if (profileInitial) profileInitial.textContent = initials;
+
+                renderAccountInfoView();
+                setEditMode(false);
+
+                showAlert('✅ Account information saved successfully!', 'success');
             } catch (err) {
                 console.error('Error saving student profile:', err);
                 showAlert('❌ Failed to save profile details: ' + err.message, 'error');
             } finally {
                 if (saveStudentProfileBtn) {
                     saveStudentProfileBtn.disabled = false;
-                    saveStudentProfileBtn.innerHTML = '<i class="fas fa-save"></i> Save Personal Details';
+                    saveStudentProfileBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
                 }
             }
         });
@@ -602,7 +733,7 @@ import { supabase } from '../../supabase/config.js';
     window.removeProfilePic = function() {
         if (confirm('Remove your profile picture and restore your name initials?')) {
             try {
-                localStorage.removeItem('plsnhs_student_avatar');
+                localStorage.removeItem('hes_student_avatar');
             } catch(e) {}
             const displayName = studentData?.first_name ? 
                 `${studentData.first_name} ${studentData.last_name || ''}`.trim() : 
@@ -637,7 +768,7 @@ import { supabase } from '../../supabase/config.js';
             reader.onload = function(evt) {
                 const base64Image = evt.target.result;
                 try {
-                    localStorage.setItem('plsnhs_student_avatar', base64Image);
+                    localStorage.setItem('hes_student_avatar', base64Image);
                 } catch(e) {}
                 
                 applyStudentAvatarToDOM(base64Image);
@@ -691,12 +822,12 @@ import { supabase } from '../../supabase/config.js';
 
     let studentDocs = [];
     try {
-        const savedSDocs = localStorage.getItem('plsnhs_student_documents');
+        const savedSDocs = localStorage.getItem('hes_student_documents');
         if (savedSDocs) {
             studentDocs = JSON.parse(savedSDocs);
         } else {
             studentDocs = [...defaultStudentDocs];
-            localStorage.setItem('plsnhs_student_documents', JSON.stringify(studentDocs));
+            localStorage.setItem('hes_student_documents', JSON.stringify(studentDocs));
         }
     } catch(e) {
         studentDocs = [...defaultStudentDocs];
@@ -704,7 +835,7 @@ import { supabase } from '../../supabase/config.js';
 
     function persistStudentDocs() {
         try {
-            localStorage.setItem('plsnhs_student_documents', JSON.stringify(studentDocs));
+            localStorage.setItem('hes_student_documents', JSON.stringify(studentDocs));
         } catch(e) {}
     }
 

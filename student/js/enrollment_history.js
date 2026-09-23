@@ -1,6 +1,6 @@
 /**
  * Student Enrollment History - Supabase Integration
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -123,8 +123,8 @@ import { supabase } from '../../supabase/config.js';
         logoutBtn.addEventListener('click', async function (e) {
             e.preventDefault();
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_student_avatar');
-            localStorage.removeItem('plsnhs_student_name');
+            localStorage.removeItem('hes_student_avatar');
+            localStorage.removeItem('hes_student_name');
             try {
                 await supabase.auth.signOut();
             } catch (err) { }
@@ -207,7 +207,7 @@ import { supabase } from '../../supabase/config.js';
             // Fallback to localStorage if online table returned 0 rows but local dummy/test data exists
             if (enrollmentsData.length === 0) {
                 try {
-                    const localSaved = localStorage.getItem('plsnhs_enrollments');
+                    const localSaved = localStorage.getItem('hes_enrollments');
                     if (localSaved) {
                         const parsed = JSON.parse(localSaved);
                         if (Array.isArray(parsed) && parsed.length > 0) {

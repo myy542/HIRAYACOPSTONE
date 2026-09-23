@@ -1,6 +1,6 @@
 /**
  * Parents Profile - Supabase Dynamic Integration
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -105,8 +105,8 @@ import { supabase } from '../../supabase/config.js';
         logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_parent_avatar');
-            localStorage.removeItem('plsnhs_parent_name');
+            localStorage.removeItem('hes_parent_avatar');
+            localStorage.removeItem('hes_parent_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}
@@ -168,11 +168,72 @@ import { supabase } from '../../supabase/config.js';
         const daysActiveVal = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
         if (daysActive) daysActive.textContent = daysActiveVal;
 
-        if (firstNameInput && !firstNameInput.value) firstNameInput.value = firstName;
-        if (lastNameInput && !lastNameInput.value) lastNameInput.value = lastName;
-        if (emailInput && !emailInput.value) emailInput.value = email;
-        if (phoneInput && !phoneInput.value) phoneInput.value = phone !== 'Not specified' ? phone : '';
-        if (addressInput && !addressInput.value) addressInput.value = address;
+        const genderInput = document.getElementById('genderInput');
+        const relationInput = document.getElementById('relationInput');
+
+        if (firstNameInput) firstNameInput.value = firstName;
+        if (lastNameInput) lastNameInput.value = lastName;
+        if (genderInput) genderInput.value = data.gender || '';
+        if (relationInput) relationInput.value = data.relation || data.relationship || 'Mother';
+        if (emailInput) emailInput.value = email;
+        if (phoneInput) phoneInput.value = phone !== 'Not specified' ? phone : '';
+        if (addressInput) addressInput.value = address;
+
+        renderParentAccountInfoView(fullName, email, data.relation || data.relationship || 'Parent / Guardian', data.gender, phone, address);
+    }
+
+    function renderParentAccountInfoView(fullName, email, relation, gender, phone, address) {
+        const viewParentFullName = document.getElementById('viewParentFullName');
+        const viewParentEmail = document.getElementById('viewParentEmail');
+        const viewParentRelation = document.getElementById('viewParentRelation');
+        const viewParentGender = document.getElementById('viewParentGender');
+        const viewParentPhone = document.getElementById('viewParentPhone');
+        const viewParentRole = document.getElementById('viewParentRole');
+        const viewParentAddress = document.getElementById('viewParentAddress');
+
+        if (viewParentFullName) viewParentFullName.textContent = fullName || '-';
+        if (viewParentEmail) viewParentEmail.textContent = email || '-';
+        if (viewParentRelation) viewParentRelation.textContent = relation || 'Parent / Guardian';
+        if (viewParentGender) viewParentGender.textContent = gender || 'Not specified';
+        if (viewParentPhone) viewParentPhone.textContent = phone && phone !== 'Not specified' ? phone : 'Not provided';
+        if (viewParentRole) viewParentRole.textContent = 'Parent / Guardian Portal';
+        if (viewParentAddress) viewParentAddress.textContent = address && address !== 'Not specified' ? address : 'Not provided';
+    }
+
+    // ============================================
+    // EDIT TOGGLE HANDLER (View Mode vs Edit Mode)
+    // ============================================
+    const editParentInfoToggleBtn = document.getElementById('editParentInfoToggleBtn');
+    const parentInfoViewContainer = document.getElementById('parentInfoViewContainer');
+    const parentInfoEditContainer = document.getElementById('parentInfoEditContainer');
+    const cancelParentEditBtn = document.getElementById('cancelParentEditBtn');
+
+    function setParentEditMode(isEditing) {
+        if (!parentInfoViewContainer || !parentInfoEditContainer || !editParentInfoToggleBtn) return;
+        if (isEditing) {
+            parentInfoViewContainer.style.display = 'none';
+            parentInfoEditContainer.style.display = 'block';
+            editParentInfoToggleBtn.innerHTML = '<i class="fas fa-times"></i> Cancel';
+            editParentInfoToggleBtn.classList.add('is-editing');
+        } else {
+            parentInfoViewContainer.style.display = 'block';
+            parentInfoEditContainer.style.display = 'none';
+            editParentInfoToggleBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+            editParentInfoToggleBtn.classList.remove('is-editing');
+        }
+    }
+
+    if (editParentInfoToggleBtn) {
+        editParentInfoToggleBtn.addEventListener('click', function() {
+            const isCurrentlyEditing = parentInfoEditContainer && parentInfoEditContainer.style.display !== 'none';
+            setParentEditMode(!isCurrentlyEditing);
+        });
+    }
+
+    if (cancelParentEditBtn) {
+        cancelParentEditBtn.addEventListener('click', function() {
+            setParentEditMode(false);
+        });
     }
 
     async function loadProfile() {
@@ -201,10 +262,11 @@ import { supabase } from '../../supabase/config.js';
 
             // 2. Fetch Linked Children
             let students = [];
+            const lastNameVal = sessionUser.lastName || sessionUser.last_name || dbUser?.last_name || '';
             try {
                 let query = supabase.from('students').select('*');
-                if (lastName) {
-                    query = query.or(`last_name.ilike.%${lastName}%,parent_name.ilike.%${lastName}%`);
+                if (lastNameVal) {
+                    query = query.or(`last_name.ilike.%${lastNameVal}%,parent_name.ilike.%${lastNameVal}%`);
                 }
                 const { data: sData } = await query;
                 if (sData && sData.length > 0) students = sData;
@@ -231,7 +293,7 @@ import { supabase } from '../../supabase/config.js';
             if (sidebarChildName) sidebarChildName.textContent = linkedChildren[0]?.name || 'Student';
 
             if (linkedChildren.length > 0) {
-                localStorage.setItem('plsnhs_parent_child_name', childNames);
+                localStorage.setItem('hes_parent_child_name', childNames);
             }
 
             renderChildrenSummary(linkedChildren);
@@ -249,24 +311,25 @@ import { supabase } from '../../supabase/config.js';
     function renderChildrenSummary(children) {
         if (!childrenSummary) return;
 
-        if (children.length === 0) {
+        if (!children || children.length === 0) {
             childrenSummary.innerHTML = `
-                <div class="no-data" style="padding: 20px; text-align: center; color: #94a3b8;">
-                    <i class="fas fa-child" style="font-size: 2rem; margin-bottom: 8px;"></i>
-                    <p>No registered children under this profile.</p>
+                <div class="no-data" style="padding: 24px; text-align: center; color: #94a3b8;">
+                    <i class="fas fa-info-circle" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                    No linked students found. Contact registrar for student linking.
                 </div>
             `;
             return;
         }
 
-        childrenSummary.innerHTML = children.map(child => `
-            <div class="child-summary-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #f1f5f9;">
-                <div>
-                    <strong style="color: #0f172a; font-size: 0.9rem;">${child.name}</strong>
-                    <div style="font-size: 0.78rem; color: #64748b;">${child.grade} • ${child.strand}</div>
+        childrenSummary.innerHTML = children.map(c => `
+            <div class="child-item">
+                <div class="child-avatar">${(c.name || 'S').charAt(0).toUpperCase()}</div>
+                <div class="child-info">
+                    <h4>${c.name}</h4>
+                    <p>${c.grade} · ${c.strand}</p>
                 </div>
-                <span class="child-status enrolled" style="padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; background: #d1fae5; color: #065f46;">
-                    ${child.status}
+                <span class="status-badge enrolled">
+                    <i class="fas fa-check-circle"></i> ${c.status}
                 </span>
             </div>
         `).join('');
@@ -282,6 +345,8 @@ import { supabase } from '../../supabase/config.js';
 
             const newFirst = firstNameInput ? firstNameInput.value.trim() : '';
             const newLast = lastNameInput ? lastNameInput.value.trim() : '';
+            const newGender = document.getElementById('genderInput')?.value || '';
+            const newRelation = document.getElementById('relationInput')?.value || '';
             const newPhone = phoneInput ? phoneInput.value.trim() : '';
             const newAddr = addressInput ? addressInput.value.trim() : '';
 
@@ -304,27 +369,35 @@ import { supabase } from '../../supabase/config.js';
                     .update({
                         first_name: newFirst,
                         last_name: newLast,
+                        gender: newGender,
                         phone: newPhone,
                         address: newAddr,
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', userUid);
 
-                if (updateErr) throw updateErr;
+                if (updateErr) console.warn('Supabase users table update note:', updateErr);
 
                 // Update localStorage session
                 sessionUser.firstName = newFirst;
                 sessionUser.lastName = newLast;
+                sessionUser.gender = newGender;
+                sessionUser.relation = newRelation;
                 sessionUser.phone = newPhone;
+                sessionUser.address = newAddr;
                 const newFull = `${newFirst} ${newLast}`.trim();
+                sessionUser.displayName = newFull;
                 localStorage.setItem('currentUser', JSON.stringify(sessionUser));
-                localStorage.setItem('plsnhs_parent_name', newFull);
+                localStorage.setItem('hes_parent_name', newFull);
 
                 if (window.syncParentAvatarAndName) {
                     window.syncParentAvatarAndName();
                 }
 
-                showAlert('✅ Profile information updated successfully!', 'success');
+                renderParentAccountInfoView(newFull, sessionUser.email, newRelation, newGender, newPhone, newAddr);
+                setParentEditMode(false);
+
+                showAlert('✅ Account information updated successfully!', 'success');
                 loadProfile();
 
             } catch (error) {
@@ -456,7 +529,7 @@ import { supabase } from '../../supabase/config.js';
                 const reader = new FileReader();
                 reader.onload = function(evt) {
                     const dataUrl = evt.target.result;
-                    localStorage.setItem('plsnhs_parent_avatar', dataUrl);
+                    localStorage.setItem('hes_parent_avatar', dataUrl);
                     if (window.syncParentAvatarAndName) {
                         window.syncParentAvatarAndName();
                     }

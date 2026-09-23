@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile - PLSNHS Parent Portal</title>
+    <title>My Profile - HES, Hiraya Enrollment System Parent Portal</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Fonts -->
@@ -11,6 +11,7 @@
     <!-- CSS -->
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="css/profile.css">
+    <link rel="stylesheet" href="../css/chatbot.css">
 </head>
 <body>
     <!-- Mobile Menu Toggle -->
@@ -26,9 +27,9 @@
                     <div class="logo-icon">
                         <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
                     </div>
-                    <div class="logo-text">PLS<span>NHS</span></div>
+                    <div class="logo-text">H.<span>E.S</span></div>
                 </div>
-                <div class="school-badge">Placido L. Señor NHS</div>
+                <div class="school-badge">Hiraya Enrollment System</div>
             </div>
 
             <div class="parent-profile">
@@ -154,43 +155,110 @@
 
                 <!-- Right Column - Edit Forms -->
                 <div>
-                    <!-- Edit Profile Form -->
-                    <div class="form-card">
-                        <div class="form-header">
-                            <h3><i class="fas fa-user-edit"></i> Edit Profile Information</h3>
-                        </div>
-                        <form id="profileForm">
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label for="firstNameInput">First Name <span class="required">*</span></label>
-                                    <input type="text" id="firstNameInput" name="first_name" required>
-                                </div>
-                                <div class="form-group">
-                                    <label for="lastNameInput">Last Name <span class="required">*</span></label>
-                                    <input type="text" id="lastNameInput" name="last_name" required>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="emailInput">Email Address <span class="required">*</span></label>
-                                <input type="email" id="emailInput" name="email" required readonly style="background-color: #f8fafc; cursor: not-allowed;">
-                                <small style="color: #64748b; font-size: 0.78rem;">Email address is linked to your authentication account.</small>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="phoneInput">Contact Number</label>
-                                <input type="text" id="phoneInput" name="phone" placeholder="09xxxxxxxxx">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="addressInput">Residential Address</label>
-                                <textarea id="addressInput" name="address" rows="3" placeholder="Enter complete home address"></textarea>
-                            </div>
-
-                            <button type="submit" class="btn-primary" id="saveProfileBtn">
-                                <i class="fas fa-save"></i> Save Changes
+                    <!-- Account Information Card (View & Edit Modes) -->
+                    <div class="account-info-card" id="accountInfoCard">
+                        <div class="card-header-with-action">
+                            <h3><i class="fas fa-id-card"></i> Account Information</h3>
+                            <button type="button" class="btn-edit-toggle" id="editParentInfoToggleBtn">
+                                <i class="fas fa-edit"></i> Edit
                             </button>
-                        </form>
+                        </div>
+
+                        <!-- VIEW MODE -->
+                        <div class="account-info-view" id="parentInfoViewContainer">
+                            <div class="account-info-grid">
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Full Name</span>
+                                    <span class="account-info-value" id="viewParentFullName">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Email Address</span>
+                                    <span class="account-info-value" id="viewParentEmail">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Relationship to Student</span>
+                                    <span class="account-info-value" id="viewParentRelation">Parent / Guardian</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Gender</span>
+                                    <span class="account-info-value" id="viewParentGender">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Contact Number</span>
+                                    <span class="account-info-value" id="viewParentPhone">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Account Role</span>
+                                    <span class="account-info-value" id="viewParentRole">Parent / Guardian Portal</span>
+                                </div>
+                                <div class="account-info-item full-width">
+                                    <span class="account-info-label">Complete Home Address</span>
+                                    <span class="account-info-value" id="viewParentAddress">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- EDIT MODE (Form) -->
+                        <div class="account-info-edit-container" id="parentInfoEditContainer" style="display: none;">
+                            <form id="profileForm">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="firstNameInput">First Name <span class="required" style="color: #ef4444;">*</span></label>
+                                        <input type="text" id="firstNameInput" name="first_name" required style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="lastNameInput">Last Name <span class="required" style="color: #ef4444;">*</span></label>
+                                        <input type="text" id="lastNameInput" name="last_name" required style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                                    </div>
+                                </div>
+
+                                <div class="form-row" style="margin-top: 14px;">
+                                    <div class="form-group">
+                                        <label for="genderInput">Gender</label>
+                                        <select id="genderInput" name="gender" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; background: #fff;">
+                                            <option value="">Select Gender</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Prefer not to say">Prefer not to say</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="relationInput">Relationship to Student</label>
+                                        <select id="relationInput" name="relation" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; background: #fff;">
+                                            <option value="Mother">Mother</option>
+                                            <option value="Father">Father</option>
+                                            <option value="Guardian">Guardian</option>
+                                            <option value="Other">Other Relative</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-group" style="margin-top: 14px;">
+                                    <label for="emailInput">Email Address <span class="required" style="color: #ef4444;">*</span></label>
+                                    <input type="email" id="emailInput" name="email" required readonly style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; background-color: #f8fafc; cursor: not-allowed; color: #64748b;">
+                                    <small style="color: #64748b; font-size: 0.78rem;">Email address is linked to your authentication account.</small>
+                                </div>
+
+                                <div class="form-group" style="margin-top: 14px;">
+                                    <label for="phoneInput">Contact Number</label>
+                                    <input type="text" id="phoneInput" name="phone" placeholder="09XXXXXXXXX" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                                </div>
+
+                                <div class="form-group" style="margin-top: 14px;">
+                                    <label for="addressInput">Residential Address</label>
+                                    <textarea id="addressInput" name="address" rows="2" placeholder="Enter complete home address" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; resize: vertical;"></textarea>
+                                </div>
+
+                                <div class="account-info-actions">
+                                    <button type="button" class="btn-secondary" id="cancelParentEditBtn" style="padding: 9px 18px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; color: #475569; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                    <button type="submit" class="btn-primary" id="saveProfileBtn" style="padding: 9px 22px; background: #0b2b4a; color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 0.92rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                                        <i class="fas fa-save"></i> Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
 
                     <!-- Change Password Form -->
@@ -252,5 +320,6 @@
 
     <script src="js/parent_avatar_sync.js"></script>
     <script type="module" src="js/profile.js"></script>
+    <script src="../js/chatbot.js"></script>
 </body>
 </html>

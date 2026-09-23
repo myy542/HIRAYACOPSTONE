@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance Management - Teacher Dashboard | HES</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Base & Custom CSS -->
+    <link rel="stylesheet" href="css/student-attendance.css">
+    <link rel="stylesheet" href="../css/chatbot.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                    </div>
+                    <div class="logo-text">H.<span>E.S</span></div>
+                </div>
+                <div class="school-badge">Hiraya Enrollment System</div>
+            </div>
+
+            <div class="teacher-profile">
+                <div class="teacher-avatar">
+                    <div class="avatar-initial" id="teacherInitial">T</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="teacher-name" id="teacherName">Teacher</div>
+                <div class="teacher-role"><i class="fas fa-chalkboard-user"></i> Teacher</div>
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></a></li>
+                        <li><a href="attendance-face.html"><i class="fas fa-camera"></i> <span>Face Attendance</span></a></li>
+                        <li><a href="student-attendance.html" class="active"><i class="fas fa-user-check"></i> <span>Student Attendance</span></a></li>
+                        <li><a href="classes.html"><i class="fas fa-users"></i> <span>My Classes</span></a></li>
+                        <li><a href="schedule.html"><i class="fas fa-clock"></i> <span>Schedule</span></a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> <span>Grades</span></a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> <span>Profile</span></a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
+                    </ul>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1><i class="fas fa-user-check"></i> Student Attendance Manager</h1>
+                    <p>Record, manage, and notify student attendance by Grade Level, Section, or Strand</p>
+                </div>
+                <div class="date-badge" id="currentDateBadge">
+                    <i class="fas fa-calendar-alt"></i> Loading...
+                </div>
+            </div>
+
+            <!-- Philippine Time Display -->
+            <div class="ph-time-bar">
+                <div class="time-item">
+                    <i class="fas fa-clock"></i> Philippine Standard Time: <span id="phTimeDisplay" class="fw-bold">Loading...</span>
+                </div>
+                <div class="time-policy">
+                    <i class="fas fa-shield-halved"></i> Only teachers can record student attendance. Attendance is disabled on weekends.
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Weekend Alert Banner (Shown when Saturday or Sunday is selected) -->
+            <div id="studentWeekendBanner" class="weekend-alert-card" style="display: none;">
+                <div class="weekend-icon"><i class="fas fa-calendar-times"></i></div>
+                <div class="weekend-content">
+                    <h3>Weekend Recess (Saturday / Sunday)</h3>
+                    <p id="studentWeekendText">
+                        School is closed on weekends. No attendance can be recorded or marked for students on Saturday or Sunday. Please select a weekday (Monday to Friday) to record attendance.
+                    </p>
+                </div>
+                <button type="button" class="btn-jump-weekday" id="btnJumpToWeekday">
+                    <i class="fas fa-arrow-rotate-left"></i> Jump to Latest Class Day
+                </button>
+            </div>
+
+            <!-- Filter Card -->
+            <div class="filter-card">
+                <div class="filter-card-header">
+                    <div class="filter-title">
+                        <i class="fas fa-filter"></i> Attendance Filters
+                    </div>
+                    <div class="filter-actions">
+                        <button type="button" id="resetFiltersBtn" class="btn-reset">
+                            <i class="fas fa-rotate-right"></i> Reset All Filters
+                        </button>
+                    </div>
+                </div>
+
+                <div class="filter-grid">
+                    <!-- Filter 1: Year / Grade Level -->
+                    <div class="form-group">
+                        <label for="filterYearLevel"><i class="fas fa-graduation-cap"></i> Year / Grade Level</label>
+                        <select id="filterYearLevel" class="form-select">
+                            <option value="">All Year Levels (Grades 7 - 12)</option>
+                            <option value="Grade 7">Grade 7 (Junior High)</option>
+                            <option value="Grade 8">Grade 8 (Junior High)</option>
+                            <option value="Grade 9">Grade 9 (Junior High)</option>
+                            <option value="Grade 10">Grade 10 (Junior High)</option>
+                            <option value="Grade 11">Grade 11 (Senior High)</option>
+                            <option value="Grade 12">Grade 12 (Senior High)</option>
+                        </select>
+                    </div>
+
+                    <!-- Filter 2: Strand / Track -->
+                    <div class="form-group">
+                        <label for="filterStrand"><i class="fas fa-layer-group"></i> Strand / Track</label>
+                        <select id="filterStrand" class="form-select">
+                            <option value="">All Strands / Tracks</option>
+                            <option value="JHS">Junior High School (JHS)</option>
+                            <option value="STEM">STEM (Science, Tech, Eng, Math)</option>
+                            <option value="ABM">ABM (Accountancy & Business)</option>
+                            <option value="HUMSS">HUMSS (Humanities & Social Sci)</option>
+                            <option value="TVL-ICT">TVL - ICT (Information & Tech)</option>
+                            <option value="TVL-HE">TVL - Home Economics</option>
+                            <option value="GAS">GAS (General Academic Strand)</option>
+                        </select>
+                    </div>
+
+                    <!-- Filter 3: Section (Dynamic) -->
+                    <div class="form-group">
+                        <label for="filterSection"><i class="fas fa-users-rectangle"></i> Section</label>
+                        <select id="filterSection" class="form-select">
+                            <option value="">All Sections</option>
+                        </select>
+                    </div>
+
+                    <!-- Filter 4: Attendance Date -->
+                    <div class="form-group">
+                        <label for="studentAttDate"><i class="fas fa-calendar-day"></i> Attendance Date</label>
+                        <div class="date-input-wrap">
+                            <input type="date" id="studentAttDate" class="form-input">
+                            <span class="weekday-pill" id="studentDateWeekday">Today</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="search-bar-row">
+                    <div class="search-input-wrap">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="studentSearch" placeholder="Search student by name, LRN, section, or strand..." class="form-input search-input">
+                        <button type="button" id="clearSearchBtn" class="clear-search-btn" style="display:none;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KPI / Summary Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card total">
+                    <div class="kpi-icon"><i class="fas fa-user-group"></i></div>
+                    <div class="kpi-info">
+                        <div class="kpi-number" id="stuStatTotal">0</div>
+                        <div class="kpi-label">Filtered Students</div>
+                    </div>
+                </div>
+                <div class="kpi-card success">
+                    <div class="kpi-icon"><i class="fas fa-user-check"></i></div>
+                    <div class="kpi-info">
+                        <div class="kpi-number" id="stuStatPresent">0</div>
+                        <div class="kpi-label">Present</div>
+                    </div>
+                </div>
+                <div class="kpi-card warning">
+                    <div class="kpi-icon"><i class="fas fa-user-clock"></i></div>
+                    <div class="kpi-info">
+                        <div class="kpi-number" id="stuStatLate">0</div>
+                        <div class="kpi-label">Late</div>
+                    </div>
+                </div>
+                <div class="kpi-card danger">
+                    <div class="kpi-icon"><i class="fas fa-user-xmark"></i></div>
+                    <div class="kpi-info">
+                        <div class="kpi-number" id="stuStatAbsent">0</div>
+                        <div class="kpi-label">Absent</div>
+                    </div>
+                </div>
+                <div class="kpi-card info">
+                    <div class="kpi-icon"><i class="fas fa-user-shield"></i></div>
+                    <div class="kpi-info">
+                        <div class="kpi-number" id="stuStatExcused">0</div>
+                        <div class="kpi-label">Excused</div>
+                    </div>
+                </div>
+                <div class="kpi-card purple">
+                    <div class="kpi-icon"><i class="fas fa-chart-pie"></i></div>
+                    <div class="kpi-info">
+                        <div class="kpi-number" id="stuStatRate">0%</div>
+                        <div class="kpi-label">Attendance Rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Roster & Actions Section -->
+            <div class="roster-card">
+                <div class="roster-card-header">
+                    <div class="roster-title-group">
+                        <h2 id="tableHeaderTitle">Student Attendance Roster</h2>
+                        <span class="active-filter-badge" id="activeFilterSummary">Showing all sections</span>
+                    </div>
+                    <div class="batch-actions-group">
+                        <span class="batch-label">Quick Actions:</span>
+                        <button type="button" class="btn-batch btn-batch-present" id="btnMarkAllPresent" title="Mark all filtered students as Present">
+                            <i class="fas fa-check-double"></i> Mark All Present
+                        </button>
+                        <button type="button" class="btn-batch btn-batch-late" id="btnMarkAllLate" title="Mark all filtered students as Late">
+                            <i class="fas fa-clock"></i> Mark All Late
+                        </button>
+                        <button type="button" class="btn-batch btn-batch-absent" id="btnMarkAllAbsent" title="Mark all filtered students as Absent">
+                            <i class="fas fa-times-circle"></i> Mark All Absent
+                        </button>
+                        <button type="button" class="btn-save-attendance" id="btnSaveStudentAttendance">
+                            <i class="fas fa-paper-plane"></i> Save & Notify Students
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="student-attendance-table" id="studentAttendanceTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px; min-width: 50px; text-align: center;">#</th>
+                                <th style="width: 250px; min-width: 240px;">Student Details</th>
+                                <th style="width: 190px; min-width: 180px;">Grade & Section</th>
+                                <th style="width: 110px; min-width: 100px; text-align: center;">Strand</th>
+                                <th style="width: 320px; min-width: 310px; text-align: center;">Attendance Status</th>
+                                <th style="width: 115px; min-width: 110px; text-align: center;">Time In</th>
+                                <th style="width: 190px; min-width: 170px;">Remarks</th>
+                                <th style="width: 130px; min-width: 125px; text-align: center;">Notification</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentAttendanceTableBody">
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <div class="loading-state">
+                                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                        <p>Loading student attendance roster...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/teacher_avatar_sync.js"></script>
+    <script type="module" src="js/student-attendance.js"></script>
+    <script src="../js/chatbot.js"></script>
+</body>
+</html>

@@ -103,8 +103,8 @@ import { supabase } from '../../supabase/config.js';
             e.preventDefault();
             localStorage.removeItem('currentUser');
             localStorage.removeItem('registrarName');
-            localStorage.removeItem('plsnhs_registrar_avatar');
-            localStorage.removeItem('plsnhs_registrar_name');
+            localStorage.removeItem('hes_registrar_avatar');
+            localStorage.removeItem('hes_registrar_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}
@@ -407,7 +407,7 @@ import { supabase } from '../../supabase/config.js';
 
                 // Determine student type
                 let studentType = 'New';
-                if (prevSchool && prevSchool.toLowerCase().includes('plsnhs')) {
+                if (prevSchool && (prevSchool.toLowerCase().includes('hes') || prevSchool.toLowerCase().includes('hiraya'))) {
                     studentType = 'Old';
                 } else if (prevSchool && !prevSchool.toLowerCase().includes('n/a')) {
                     studentType = 'Transferee';
@@ -450,7 +450,7 @@ import { supabase } from '../../supabase/config.js';
                     const rawStatus = (e.status || 'pending').toLowerCase();
                     const prevSchool = e.previous_school || '';
                     let studentType = 'New';
-                    if (prevSchool && prevSchool.toLowerCase().includes('plsnhs')) {
+                    if (prevSchool && (prevSchool.toLowerCase().includes('hes') || prevSchool.toLowerCase().includes('hiraya'))) {
                         studentType = 'Old';
                     } else if (prevSchool && !prevSchool.toLowerCase().includes('n/a')) {
                         studentType = 'Transferee';
@@ -806,7 +806,7 @@ import { supabase } from '../../supabase/config.js';
 
         // Cross-tab / same browser storage synchronization
         window.addEventListener('storage', (e) => {
-            if (e.key === 'plsnhs_latest_notification' || e.key === 'plsnhs_student_updated' || e.key === 'plsnhs_enrollment_updated') {
+            if (e.key === 'hes_latest_notification' || e.key === 'hes_student_updated' || e.key === 'hes_enrollment_updated') {
                 try {
                     let data = null;
                     if (e.newValue) data = JSON.parse(e.newValue);

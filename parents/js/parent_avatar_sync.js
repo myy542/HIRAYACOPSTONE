@@ -1,4 +1,4 @@
-// ===== PLSNHS PARENT AVATAR & INITIALS SYNC =====
+// ===== HES PARENT AVATAR & INITIALS SYNC =====
 (function() {
     'use strict';
 
@@ -13,7 +13,7 @@
 
     function syncParentAvatarAndName() {
         try {
-            let parentNameStr = localStorage.getItem('plsnhs_parent_name');
+            let parentNameStr = localStorage.getItem('hes_parent_name');
             const currentUserStr = localStorage.getItem('currentUser');
 
             if (currentUserStr) {
@@ -38,7 +38,7 @@
             });
 
             const initials = getParentInitials(name);
-            const savedAvatar = localStorage.getItem('plsnhs_parent_avatar');
+            const savedAvatar = localStorage.getItem('hes_parent_avatar');
 
             document.querySelectorAll('.parent-avatar').forEach(avatar => {
                 if (savedAvatar) {
@@ -60,7 +60,7 @@
             });
 
             // Child Name Sync in Sidebar
-            let childNameStr = localStorage.getItem('plsnhs_parent_child_name');
+            let childNameStr = localStorage.getItem('hes_parent_child_name');
             if (childNameStr) {
                 document.querySelectorAll('#sidebarChildName, .sidebar-child-name, #sidebarChildBadge span').forEach(el => {
                     el.textContent = childNameStr;

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Activities & Logs - HES, Hiraya Enrollment System</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/activities.css">
+    <link rel="stylesheet" href="../css/chatbot.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <div class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                    </div>
+                    <div class="logo-text">H.<span>E.S</span></div>
+                </div>
+                <div class="school-badge">Hiraya Enrollment System</div>
+            </div>
+
+            <div class="admin-profile">
+                <div class="admin-avatar">
+                    <div class="avatar-initial" id="adminAvatar">A</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="admin-name" id="adminName">Admin</div>
+                <div class="admin-role"><i class="fas fa-shield-alt"></i> Administrator</div>
+            </div>
+
+            <div class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="student.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+                        <li><a href="teachers.html"><i class="fas fa-chalkboard-user"></i> Teachers</a></li>
+                        <li><a href="sections.html"><i class="fas fa-layer-group"></i> Sections</a></li>
+                        <li><a href="subjects.html"><i class="fas fa-book"></i> Subjects</a></li>
+                        <li><a href="enrollments.html"><i class="fas fa-file-signature"></i> Enrollments</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">MANAGEMENT</div>
+                    <ul class="nav-items">
+                        <li><a href="manage_accounts.html"><i class="fas fa-users-cog"></i> Accounts</a></li>
+                        <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Attendance</a></li>
+                        <li><a href="register_face.html"><i class="fas fa-camera"></i> Face Registration</a></li>
+                        <li><a href="activities.html" class="active"><i class="fas fa-history"></i> Activities</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/logout.html"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1>System Activities & Audit Logs</h1>
+                    <p class="subtitle">Real-time chronological timeline of all student enrollments, account updates, and system operations</p>
+                </div>
+                <div class="header-actions">
+                    <button type="button" id="refreshActivitiesBtn" class="btn-primary">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button type="button" id="exportActivitiesBtn" class="btn-secondary">
+                        <i class="fas fa-download"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- KPI Stats Row -->
+            <div class="stats-grid">
+                <div class="stat-card total">
+                    <div class="stat-header">
+                        <h3>Total Logs</h3>
+                        <div class="stat-icon"><i class="fas fa-history"></i></div>
+                    </div>
+                    <div class="stat-number" id="statTotalActivities">0</div>
+                    <div class="stat-label">All recorded activities</div>
+                </div>
+
+                <div class="stat-card enrollment">
+                    <div class="stat-header">
+                        <h3>Enrollments</h3>
+                        <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+                    </div>
+                    <div class="stat-number" id="statEnrollmentActivities">0</div>
+                    <div class="stat-label">Applications & approvals</div>
+                </div>
+
+                <div class="stat-card accounts">
+                    <div class="stat-header">
+                        <h3>Accounts & Users</h3>
+                        <div class="stat-icon"><i class="fas fa-users-cog"></i></div>
+                    </div>
+                    <div class="stat-number" id="statAccountActivities">0</div>
+                    <div class="stat-label">Registrations & status changes</div>
+                </div>
+
+                <div class="stat-card security">
+                    <div class="stat-header">
+                        <h3>System & Security</h3>
+                        <div class="stat-icon"><i class="fas fa-shield-alt"></i></div>
+                    </div>
+                    <div class="stat-number" id="statSecurityActivities">0</div>
+                    <div class="stat-label">Attendance & admin audits</div>
+                </div>
+            </div>
+
+            <!-- Control & Filter Toolbar -->
+            <div class="filter-card">
+                <div class="filter-row-top">
+                    <div class="search-input-wrap">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="activitySearchInput" placeholder="Search activities by user name, email, action description, or ID..." class="search-input">
+                        <button type="button" id="clearSearchBtn" class="clear-search-btn" style="display: none;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <select id="roleFilterSelect" class="filter-select">
+                        <option value="">All Roles</option>
+                        <option value="admin">Administrator</option>
+                        <option value="registrar">Registrar</option>
+                        <option value="teacher">Teacher</option>
+                        <option value="student">Student</option>
+                        <option value="parent">Parent</option>
+                        <option value="system">System</option>
+                    </select>
+
+                    <select id="dateFilterSelect" class="filter-select">
+                        <option value="all">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="week">Past 7 Days</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+
+                <!-- Category Filter Chips -->
+                <div class="category-chips-row">
+                    <button type="button" class="category-chip active" data-category="all">
+                        <i class="fas fa-layer-group"></i> All Activities <span class="chip-count" id="chipAllCount">0</span>
+                    </button>
+                    <button type="button" class="category-chip" data-category="enrollment">
+                        <i class="fas fa-file-signature"></i> Enrollments <span class="chip-count" id="chipEnrollCount">0</span>
+                    </button>
+                    <button type="button" class="category-chip" data-category="account">
+                        <i class="fas fa-user-plus"></i> User Accounts <span class="chip-count" id="chipAccountCount">0</span>
+                    </button>
+                    <button type="button" class="category-chip" data-category="attendance">
+                        <i class="fas fa-calendar-check"></i> Attendance <span class="chip-count" id="chipAttendanceCount">0</span>
+                    </button>
+                    <button type="button" class="category-chip" data-category="admin_action">
+                        <i class="fas fa-shield-alt"></i> Admin Actions <span class="chip-count" id="chipAdminCount">0</span>
+                    </button>
+                    <button type="button" class="category-chip" data-category="security">
+                        <i class="fas fa-lock"></i> Security & Auth <span class="chip-count" id="chipSecurityCount">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Activity Stream Timeline -->
+            <div class="timeline-card">
+                <div class="timeline-header">
+                    <div class="timeline-title">
+                        <i class="fas fa-stream"></i> Activity Stream
+                    </div>
+                    <span class="timeline-count-badge" id="visibleCountBadge">Showing 0 activities</span>
+                </div>
+
+                <div class="activity-stream" id="activityStreamContainer">
+                    <!-- Loading Placeholder -->
+                    <div class="empty-state" id="loadingPlaceholder">
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                        <h4>Loading Activities...</h4>
+                        <p>Fetching real-time audit logs from the database.</p>
+                    </div>
+                </div>
+
+                <!-- Load More Button -->
+                <div class="load-more-wrap" id="loadMoreWrap" style="display: none;">
+                    <button type="button" id="loadMoreBtn" class="btn-load-more">
+                        <i class="fas fa-chevron-down"></i> Load More Activities
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Activity Detail Modal -->
+    <div class="modal" id="activityDetailModal" style="display: none;">
+        <div class="modal-content" style="max-width: 540px; background: #fff; border-radius: 16px; padding: 24px;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e9edf4; padding-bottom: 14px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1B2A4A; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-info-circle"></i> Activity Log Details
+                </h3>
+                <button type="button" class="close-modal" id="closeDetailModalBtn" style="background: none; border: none; font-size: 24px; color: #94a3b8; cursor: pointer;">&times;</button>
+            </div>
+            <div class="modal-body" id="activityModalBody">
+                <!-- Loaded by JS -->
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" class="btn-secondary" id="closeDetailModalBtn2">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/admin_avatar_sync.js"></script>
+    <script type="module" src="js/activities.js"></script>
+    <script src="../js/chatbot.js"></script>
+</body>
+</html>

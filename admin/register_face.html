@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Registration - HES, Hiraya Enrollment System</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/register_face.css">
+    <link rel="stylesheet" href="../css/chatbot.css">
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <div class="menu-toggle" id="menuToggle">
+        <i class="fas fa-bars"></i>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                    </div>
+                    <div class="logo-text">H.<span>E.S</span></div>
+                </div>
+                <div class="school-badge">Hiraya Enrollment System</div>
+            </div>
+
+            <div class="admin-profile">
+                <div class="admin-avatar">
+                    <div class="avatar-initial" id="adminAvatar">A</div>
+                    <div class="online-dot"></div>
+                </div>
+                <div class="admin-name" id="adminName">Admin</div>
+                <div class="admin-role"><i class="fas fa-shield-alt"></i> Administrator</div>
+            </div>
+
+            <div class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">MAIN MENU</div>
+                    <ul class="nav-items">
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                        <li><a href="student.html"><i class="fas fa-user-graduate"></i> Students</a></li>
+                        <li><a href="teachers.html"><i class="fas fa-chalkboard-user"></i> Teachers</a></li>
+                        <li><a href="sections.html"><i class="fas fa-layer-group"></i> Sections</a></li>
+                        <li><a href="subjects.html"><i class="fas fa-book"></i> Subjects</a></li>
+                        <li><a href="enrollments.html"><i class="fas fa-file-signature"></i> Enrollments</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">MANAGEMENT</div>
+                    <ul class="nav-items">
+                        <li><a href="manage_accounts.html"><i class="fas fa-users-cog"></i> Accounts</a></li>
+                        <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Attendance</a></li>
+                        <li><a href="register_face.html" class="active"><i class="fas fa-camera"></i> Face Registration</a></li>
+                        <li><a href="activities.html"><i class="fas fa-history"></i> Activities</a></li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">ACCOUNT</div>
+                    <ul class="nav-items">
+                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
+                        <li><a href="../auth/logout.html"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1>Teacher Face Registration</h1>
+                    <p class="subtitle">Scan and register faculty biometric face profiles for smart attendance</p>
+                </div>
+                <div class="header-actions">
+                    <button type="button" class="btn-header btn-refresh" id="btnRefreshData" title="Refresh records">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button type="button" class="btn-header btn-settings" id="btnOpenSettings" title="Face++ API Configuration">
+                        <i class="fas fa-sliders-h"></i> API Settings
+                    </button>
+                </div>
+            </div>
+
+            <!-- Alert Container -->
+            <div id="alertContainer"></div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <h3>Total Faculty</h3>
+                        <div class="stat-icon"><i class="fas fa-chalkboard-user"></i></div>
+                    </div>
+                    <div class="stat-number" id="totalTeachersStat">0</div>
+                    <div class="stat-label">Faculty members</div>
+                </div>
+
+                <div class="stat-card registered">
+                    <div class="stat-header">
+                        <h3>Registered Faces</h3>
+                        <div class="stat-icon registered"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                    <div class="stat-number" id="registeredTeachersStat">0</div>
+                    <div class="stat-label">Biometrics active</div>
+                </div>
+
+                <div class="stat-card pending">
+                    <div class="stat-header">
+                        <h3>Pending Registration</h3>
+                        <div class="stat-icon pending"><i class="fas fa-clock"></i></div>
+                    </div>
+                    <div class="stat-number" id="pendingTeachersStat">0</div>
+                    <div class="stat-label">Awaiting face scan</div>
+                </div>
+
+                <div class="stat-card rate">
+                    <div class="stat-header">
+                        <h3>Registration Rate</h3>
+                        <div class="stat-icon rate"><i class="fas fa-chart-pie"></i></div>
+                    </div>
+                    <div class="stat-number" id="registrationRateStat">0%</div>
+                    <div class="stat-label">Faculty coverage</div>
+                </div>
+            </div>
+
+            <!-- Two-Column Scanner Interface -->
+            <div class="scanner-layout">
+                <!-- Left: Camera & Registration Card -->
+                <div class="camera-card">
+                    <div class="card-title-bar">
+                        <h2><i class="fas fa-camera"></i> Face Scanner Viewfinder</h2>
+                    </div>
+
+                    <!-- Teacher Selector Trigger -->
+                    <div class="teacher-selector-trigger" id="teacherSelectorTrigger" title="Click to change selected teacher">
+                        <div class="selector-left">
+                            <div class="selector-avatar" id="selectorAvatar">T</div>
+                            <div class="selector-info">
+                                <h4 id="selectorTitle">Select Teacher</h4>
+                                <p id="selectorSubtitle">Click here to browse faculty members</p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color: #94a3b8; font-size: 14px;"></i>
+                    </div>
+
+                    <!-- Status Banner -->
+                    <div class="status-banner empty" id="statusBanner">
+                        <i class="fas fa-info-circle" id="statusBannerIcon"></i>
+                        <span id="statusBannerText">Select a teacher to view or capture biometric face registration.</span>
+                    </div>
+
+                    <!-- Camera Viewfinder -->
+                    <div class="viewfinder-container">
+                        <video id="cameraVideo" autoplay playsinline muted class="camera-video"></video>
+                        <canvas id="captureCanvas" style="display: none;"></canvas>
+
+                        <!-- Standby / Permission Overlay -->
+                        <div class="camera-standby-overlay" id="cameraStandby">
+                            <i class="fas fa-video-slash"></i>
+                            <h4>Camera Not Active</h4>
+                            <p>Please grant browser camera access to scan teacher faces.</p>
+                            <button type="button" class="btn-permission" id="btnGrantPermission">
+                                <i class="fas fa-camera"></i> Allow Camera Access
+                            </button>
+                        </div>
+
+                        <!-- Face Frame Guide Overlay -->
+                        <div class="face-frame-overlay" id="faceFrame">
+                            <div class="scan-line"></div>
+                        </div>
+
+                        <!-- Viewfinder Hint -->
+                        <div class="viewfinder-hint">
+                            <i class="fas fa-user-circle"></i>
+                            <span>Position face inside the oval frame • Look straight at the lens</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Controls -->
+                    <div class="camera-actions-bar">
+                        <button type="button" class="btn-capture" id="btnCapture">
+                            <i class="fas fa-spinner fa-spin" id="captureSpinner" style="display: none;"></i>
+                            <i class="fas fa-expand"></i>
+                            <span id="btnCaptureText">Register Face Biometrics</span>
+                        </button>
+                        <button type="button" class="btn-toggle-cam" id="btnToggleCam" title="Switch Camera (Front/Back)">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button type="button" class="btn-remove-face" id="btnRemoveFace" style="display: none;" title="Remove registered face data">
+                            <i class="fas fa-trash-alt"></i> Remove
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Faculty Directory Card -->
+                <div class="directory-card">
+                    <div class="card-title-bar">
+                        <h2><i class="fas fa-users"></i> Faculty Directory</h2>
+                    </div>
+
+                    <div class="directory-controls">
+                        <div class="search-input-wrap">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchTeacherInput" placeholder="Search teacher by name or ID...">
+                        </div>
+                        <div class="directory-tabs">
+                            <button type="button" class="tab-pill active" data-filter="all">All</button>
+                            <button type="button" class="tab-pill" data-filter="registered">Registered</button>
+                            <button type="button" class="tab-pill" data-filter="unregistered">Pending</button>
+                        </div>
+                    </div>
+
+                    <!-- Teacher List -->
+                    <div class="teacher-list" id="teacherList">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal 1: Select Teacher Modal -->
+    <div class="modal-overlay" id="teacherSelectModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fas fa-chalkboard-user"></i> Select Faculty Member</h3>
+                <button type="button" class="btn-close-modal" id="closeTeacherModalBtn"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="search-input-wrap" style="margin-bottom: 14px;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="modalSearchInput" placeholder="Search teacher...">
+                </div>
+                <div class="modal-teacher-list" id="modalTeacherList" style="max-height: 380px; overflow-y: auto;">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Success / Confirmation Modal -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-box" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-check-circle" style="color: #22c55e;"></i> Face Registered</h3>
+                <button type="button" class="btn-close-modal" id="closeSuccessModalBtn"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="success-preview-wrap">
+                    <img id="successPreviewImg" class="preview-snapshot-img" src="" alt="Captured Face">
+                    <h3 id="successTeacherName" style="margin: 8px 0 2px 0; color: #1B2A4A; font-size: 17px;">Teacher Name</h3>
+                    <p style="margin: 0; font-size: 13px; color: #64748b;">Employee ID: <strong id="successEmployeeId">N/A</strong></p>
+                    
+                    <div class="preview-meta-box">
+                        <div class="preview-meta-row">
+                            <span class="preview-meta-label">Status:</span>
+                            <span style="color: #15803d; font-weight: 600;"><i class="fas fa-shield-alt"></i> Biometrics Active</span>
+                        </div>
+                        <div class="preview-meta-row">
+                            <span class="preview-meta-label">Registered At:</span>
+                            <span id="successTimestamp">Just now</span>
+                        </div>
+                        <div class="preview-meta-row">
+                            <span class="preview-meta-label">Engine:</span>
+                            <span>Face++ Biometrics Token</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-header btn-refresh" onclick="document.getElementById('successModal').classList.remove('active')" style="background:#1B2A4A; color:#fff; border:none; width:100%; justify-content:center;">
+                    <i class="fas fa-check"></i> Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: Face++ Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3><i class="fas fa-sliders-h"></i> Face++ API Configuration</h3>
+                <button type="button" class="btn-close-modal" id="closeSettingsModalBtn"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="formFaceppSettings">
+                <div class="modal-body">
+                    <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
+                        Configure your Face++ Detect credentials for cloud biometric face feature extraction.
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 14px;">
+                        <div>
+                            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Face++ API Key</label>
+                            <input type="text" id="inputFaceppKey" placeholder="Enter Face++ API Key" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px; font-family: monospace;">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">Face++ API Secret</label>
+                            <input type="password" id="inputFaceppSecret" placeholder="Enter Face++ API Secret" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px; font-family: monospace;">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">API Endpoint</label>
+                            <input type="text" id="inputFaceppEndpoint" placeholder="https://api-us.faceplusplus.com/facepp/v3/detect" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 13px; font-family: monospace;">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-header btn-settings" onclick="document.getElementById('settingsModal').classList.remove('active')">Cancel</button>
+                    <button type="submit" class="btn-header" style="background: #1B2A4A; color: #fff; border: none;">
+                        <i class="fas fa-save"></i> Save Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 4: Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-box" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i> Remove Face Data</h3>
+                <button type="button" class="btn-close-modal" onclick="document.getElementById('deleteModal').classList.remove('active')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 14px; color: #334155; margin: 0 0 10px 0;">
+                    Are you sure you want to remove the registered face data for <strong id="deleteTeacherName">this teacher</strong>?
+                </p>
+                <p style="font-size: 12px; color: #94a3b8; margin: 0;">
+                    The teacher will need to be re-scanned to use biometric face attendance.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-header btn-settings" id="btnCancelDelete">Cancel</button>
+                <button type="button" class="btn-header" id="btnConfirmDelete" style="background: #dc2626; color: #fff; border: none;">
+                    <i class="fas fa-trash"></i> Remove Face
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/admin_avatar_sync.js"></script>
+    <script type="module" src="js/register_face.js"></script>
+    <script src="../js/chatbot.js"></script>
+</body>
+</html>

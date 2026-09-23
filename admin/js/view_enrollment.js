@@ -1,8 +1,9 @@
 /**
- * PLSNHS Admin - View Enrollment Details (Supabase Dynamic Integration)
+ * HES Admin - View Enrollment Details (Supabase Dynamic Integration)
  */
 
 import { supabase } from '../../supabase/config.js';
+import { EmailNotificationService } from '../../js/email_service.js';
 
 (function() {
     'use strict';
@@ -313,24 +314,6 @@ import { supabase } from '../../supabase/config.js';
                 name: 'Good Moral Certificate',
                 is_required: true,
                 can_be_followed: false,
-                file_path: null
-            });
-        }
-
-        // Check 2x2 ID Photo
-        const photoUrl = doc?.photo || sDocs.find(d => d.document_type === 'photo')?.file_url;
-        if (photoUrl) {
-            submittedRequirements.push({
-                name: '2x2 ID Pictures',
-                is_required: false,
-                can_be_followed: true,
-                file_path: photoUrl
-            });
-        } else {
-            missingRequirements.push({
-                name: '2x2 ID Pictures',
-                is_required: false,
-                can_be_followed: true,
                 file_path: null
             });
         }
@@ -662,27 +645,153 @@ import { supabase } from '../../supabase/config.js';
         }
 
         try {
+            const targetId = student?.user_id || student?.id || enr?.student_id || enr?.user_id || null;
+            const targetStudentId = student?.id || enr?.student_id || null;
+            const targetEmail = student?.email || enr?.email || null;
+            const notifMsg = `Notice for ${sName}: Please submit your "${requirementName}" to finalize your enrollment application.`;
+
             await supabase.from('notifications').insert([{
-                user_id: student?.user_id || null,
+                user_id: targetId,
+                student_id: targetStudentId,
+                recipient_email: targetEmail,
                 role: 'student',
                 title: 'Missing Requirement Notice',
-                message: `Notice for ${sName}: Please submit your "${requirementName}" to finalize your enrollment application.`,
+                message: notifMsg,
                 type: 'document_reminder',
                 read: false,
+                is_read: false,
                 created_at: new Date().toISOString()
             }]);
 
-            showAlert(`✅ Notification for "${requirementName}" sent successfully to ${sName}!`, 'success');
+            if (targetId) {
+                try {
+                    const k = `hes_notifications_${targetId}`;
+                    const raw = localStorage.getItem(k);
+                    let list = raw ? JSON.parse(raw) : [];
+                    list.unshift({
+                        id: 'notif_' + Date.now(),
+                        type: 'reminder',
+                        title: 'Missing Requirement Notice',
+                        message: notifMsg,
+                        time: 'Just now',
+                        read: false
+                    });
+                    localStorage.setItem(k, JSON.stringify(list.slice(0, 30)));
+                } catch(e) {}
+            }
+
+            showAlert(`✅ In-app notification for "${requirementName}" posted to ${sName}'s dashboard!`, 'success');
+
+            if (targetEmail) {
+                const sendGmail = confirm(`✉️ Notification posted! Would you also like to open Gmail compose to send this notice directly to the student's Gmail (${targetEmail})?`);
+                if (sendGmail) {
+                    const emailData = EmailNotificationService.buildMissingRequirementsEmail({
+                        studentName: sName,
+                        email: targetEmail,
+                        missingRequirement: requirementName,
+                        gradeLevel: student?.grade_level || enr?.grade_level || 'Junior/Senior High'
+                    });
+                    EmailNotificationService.sendViaGmailWeb(emailData);
+                }
+            }
         } catch (error) {
             console.error('❌ Error notifying requirement:', error);
             showAlert('Failed to send notification: ' + error.message, 'error');
         }
     };
 
+    // ============================================
+    // CREDENTIALS MODAL & GMAIL DISPATCH
+    // ============================================
+
+    let activeCredentialsData = null;
+
+    window.showCredentialsModal = function(creds) {
+        activeCredentialsData = creds;
+        const credModal = document.getElementById('credentialsModal');
+        const credName = document.getElementById('credStudentName');
+        const credUser = document.getElementById('credUsername');
+        const credPass = document.getElementById('credPassword');
+
+        if (credName) credName.textContent = creds.studentFullName || `${creds.firstName} ${creds.lastName}`;
+        if (credUser) credUser.textContent = creds.email;
+        if (credPass) credPass.textContent = creds.lastName;
+
+        if (credModal) credModal.style.display = 'flex';
+    };
+
+    window.closeCredentialsModal = function() {
+        const credModal = document.getElementById('credentialsModal');
+        if (credModal) credModal.style.display = 'none';
+    };
+
+    const closeCredBtn = document.getElementById('closeCredentialsBtn');
+    const dismissCredBtn = document.getElementById('dismissCredentialsBtn');
+    const copyUserBtn = document.getElementById('copyUsernameBtn');
+    const copyPassBtn = document.getElementById('copyPasswordBtn');
+    const sendGmailCredBtn = document.getElementById('sendGmailCredBtn');
+    const copyEmailTextBtn = document.getElementById('copyEmailTextBtn');
+    const sendMailtoCredBtn = document.getElementById('sendMailtoCredBtn');
+
+    if (closeCredBtn) closeCredBtn.addEventListener('click', window.closeCredentialsModal);
+    if (dismissCredBtn) dismissCredBtn.addEventListener('click', window.closeCredentialsModal);
+
+    if (copyUserBtn) {
+        copyUserBtn.addEventListener('click', () => {
+            const userText = document.getElementById('credUsername')?.textContent || '';
+            navigator.clipboard.writeText(userText).then(() => {
+                showAlert('📋 Username copied to clipboard!', 'success');
+            });
+        });
+    }
+
+    if (copyPassBtn) {
+        copyPassBtn.addEventListener('click', () => {
+            const passText = document.getElementById('credPassword')?.textContent || '';
+            navigator.clipboard.writeText(passText).then(() => {
+                showAlert('📋 Password copied to clipboard!', 'success');
+            });
+        });
+    }
+
+    if (sendGmailCredBtn) {
+        sendGmailCredBtn.addEventListener('click', () => {
+            if (!activeCredentialsData) return;
+            const emailData = EmailNotificationService.buildCredentialsEmail(activeCredentialsData);
+            EmailNotificationService.sendViaGmailWeb(emailData);
+            showAlert(`📧 Opening Gmail compose to send credentials to ${activeCredentialsData.email}...`, 'success');
+        });
+    }
+
+    if (copyEmailTextBtn) {
+        copyEmailTextBtn.addEventListener('click', async () => {
+            if (!activeCredentialsData) return;
+            const emailData = EmailNotificationService.buildCredentialsEmail(activeCredentialsData);
+            const success = await EmailNotificationService.copyEmailText(emailData);
+            if (success) {
+                showAlert('📋 Full credentials email template copied to clipboard!', 'success');
+            } else {
+                showAlert('Failed to copy text.', 'error');
+            }
+        });
+    }
+
+    if (sendMailtoCredBtn) {
+        sendMailtoCredBtn.addEventListener('click', () => {
+            if (!activeCredentialsData) return;
+            const emailData = EmailNotificationService.buildCredentialsEmail(activeCredentialsData);
+            EmailNotificationService.sendViaMailto(emailData);
+        });
+    }
+
     // Close modal on background click
     document.addEventListener('click', function(e) {
         if (e.target === filePreviewModal) {
             window.closeFileModal();
+        }
+        const credModal = document.getElementById('credentialsModal');
+        if (e.target === credModal) {
+            window.closeCredentialsModal();
         }
     });
 

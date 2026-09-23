@@ -1,4 +1,4 @@
-// ===== PLSNHS STUDENT AVATAR & INITIALS SYNC =====
+// ===== HES STUDENT AVATAR & INITIALS SYNC =====
 (function() {
     'use strict';
 
@@ -20,7 +20,7 @@
 
     function syncStudentAvatarAndName() {
         try {
-            let studentNameStr = localStorage.getItem('plsnhs_student_name');
+            let studentNameStr = localStorage.getItem('hes_student_name');
             const currentUserStr = localStorage.getItem('currentUser');
 
             if (currentUserStr) {
@@ -29,13 +29,13 @@
                     if (u.role === 'student') {
                         let nameFromSession = u.displayName || (u.firstName ? `${u.firstName} ${u.lastName || ''}`.trim() : (u.email ? u.email.split('@')[0] : 'Student'));
                         studentNameStr = nameFromSession || studentNameStr || 'Student';
-                        localStorage.setItem('plsnhs_student_name', studentNameStr);
+                        localStorage.setItem('hes_student_name', studentNameStr);
                     }
                 } catch(e) {}
             }
 
             studentNameStr = studentNameStr || 'Student';
-            localStorage.setItem('plsnhs_student_name', studentNameStr);
+            localStorage.setItem('hes_student_name', studentNameStr);
 
             // Apply name to all student name elements in dashboard and pages
             document.querySelectorAll('.student-name, #studentName, #studentNameHeader, #bannerStudentName, #profileName').forEach(el => {
@@ -43,7 +43,7 @@
             });
 
             const initials = getStudentInitials(studentNameStr);
-            const savedAvatar = localStorage.getItem('plsnhs_student_avatar');
+            const savedAvatar = localStorage.getItem('hes_student_avatar');
 
             document.querySelectorAll('.student-avatar').forEach(avatar => {
                 if (savedAvatar) {

@@ -1,5 +1,5 @@
 /**
- * PLSNHS Admin - Subjects Management (SUPABASE POWERED)
+ * HES Admin - Subjects Management (SUPABASE POWERED)
  */
 
 import { supabase } from '../../supabase/config.js';

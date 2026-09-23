@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Schedule - Teacher Dashboard | PLSNHS</title>
+    <title>My Schedule - Teacher Dashboard | HES</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Schedule CSS -->
     <link rel="stylesheet" href="css/schedule.css">
+    <link rel="stylesheet" href="../css/chatbot.css">
 </head>
 <body>
     <div class="app-container">
@@ -17,10 +18,12 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
-                    <div class="logo-icon">P</div>
-                    <div class="logo-text">PLS<span>NHS</span></div>
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                    </div>
+                    <div class="logo-text">H.<span>E.S</span></div>
                 </div>
-                <div class="school-badge">Placido L. Señor NHS</div>
+                <div class="school-badge">Hiraya Enrollment System</div>
             </div>
 
             <div class="teacher-profile">
@@ -36,19 +39,20 @@
                 <div class="nav-section">
                     <div class="nav-section-title">MAIN MENU</div>
                     <ul class="nav-items">
-                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                        <li><a href="attendance-qr.html"><i class="fas fa-qrcode"></i> QR Attendance</a></li>
-                        <li><a href="classes.html"><i class="fas fa-users"></i> My Classes</a></li>
-                        <li><a href="schedule.html" class="active"><i class="fas fa-clock"></i> Schedule</a></li>
-                        <li><a href="grades.html"><i class="fas fa-star"></i> Grades</a></li>
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></a></li>
+                        <li><a href="attendance-face.html"><i class="fas fa-camera"></i> <span>Face Attendance</span></a></li>
+                        <li><a href="student-attendance.html"><i class="fas fa-user-check"></i> <span>Student Attendance</span></a></li>
+                        <li><a href="classes.html"><i class="fas fa-users"></i> <span>My Classes</span></a></li>
+                        <li><a href="schedule.html" class="active"><i class="fas fa-clock"></i> <span>Schedule</span></a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> <span>Grades</span></a></li>
                     </ul>
                 </div>
 
                 <div class="nav-section">
                     <div class="nav-section-title">ACCOUNT</div>
                     <ul class="nav-items">
-                        <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        <li><a href="profile.html"><i class="fas fa-user"></i> <span>Profile</span></a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
                     </ul>
                 </div>
             </nav>
@@ -59,11 +63,16 @@
             <!-- Page Header -->
             <div class="page-header">
                 <div>
-                    <h1>My Schedule</h1>
-                    <p>View your weekly class schedule assigned by the admin</p>
+                    <h1>My Class Schedule</h1>
+                    <p>View and manage your weekly assigned classes, sections, and room assignments</p>
                 </div>
-                <div class="date-badge">
-                    <i class="fas fa-calendar-alt"></i> Loading...
+                <div class="header-actions">
+                    <button type="button" class="btn-header-action" id="btnRefresh" title="Reload schedule from database">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <div class="date-badge" id="dateBadge">
+                        <i class="fas fa-calendar-alt"></i> Loading...
+                    </div>
                 </div>
             </div>
 
@@ -81,139 +90,80 @@
                     <div class="stat-label">Classes per week</div>
                 </div>
 
-                <div class="stat-card">
+                <div class="stat-card sections">
                     <div class="stat-header">
                         <h3>Sections</h3>
-                        <div class="stat-icon"><i class="fas fa-users"></i></div>
+                        <div class="stat-icon sections"><i class="fas fa-layer-group"></i></div>
                     </div>
                     <div class="stat-number" id="totalSections">0</div>
-                    <div class="stat-label">Different sections</div>
+                    <div class="stat-label">Handled sections</div>
                 </div>
 
-                <div class="stat-card">
+                <div class="stat-card subjects">
                     <div class="stat-header">
                         <h3>Subjects</h3>
-                        <div class="stat-icon"><i class="fas fa-book"></i></div>
+                        <div class="stat-icon subjects"><i class="fas fa-book"></i></div>
                     </div>
                     <div class="stat-number" id="totalSubjects">0</div>
-                    <div class="stat-label">Subjects taught</div>
+                    <div class="stat-label">Assigned subjects</div>
                 </div>
 
-                <div class="stat-card">
+                <div class="stat-card hours">
                     <div class="stat-header">
-                        <h3>Free Periods</h3>
-                        <div class="stat-icon"><i class="fas fa-coffee"></i></div>
+                        <h3>Free Slots</h3>
+                        <div class="stat-icon hours"><i class="fas fa-coffee"></i></div>
                     </div>
                     <div class="stat-number" id="freePeriods">0</div>
-                    <div class="stat-label">Available slots</div>
+                    <div class="stat-label">Available periods</div>
                 </div>
             </div>
 
-            <!-- Week Navigation -->
-            <div class="week-nav">
-                <div class="week-display">
-                    <h3><i class="fas fa-calendar-week"></i> Week Schedule</h3>
-                    <span class="week-range" id="weekRange">Loading...</span>
-                </div>
-                <div class="nav-buttons">
-                    <a href="#" class="nav-btn" onclick="window.changeWeek(-1)">
-                        <i class="fas fa-chevron-left"></i> Previous Week
-                    </a>
-                    <a href="#" class="nav-btn" onclick="window.changeWeek(1)">
-                        Next Week <i class="fas fa-chevron-right"></i>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Schedule Container -->
-            <div class="schedule-container">
-                <div class="schedule-header">
-                    <h3><i class="fas fa-table"></i> Your Assigned Schedule</h3>
-                    <span class="schedule-info-badge" id="scheduleInfoBadge">
-                        <i class="fas fa-info-circle"></i> 0 classes scheduled
-                    </span>
+            <!-- Controls & Filters Bar -->
+            <div class="controls-card">
+                <!-- Day Filter Chips -->
+                <div class="day-filter-chips">
+                    <button type="button" class="day-chip active" data-day="all">All Days</button>
+                    <button type="button" class="day-chip" data-day="Monday">Monday</button>
+                    <button type="button" class="day-chip" data-day="Tuesday">Tuesday</button>
+                    <button type="button" class="day-chip" data-day="Wednesday">Wednesday</button>
+                    <button type="button" class="day-chip" data-day="Thursday">Thursday</button>
+                    <button type="button" class="day-chip" data-day="Friday">Friday</button>
+                    <button type="button" class="day-chip" data-day="Saturday">Saturday</button>
                 </div>
 
-                <!-- Schedule Table -->
-                <div class="table-container">
-                    <table class="data-table schedule-table">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Monday</th>
-                                <th>Tuesday</th>
-                                <th>Wednesday</th>
-                                <th>Thursday</th>
-                                <th>Friday</th>
-                            </tr>
-                        </thead>
-                        <tbody id="scheduleBody">
-                            <tr>
-                                <td colspan="6" class="no-data-cell">
-                                    <div class="no-data">
-                                        <i class="fas fa-clock"></i>
-                                        <h3>Loading schedule...</h3>
-                                        <p>Please wait while we load your schedule.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Legend -->
-                <div class="legend">
-                    <div class="legend-item">
-                        <div class="legend-color class"></div>
-                        <span>Regular Class</span>
+                <!-- Right Controls: View Toggle & Search -->
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                    <div class="search-box-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchScheduleInput" placeholder="Search subject, section, room...">
                     </div>
-                    <div class="legend-item">
-                        <div class="legend-color advisory"></div>
-                        <span>Advisory Class (You are the adviser)</span>
+
+                    <div class="view-switcher-group">
+                        <button type="button" class="btn-view-toggle active" data-view="cards">
+                            <i class="fas fa-th-large"></i> Cards View
+                        </button>
+                        <button type="button" class="btn-view-toggle" data-view="grid">
+                            <i class="fas fa-table"></i> Timetable Grid
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Summary Grid -->
-            <div class="summary-grid">
-                <!-- Your Sections -->
-                <div class="summary-card">
-                    <h4>
-                        <i class="fas fa-users"></i> Your Sections
-                        <span class="badge-count" id="sectionsBadge">0</span>
-                    </h4>
-                    <div class="summary-content" id="sectionsList">
-                        <div class="no-data-message"><i class="fas fa-info-circle"></i> No sections assigned</div>
-                    </div>
-                </div>
+            <!-- View 1: Day-by-Day Schedule Cards (Matching Mobile React Native App) -->
+            <div id="scheduleContainer">
+                <!-- Populated dynamically by schedule.js -->
+            </div>
 
-                <!-- Your Subjects -->
-                <div class="summary-card">
-                    <h4>
-                        <i class="fas fa-book"></i> Your Subjects
-                        <span class="badge-count" id="subjectsBadge">0</span>
-                    </h4>
-                    <div class="summary-content" id="subjectsList">
-                        <div class="no-data-message"><i class="fas fa-info-circle"></i> No subjects assigned</div>
-                    </div>
-                </div>
-
-                <!-- Advisory Classes -->
-                <div class="summary-card">
-                    <h4>
-                        <i class="fas fa-star" style="color: #FFD700;"></i> Advisory Classes
-                        <span class="badge-count" id="advisoryBadge">0</span>
-                    </h4>
-                    <div class="summary-content" id="advisoryList">
-                        <div class="no-data-message"><i class="fas fa-info-circle"></i> No advisory classes</div>
-                    </div>
-                </div>
+            <!-- View 2: Weekly Timetable Grid -->
+            <div class="timetable-grid-card" id="timetableContainer">
+                <!-- Populated dynamically by schedule.js -->
             </div>
         </main>
     </div>
 
-    <!-- JavaScript -->
+    <!-- JavaScript Files -->
     <script src="js/teacher_avatar_sync.js"></script>
     <script type="module" src="js/schedule.js"></script>
+    <script src="../js/chatbot.js"></script>
 </body>
 </html>

@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const { data: s } = await supabase.from('students').select('lrn').eq('email', user.email).maybeSingle();
                 idNum = s?.lrn || '';
             }
-            if (!idNum) idNum = `PLSNHS-${(user.role || 'USR').substring(0, 3).toUpperCase()}-${user.id.substring(0, 5).toUpperCase()}`;
+            if (!idNum) idNum = `HES-${(user.role || 'USR').substring(0, 3).toUpperCase()}-${user.id.substring(0, 5).toUpperCase()}`;
             if (idNumberInput) idNumberInput.value = idNum;
 
             updatePreview();

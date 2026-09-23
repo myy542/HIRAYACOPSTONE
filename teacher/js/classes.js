@@ -102,8 +102,8 @@ import {
             e.preventDefault();
             console.log('🚪 Teacher logging out...');
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_teacher_avatar');
-            localStorage.removeItem('plsnhs_teacher_name');
+            localStorage.removeItem('hes_teacher_avatar');
+            localStorage.removeItem('hes_teacher_name');
             window.location.replace('../auth/login.html');
         });
     }
@@ -356,14 +356,14 @@ import {
                                 </div>
                             `).join('') : '<p class="no-students">No students enrolled yet</p>'}
                             ${studentList.length > 0 ? `
-                                <a href="#" class="view-all-link">View All Students <i class="fas fa-arrow-right"></i></a>
+                                <a href="view-section.html?id=${section.id || ''}" class="view-all-link">View All Students & Attendance <i class="fas fa-arrow-right"></i></a>
                             ` : ''}
                         </div>
 
                         <div class="class-actions">
-                            <a href="#" class="class-action-btn btn-grades"><i class="fas fa-star"></i> Grades</a>
-                            <a href="#" class="class-action-btn btn-students"><i class="fas fa-users"></i> Section</a>
-                            <a href="#" class="class-action-btn btn-schedule"><i class="fas fa-clock"></i> Schedule</a>
+                            <a href="grades.html" class="class-action-btn btn-grades"><i class="fas fa-star"></i> Grades</a>
+                            <a href="view-section.html?id=${section.id || ''}" class="class-action-btn btn-students"><i class="fas fa-clipboard-check"></i> Attendance & Section</a>
+                            <a href="schedule.html" class="class-action-btn btn-schedule"><i class="fas fa-clock"></i> Schedule</a>
                         </div>
                     </div>
                 </div>

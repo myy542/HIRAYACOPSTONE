@@ -1,6 +1,6 @@
 /**
  * Enrollment Management - Supabase Realtime & Interactive JavaScript
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -84,8 +84,8 @@ import { EmailNotificationService } from '../../js/email_service.js';
         logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_registrar_avatar');
-            localStorage.removeItem('plsnhs_registrar_name');
+            localStorage.removeItem('hes_registrar_avatar');
+            localStorage.removeItem('hes_registrar_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}
@@ -600,12 +600,15 @@ import { EmailNotificationService } from '../../js/email_service.js';
         }
 
         // 5. Send Approval Notification with credentials
-        const credentialsMessage = `Congratulations ${firstName}! Your enrollment for ${gradeLevel}${strand ? ' (' + strand + ')' : ''} has been approved by the Registrar.\n\nYour Student Portal Login Credentials:\n• Username (Email): ${email}\n• Password: ${lastName}\n\nYou can now log in to the PLSNHS Student Portal.`;
+        const credentialsMessage = `Congratulations ${firstName}! Your enrollment for ${gradeLevel}${strand ? ' (' + strand + ')' : ''} has been approved by the Registrar.\n\nYour Student Portal Login Credentials:\n• Username (Email): ${email}\n• Password: ${lastName}\n\nYou can now log in to the HES Student Portal.`;
 
+        const targetStudentId = studentUserId || studentTableId || null;
         await supabase
             .from('notifications')
             .insert([{
-                user_id: studentUserId || studentTableId || null,
+                user_id: targetStudentId,
+                student_id: studentTableId || null,
+                recipient_email: email,
                 role: 'student',
                 title: '🎉 Enrollment Approved!',
                 message: credentialsMessage,
@@ -615,6 +618,40 @@ import { EmailNotificationService } from '../../js/email_service.js';
                 is_read: false,
                 created_at: new Date().toISOString()
             }]);
+
+        if (targetStudentId) {
+            try {
+                const k = `hes_notifications_${targetStudentId}`;
+                const raw = localStorage.getItem(k);
+                let list = raw ? JSON.parse(raw) : [];
+                list.unshift({
+                    id: 'notif_' + Date.now(),
+                    type: 'action',
+                    title: '🎉 Enrollment Approved!',
+                    message: credentialsMessage,
+                    time: 'Just now',
+                    read: false
+                });
+                localStorage.setItem(k, JSON.stringify(list.slice(0, 30)));
+            } catch(e) {}
+        }
+
+        if (email) {
+            try {
+                const kEm = `hes_notifications_${email}`;
+                const rawEm = localStorage.getItem(kEm);
+                let listEm = rawEm ? JSON.parse(rawEm) : [];
+                listEm.unshift({
+                    id: 'notif_em_' + Date.now(),
+                    type: 'action',
+                    title: '🎉 Enrollment Approved!',
+                    message: credentialsMessage,
+                    time: 'Just now',
+                    read: false
+                });
+                localStorage.setItem(kEm, JSON.stringify(listEm.slice(0, 30)));
+            } catch(e) {}
+        }
 
         return {
             email,
@@ -661,18 +698,42 @@ import { EmailNotificationService } from '../../js/email_service.js';
             if (error) throw error;
 
             try {
+                const enrItem = (allEnrollments || []).find(e => String(e.id) === String(id));
+                const targetId = enrItem?.student_id || enrItem?.user_id || enrItem?.id || null;
+                const rejMsg = `Notice for ${name}: Your enrollment application was not approved. Reason: ${reason}`;
+
                 await supabase
                     .from('notifications')
                     .insert([{
+                        user_id: targetId,
+                        student_id: enrItem?.student_id || enrItem?.id || null,
+                        recipient_email: enrItem?.email || null,
                         role: 'student',
                         title: '⚠️ Enrollment Update',
-                        message: `Your enrollment application was not approved. Reason: ${reason}`,
+                        message: rejMsg,
                         type: 'enrollment_status',
                         enrollment_id: id,
                         is_read: false,
                         read: false,
                         created_at: new Date().toISOString()
                     }]);
+
+                if (targetId) {
+                    try {
+                        const k = `hes_notifications_${targetId}`;
+                        const raw = localStorage.getItem(k);
+                        let list = raw ? JSON.parse(raw) : [];
+                        list.unshift({
+                            id: 'notif_' + Date.now(),
+                            type: 'alert',
+                            title: '⚠️ Enrollment Update',
+                            message: rejMsg,
+                            time: 'Just now',
+                            read: false
+                        });
+                        localStorage.setItem(k, JSON.stringify(list.slice(0, 30)));
+                    } catch(e) {}
+                }
             } catch(nErr) {}
 
             showAlert(`❌ Enrollment application for ${name} has been rejected.`, 'info');
@@ -771,7 +832,7 @@ import { EmailNotificationService } from '../../js/email_service.js';
 
             let fName = 'Walk-in';
             let lName = 'Student';
-            let email = 'walkin.student@plsnhs.edu.ph';
+            let email = 'walkin.student@hes.edu.ph';
 
             if (studentId) {
                 const matched = students.find(s => s.id === studentId);
@@ -1086,7 +1147,7 @@ import { EmailNotificationService } from '../../js/email_service.js';
 
         // Cross-tab synchronization
         window.addEventListener('storage', (e) => {
-            if (e.key === 'plsnhs_latest_notification' && e.newValue) {
+            if (e.key === 'hes_latest_notification' && e.newValue) {
                 try {
                     const data = JSON.parse(e.newValue);
                     if (!data.role || data.role === 'registrar') {

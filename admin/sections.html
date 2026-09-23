@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sections Management - PLSNHS</title>
+    <title>Sections Management - HES, Hiraya Enrollment System</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Google Fonts -->
@@ -11,7 +12,37 @@
     <!-- CSS Files -->
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/sections.css">
+    <link rel="stylesheet" href="../css/chatbot.css">
+    <style>
+        /* Additional styles for strand column and modal field */
+        .strand-badge {
+            display: inline-block;
+            background: #eef2ff;
+            color: #1B2A4A;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+
+        .strand-group-modal {
+            transition: all 0.3s ease;
+        }
+
+        .strand-group-modal.hidden {
+            display: none;
+        }
+
+        .grade-strand-cell {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+    </style>
 </head>
+
 <body>
     <!-- Mobile Menu Toggle -->
     <div class="menu-toggle" id="menuToggle">
@@ -24,11 +55,12 @@
             <div class="sidebar-header">
                 <div class="logo">
                     <div class="logo-icon">
-                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo"
+                            onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
                     </div>
-                    <div class="logo-text">PLS<span>NHS</span></div>
+                    <div class="logo-text">H.<span>E.S</span></div>
                 </div>
-                <div class="school-badge">Placido L. Señor NHS</div>
+                <div class="school-badge">Hiraya Enrollment System</div>
             </div>
 
             <div class="admin-profile">
@@ -58,6 +90,8 @@
                     <ul class="nav-items">
                         <li><a href="manage_accounts.html"><i class="fas fa-users-cog"></i> Accounts</a></li>
                         <li><a href="attendance.html"><i class="fas fa-calendar-check"></i> Attendance</a></li>
+                        <li><a href="register_face.html"><i class="fas fa-camera"></i> Face Registration</a></li>
+                        <li><a href="activities.html"><i class="fas fa-history"></i> Activities</a></li>
                     </ul>
                 </div>
 
@@ -138,7 +172,8 @@
                     <i class="fas fa-search"></i>
                     <input type="text" id="searchInput" placeholder="Search sections...">
                 </div>
-                <button class="btn-add" onclick="openAddModal()"><i class="fas fa-plus-circle"></i> Add New Section</button>
+                <button class="btn-add" onclick="openAddModal()"><i class="fas fa-plus-circle"></i> Add New
+                    Section</button>
             </div>
 
             <!-- Table -->
@@ -153,6 +188,7 @@
                             <tr>
                                 <th>Section</th>
                                 <th>Grade Level</th>
+                                <th>Strand</th>
                                 <th>Adviser</th>
                                 <th>Actions</th>
                             </tr>
@@ -177,7 +213,8 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label>Section Name <span class="required">*</span></label>
-                        <input type="text" name="section_name" id="addSectionName" placeholder="e.g., Section A - STEM" required>
+                        <input type="text" name="section_name" id="addSectionName" placeholder="e.g., Section A - STEM"
+                            required>
                     </div>
                     <div class="form-group">
                         <label>Grade Level <span class="required">*</span></label>
@@ -191,9 +228,24 @@
                             <option value="12">Grade 12</option>
                         </select>
                     </div>
+                    <!-- Strand field for Add Modal (shown for Grade 11/12) -->
+                    <div class="form-group strand-group-modal hidden" id="addStrandGroup">
+                        <label>Strand <span class="required">*</span></label>
+                        <select name="strand" id="addStrand">
+                            <option value="">Select Strand</option>
+                            <option value="STEM">STEM - Science, Technology, Engineering & Mathematics</option>
+                            <option value="ABM">ABM - Accountancy, Business & Management</option>
+                            <option value="HUMSS">HUMSS - Humanities & Social Sciences</option>
+                            <option value="GAS">GAS - General Academic Strand</option>
+                            <option value="TVL">TVL - Technical-Vocational-Livelihood</option>
+                            <option value="Sports">Sports</option>
+                            <option value="Arts">Arts & Design</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label>Class Adviser <span class="required">*</span></label>
-                        <input type="text" name="adviser_name" id="addAdviserName" placeholder="e.g., Maria Santos" required>
+                        <input type="text" name="adviser_name" id="addAdviserName" placeholder="e.g., Maria Santos"
+                            required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -230,9 +282,24 @@
                             <option value="12">Grade 12</option>
                         </select>
                     </div>
+                    <!-- Strand field for Edit Modal (shown for Grade 11/12) -->
+                    <div class="form-group strand-group-modal hidden" id="editStrandGroup">
+                        <label>Strand <span class="required">*</span></label>
+                        <select name="strand" id="editStrand">
+                            <option value="">Select Strand</option>
+                            <option value="STEM">STEM - Science, Technology, Engineering & Mathematics</option>
+                            <option value="ABM">ABM - Accountancy, Business & Management</option>
+                            <option value="HUMSS">HUMSS - Humanities & Social Sciences</option>
+                            <option value="GAS">GAS - General Academic Strand</option>
+                            <option value="TVL">TVL - Technical-Vocational-Livelihood</option>
+                            <option value="Sports">Sports</option>
+                            <option value="Arts">Arts & Design</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label>Class Adviser <span class="required">*</span></label>
-                        <input type="text" name="adviser_name" id="editAdviserName" placeholder="e.g., Maria Santos" required>
+                        <input type="text" name="adviser_name" id="editAdviserName" placeholder="e.g., Maria Santos"
+                            required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -252,20 +319,137 @@
             </div>
             <div class="modal-body">
                 <p style="margin-bottom: 12px;"><strong>Section:</strong> <span id="scheduleSectionName"></span></p>
-                <p style="color: #94a3b8; font-size: 14px;"><i class="fas fa-info-circle"></i> Schedule management will be available in the full version.</p>
-                <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-top: 12px; text-align: center;">
+                <p style="color: #94a3b8; font-size: 14px;"><i class="fas fa-info-circle"></i> Schedule management will
+                    be available in the full version.</p>
+                <div
+                    style="background: #f8fafc; padding: 16px; border-radius: 8px; margin-top: 12px; text-align: center;">
                     <i class="fas fa-calendar-plus" style="font-size: 32px; color: #1B2A4A; opacity: 0.5;"></i>
-                    <p style="color: #94a3b8; margin-top: 8px;">Click <a href="create_schedule.html" style="color: #1B2A4A; font-weight: 600;">here</a> to create a schedule for this section.</p>
+                    <p style="color: #94a3b8; margin-top: 8px;">Click <a href="create_schedule.html"
+                            style="color: #1B2A4A; font-weight: 600;">here</a> to create a schedule for this section.
+                    </p>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="closeScheduleModal()">Close</button>
-                <a href="create_schedule.html" class="btn-save" style="text-decoration: none;"><i class="fas fa-calendar-plus"></i> Create Schedule</a>
+                <a href="create_schedule.html" class="btn-save" style="text-decoration: none;"><i
+                        class="fas fa-calendar-plus"></i> Create Schedule</a>
             </div>
         </div>
     </div>
 
     <script src="js/admin_avatar_sync.js"></script>
     <script type="module" src="js/sections.js"></script>
+    <script src="../js/chatbot.js"></script>
+
+    <!-- Inline script to handle strand visibility and preview -->
+    <script>
+        (function () {
+            // ---------- ADD MODAL ----------
+            const addGradeSelect = document.getElementById('addGradeId');
+            const addStrandGroup = document.getElementById('addStrandGroup');
+            const addStrandSelect = document.getElementById('addStrand');
+
+            function toggleAddStrand() {
+                const gradeVal = addGradeSelect.value;
+                if (gradeVal === '11' || gradeVal === '12') {
+                    addStrandGroup.classList.remove('hidden');
+                    addStrandSelect.setAttribute('required', 'required');
+                } else {
+                    addStrandGroup.classList.add('hidden');
+                    addStrandSelect.removeAttribute('required');
+                    addStrandSelect.value = '';
+                }
+            }
+
+            addGradeSelect.addEventListener('change', toggleAddStrand);
+
+            // ---------- EDIT MODAL ----------
+            const editGradeSelect = document.getElementById('editGradeId');
+            const editStrandGroup = document.getElementById('editStrandGroup');
+            const editStrandSelect = document.getElementById('editStrand');
+
+            function toggleEditStrand() {
+                const gradeVal = editGradeSelect.value;
+                if (gradeVal === '11' || gradeVal === '12') {
+                    editStrandGroup.classList.remove('hidden');
+                    editStrandSelect.setAttribute('required', 'required');
+                } else {
+                    editStrandGroup.classList.add('hidden');
+                    editStrandSelect.removeAttribute('required');
+                    editStrandSelect.value = '';
+                }
+            }
+
+            editGradeSelect.addEventListener('change', toggleEditStrand);
+
+            // ---------- OPEN ADD MODAL (hook into global functions) ----------
+            const originalOpenAddModal = window.openAddModal;
+            window.openAddModal = function () {
+                // Reset form and hide strand initially
+                document.getElementById('addSectionForm').reset();
+                addStrandGroup.classList.add('hidden');
+                addStrandSelect.removeAttribute('required');
+                // Call original if exists
+                if (originalOpenAddModal) originalOpenAddModal();
+                // After modal is shown, we might need to adjust based on any pre-filled grade
+                setTimeout(() => {
+                    if (addGradeSelect.value === '11' || addGradeSelect.value === '12') {
+                        addStrandGroup.classList.remove('hidden');
+                        addStrandSelect.setAttribute('required', 'required');
+                    }
+                }, 50);
+            };
+
+            // ---------- OPEN EDIT MODAL (hook into global functions) ----------
+            const originalOpenEditModal = window.openEditModal;
+            window.openEditModal = function (sectionId) {
+                // Call original to populate fields
+                if (originalOpenEditModal) originalOpenEditModal(sectionId);
+                // After population, check grade and show/hide strand
+                setTimeout(() => {
+                    if (editGradeSelect.value === '11' || editGradeSelect.value === '12') {
+                        editStrandGroup.classList.remove('hidden');
+                        editStrandSelect.setAttribute('required', 'required');
+                        // If the section has a strand stored, it should be set by the original JS.
+                        // If not, we leave it empty for user to fill.
+                    } else {
+                        editStrandGroup.classList.add('hidden');
+                        editStrandSelect.removeAttribute('required');
+                        editStrandSelect.value = '';
+                    }
+                }, 100);
+            };
+
+            // ---------- FORM SUBMISSION VALIDATION ----------
+            const addForm = document.getElementById('addSectionForm');
+            addForm.addEventListener('submit', function (e) {
+                const gradeVal = addGradeSelect.value;
+                if (gradeVal === '11' || gradeVal === '12') {
+                    if (!addStrandSelect.value) {
+                        e.preventDefault();
+                        alert('Please select a strand for Grade 11 or 12.');
+                        addStrandSelect.focus();
+                        return false;
+                    }
+                }
+            });
+
+            const editForm = document.getElementById('editSectionForm');
+            editForm.addEventListener('submit', function (e) {
+                const gradeVal = editGradeSelect.value;
+                if (gradeVal === '11' || gradeVal === '12') {
+                    if (!editStrandSelect.value) {
+                        e.preventDefault();
+                        alert('Please select a strand for Grade 11 or 12.');
+                        editStrandSelect.focus();
+                        return false;
+                    }
+                }
+            });
+
+            // ---------- OPTIONAL: LIVE PREVIEW OF TABLE ROW (not needed, but can be added) ----------
+        })();
+    </script>
 </body>
+
 </html>

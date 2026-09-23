@@ -1,6 +1,6 @@
 /**
  * Student Dashboard - Supabase Integration
- * PLSNHS - Placido L. Señor National High School
+ * HES - HES, Hiraya Enrollment System
  */
 
 import { supabase } from '../../supabase/config.js';
@@ -129,8 +129,8 @@ import { supabase } from '../../supabase/config.js';
         logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             localStorage.removeItem('currentUser');
-            localStorage.removeItem('plsnhs_student_avatar');
-            localStorage.removeItem('plsnhs_student_name');
+            localStorage.removeItem('hes_student_avatar');
+            localStorage.removeItem('hes_student_name');
             try {
                 await supabase.auth.signOut();
             } catch(err) {}
@@ -141,6 +141,8 @@ import { supabase } from '../../supabase/config.js';
     // ============================================
     // LOAD DASHBOARD DATA FROM SUPABASE
     // ============================================
+
+    let currentStudentRow = null;
 
     async function loadDashboardData() {
         try {
@@ -157,12 +159,13 @@ import { supabase } from '../../supabase/config.js';
 
                 if (studentsData && studentsData.length > 0) {
                     studentRow = studentsData[0];
+                    currentStudentRow = studentRow;
                     let fullName = `${studentRow.first_name || ''} ${studentRow.last_name || ''}`.trim();
                     fullName = sanitizeStudentName(fullName, userEmail);
                     if (fullName) {
                         studentDisplayName = fullName;
                         try {
-                            localStorage.setItem('plsnhs_student_name', fullName);
+                            localStorage.setItem('hes_student_name', fullName);
                         } catch(e) {}
                         if (studentName) studentName.textContent = fullName;
                         if (studentNameHeader) studentNameHeader.textContent = fullName;
@@ -204,7 +207,7 @@ import { supabase } from '../../supabase/config.js';
             // 3. Fallback to localStorage dummy data if empty
             if (enrollments.length === 0) {
                 try {
-                    const localSaved = localStorage.getItem('plsnhs_enrollments');
+                    const localSaved = localStorage.getItem('hes_enrollments');
                     if (localSaved) {
                         const parsed = JSON.parse(localSaved);
                         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -292,7 +295,7 @@ import { supabase } from '../../supabase/config.js';
             // Check local synced attendance
             if (attendanceRecords.length === 0) {
                 try {
-                    const storedAdminAtt = localStorage.getItem('plsnhs_student_attendance');
+                    const storedAdminAtt = localStorage.getItem('hes_student_attendance');
                     if (storedAdminAtt) {
                         const parsed = JSON.parse(storedAdminAtt);
                         if (Array.isArray(parsed)) {
@@ -310,10 +313,24 @@ import { supabase } from '../../supabase/config.js';
                 } catch(e) {}
             }
 
+            function isWeekend(dateStr) {
+                if (!dateStr) return false;
+                try {
+                    const d = new Date(dateStr + 'T00:00:00');
+                    const day = d.getDay();
+                    return day === 0 || day === 6;
+                } catch {
+                    return false;
+                }
+            }
+
             // Fallback generation if no records yet
             if (attendanceRecords.length === 0) {
                 attendanceRecords = generateStudentAttendanceSnippet(studentDisplayName, lrnVal);
             }
+
+            // Strictly filter out any weekend attendance records
+            attendanceRecords = attendanceRecords.filter(r => !isWeekend(r.date));
 
             // Calculate attendance rate
             if (attendanceRecords.length > 0) {
@@ -355,6 +372,7 @@ import { supabase } from '../../supabase/config.js';
     function generateStudentAttendanceSnippet(studentName, lrn) {
         const logs = [];
         const todayObj = new Date();
+        const todayStr = todayObj.toISOString().split('T')[0];
         let dayOffset = 0;
         let count = 0;
 
@@ -375,7 +393,7 @@ import { supabase } from '../../supabase/config.js';
             let timeOut = '04:30 PM';
             let remarks = 'On time';
 
-            if (dayOffset === 1) {
+            if (dateStr === todayStr && dayOfWeek !== 0 && dayOfWeek !== 6) {
                 timeIn = '07:18 AM';
                 timeOut = '04:30 PM';
                 status = 'Present';
@@ -526,49 +544,167 @@ import { supabase } from '../../supabase/config.js';
 
     async function loadNotifications() {
         let notifications = [];
+
+        // 1. Gather all valid IDs and emails for this student
+        const validUids = new Set([
+            sessionUser?.uid,
+            sessionUser?.id,
+            sessionUser?.user_id,
+            sessionUser?.student_id,
+            currentStudentRow?.id,
+            currentStudentRow?.user_id,
+            currentStudentRow?.student_id
+        ].filter(Boolean).map(String));
+
+        const validEmails = new Set([
+            sessionUser?.email,
+            currentStudentRow?.email
+        ].filter(Boolean).map(e => e.trim().toLowerCase()));
+
+        // Build student name tokens for personalization verification
+        const studentNameTokens = new Set();
+        const namesToProcess = [
+            studentDisplayName,
+            currentStudentRow?.first_name,
+            currentStudentRow?.last_name,
+            sessionUser?.firstName,
+            sessionUser?.lastName,
+            sessionUser?.displayName
+        ];
+        namesToProcess.filter(Boolean).forEach(n => {
+            n.toLowerCase().split(/[\s,.-]+/).forEach(tok => {
+                if (tok.length >= 3) studentNameTokens.add(tok);
+            });
+        });
+
+        // Helper: verify that a notification is strictly meant for this student
+        function isForThisStudent(notif) {
+            if (!notif) return false;
+
+            const notifUid = notif.user_id ? String(notif.user_id) : '';
+            const notifStudentId = notif.student_id ? String(notif.student_id) : '';
+            const notifEmail = (notif.recipient_email || notif.email) ? String(notif.recipient_email || notif.email).toLowerCase().trim() : '';
+
+            // If explicitly matches this student's IDs or email
+            if (notifUid && validUids.has(notifUid)) return true;
+            if (notifStudentId && validUids.has(notifStudentId)) return true;
+            if (notifEmail && validEmails.has(notifEmail)) return true;
+
+            // If explicitly targeted to ANOTHER user/email, strictly reject!
+            if (notifUid && !validUids.has(notifUid)) return false;
+            if (notifStudentId && !validUids.has(notifStudentId)) return false;
+            if (notifEmail && !validEmails.has(notifEmail)) return false;
+
+            // Check if title or message contains personalized salutations for someone else
+            const fullText = `${notif.title || ''} ${notif.message || ''}`.toLowerCase();
+            const salutationMatch = fullText.match(/(?:dear|notice for|congratulations|attention to|hello|hi|student:?)\s+([a-z]+(?:\s+[a-z]+)?)/i);
+            if (salutationMatch && salutationMatch[1]) {
+                const addressedName = salutationMatch[1].trim().toLowerCase();
+                let matchFound = false;
+                for (const tok of studentNameTokens) {
+                    if (addressedName.includes(tok)) {
+                        matchFound = true;
+                        break;
+                    }
+                }
+                if (!matchFound) {
+                    // Belongs to another student (e.g. Mylene when logged in as Jorvin) -> REJECT!
+                    return false;
+                }
+            }
+
+            // For general announcements without specific targeting
+            const generalTypes = ['broadcast', 'announcement', 'general', 'update', 'system'];
+            if (generalTypes.includes(notif.type) && !notif.user_id && !notif.student_id) {
+                return true;
+            }
+
+            // If it was a personal notification type (document reminder, enrollment notice, attendance) but lacked user IDs
+            return false;
+        }
+
+        // 2. Fetch from Supabase
         try {
-            const uid = sessionUser?.uid || sessionUser?.id;
+            const orClauses = [];
+            validUids.forEach(id => {
+                orClauses.push(`user_id.eq.${id}`);
+                orClauses.push(`student_id.eq.${id}`);
+            });
+            validEmails.forEach(em => {
+                orClauses.push(`recipient_email.eq.${em}`);
+            });
+
+            // Also allow system broadcasts
+            orClauses.push('and(role.eq.student,user_id.is.null,student_id.is.null,recipient_email.is.null,type.in.(broadcast,announcement,general,update))');
+
             let query = supabase
                 .from('notifications')
                 .select('*')
                 .order('created_at', { ascending: false })
-                .limit(15);
+                .limit(30);
 
-            if (uid) {
-                query = query.or(`user_id.eq.${uid},role.eq.student`);
-            } else {
-                query = query.eq('role', 'student');
+            if (orClauses.length > 0) {
+                query = query.or(orClauses.join(','));
             }
 
             const { data } = await query;
             
             if (data && data.length > 0) {
-                notifications = data.map(n => ({
-                    id: n.id,
-                    type: n.type || 'action',
-                    title: n.title,
-                    message: n.message,
-                    time: new Date(n.created_at).toLocaleDateString(),
-                    read: n.read || n.is_read || false
-                }));
+                data.forEach(n => {
+                    if (isForThisStudent(n)) {
+                        notifications.push({
+                            id: n.id,
+                            type: n.type || 'action',
+                            title: n.title,
+                            message: n.message,
+                            time: new Date(n.created_at).toLocaleDateString(),
+                            read: n.read === true || n.is_read === true
+                        });
+                    }
+                });
             }
         } catch(e) {
             console.warn('Notifications fetch warning:', e);
         }
 
+        // 3. Fetch from localStorage student notifications (strictly per-student keys)
+        try {
+            const keysToCheck = new Set([...validUids, ...validEmails]);
+            keysToCheck.forEach(kId => {
+                const localRaw = localStorage.getItem(`hes_notifications_${kId}`);
+                if (localRaw) {
+                    const localList = JSON.parse(localRaw);
+                    if (Array.isArray(localList)) {
+                        localList.forEach(loc => {
+                            if (isForThisStudent(loc) && !notifications.some(n => String(n.id) === String(loc.id) || n.message === loc.message)) {
+                                notifications.unshift({
+                                    id: loc.id || 'loc_' + Math.random().toString(36).substr(2, 6),
+                                    type: loc.type || 'action',
+                                    title: loc.title,
+                                    message: loc.message,
+                                    time: loc.time || 'Today',
+                                    read: loc.read || false
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+        } catch(e) {}
+
+        // Fallback generic announcement if none found
         if (notifications.length === 0) {
             notifications = [
-                { id: 1, type: 'update', title: '📢 Enrollment Period Open', message: 'The enrollment period for SY 2026-2027 is now open.', time: 'Today', read: false },
-                { id: 2, type: 'reminder', title: '⏰ Requirements Submission', message: 'Please submit your enrollment requirements before the deadline.', time: 'Yesterday', read: false },
-                { id: 3, type: 'action', title: '✅ Enrollment Approved', message: 'Your enrollment has been successfully recorded in the system.', time: '3 days ago', read: true }
+                { id: 1, type: 'update', title: '📢 Enrollment Period Open', message: 'Welcome to HES! The enrollment period for SY 2026-2027 is now open.', time: 'Today', read: false },
+                { id: 2, type: 'reminder', title: '⏰ Requirements Submission', message: 'Please ensure all your enrollment requirements are submitted on time.', time: 'Today', read: false }
             ];
         }
         
-        renderNotifications(notifications);
+        renderNotifications(notifications, validUids);
         updateNotificationCount(notifications.filter(n => !n.read).length);
     }
 
-    function renderNotifications(notifications) {
+    function renderNotifications(notifications, validUids) {
         if (!notifList) return;
 
         if (notifications.length === 0) {
@@ -586,7 +722,10 @@ import { supabase } from '../../supabase/config.js';
             action: 'fa-check-circle',
             reminder: 'fa-clock',
             alert: 'fa-exclamation-triangle',
-            message: 'fa-envelope'
+            warning: 'fa-exclamation-triangle',
+            message: 'fa-envelope',
+            document_reminder: 'fa-file-alt',
+            attendance: 'fa-clipboard-check'
         };
         
         notifList.innerHTML = notifications.map(notif => `
@@ -599,19 +738,42 @@ import { supabase } from '../../supabase/config.js';
                     <div class="notif-message">${notif.message}</div>
                     <div class="notif-time">${notif.time}</div>
                 </div>
-                ${!notif.read ? `<button type="button" class="mark-read-btn" data-id="${notif.id}"><i class="fas fa-check"></i></button>` : ''}
+                ${!notif.read ? `<button type="button" class="mark-read-btn" data-id="${notif.id}" title="Mark as read"><i class="fas fa-check"></i></button>` : ''}
             </div>
         `).join('');
         
         document.querySelectorAll('.mark-read-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', async function(e) {
                 e.stopPropagation();
+                const notifId = this.dataset.id;
                 const item = this.closest('.notif-item');
                 item.classList.remove('unread');
                 item.classList.add('read');
                 this.remove();
                 const unread = document.querySelectorAll('.notif-item.unread').length;
                 updateNotificationCount(unread);
+
+                // Update in Supabase if not a string id
+                try {
+                    await supabase.from('notifications').update({ read: true, is_read: true }).eq('id', notifId);
+                } catch(e) {}
+
+                // Update local storage
+                if (validUids) {
+                    validUids.forEach(id => {
+                        try {
+                            const k = `hes_notifications_${id}`;
+                            const raw = localStorage.getItem(k);
+                            if (raw) {
+                                const list = JSON.parse(raw);
+                                list.forEach(n => {
+                                    if (String(n.id) === String(notifId)) n.read = true;
+                                });
+                                localStorage.setItem(k, JSON.stringify(list));
+                            }
+                        } catch(e) {}
+                    });
+                }
             });
         });
     }
@@ -649,7 +811,7 @@ import { supabase } from '../../supabase/config.js';
     });
 
     if (markAllBtn) {
-        markAllBtn.addEventListener('click', function() {
+        markAllBtn.addEventListener('click', async function() {
             document.querySelectorAll('.notif-item.unread').forEach(item => {
                 item.classList.remove('unread');
                 item.classList.add('read');
@@ -657,11 +819,41 @@ import { supabase } from '../../supabase/config.js';
                 if (btn) btn.remove();
             });
             updateNotificationCount(0);
+
+            const uid = sessionUser?.uid || sessionUser?.id || currentStudentRow?.id;
+            if (uid) {
+                try {
+                    await supabase.from('notifications').update({ read: true, is_read: true }).eq('user_id', uid);
+                } catch(e) {}
+                try {
+                    const k = `hes_notifications_${uid}`;
+                    const raw = localStorage.getItem(k);
+                    if (raw) {
+                        const list = JSON.parse(raw);
+                        list.forEach(n => n.read = true);
+                        localStorage.setItem(k, JSON.stringify(list));
+                    }
+                } catch(e) {}
+            }
         });
     }
 
-    // Initialize
-    loadDashboardData();
-    loadNotifications();
+    // Real-time synchronization when registrar or system posts a new notification
+    window.addEventListener('storage', function(e) {
+        if (e.key && (e.key.startsWith('hes_notifications') || e.key === 'hes_latest_notification')) {
+            loadNotifications();
+        }
+    });
+
+    window.addEventListener('focus', function() {
+        loadNotifications();
+    });
+
+    // Initialize sequentially
+    async function init() {
+        await loadDashboardData();
+        await loadNotifications();
+    }
+    init();
 
 })();

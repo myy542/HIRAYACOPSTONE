@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile - Teacher Dashboard | PLSNHS</title>
+    <title>My Profile - Teacher Dashboard | HES</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Profile CSS -->
     <link rel="stylesheet" href="css/profile.css">
+    <link rel="stylesheet" href="../css/chatbot.css">
 </head>
 <body>
     <!-- Mobile Menu Toggle -->
@@ -22,10 +23,12 @@
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
-                    <div class="logo-icon">P</div>
-                    <div class="logo-text">PLS<span>NHS</span></div>
+                    <div class="logo-icon">
+                        <img src="../pictures/logo sa skwelahan.jpg" alt="School Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%231B2A4A%22 /%3E%3Ctext x=%2250%22 y=%2265%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2230%22 font-weight=%22bold%22%3EPLS%3C/text%3E%3C/svg%3E'">
+                    </div>
+                    <div class="logo-text">H.<span>E.S</span></div>
                 </div>
-                <div class="school-badge">Placido L. Señor NHS</div>
+                <div class="school-badge">Hiraya Enrollment System</div>
             </div>
 
             <div class="teacher-profile">
@@ -41,19 +44,20 @@
                 <div class="nav-section">
                     <div class="nav-section-title">MAIN MENU</div>
                     <ul class="nav-items">
-                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
-                        <li><a href="attendance-qr.html"><i class="fas fa-qrcode"></i> QR Attendance</a></li>
-                        <li><a href="classes.html"><i class="fas fa-users"></i> My Classes</a></li>
-                        <li><a href="schedule.html"><i class="fas fa-clock"></i> Schedule</a></li>
-                        <li><a href="grades.html"><i class="fas fa-star"></i> Grades</a></li>
+                        <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></a></li>
+                        <li><a href="attendance-face.html"><i class="fas fa-camera"></i> <span>Face Attendance</span></a></li>
+                        <li><a href="student-attendance.html"><i class="fas fa-user-check"></i> <span>Student Attendance</span></a></li>
+                        <li><a href="classes.html"><i class="fas fa-users"></i> <span>My Classes</span></a></li>
+                        <li><a href="schedule.html"><i class="fas fa-clock"></i> <span>Schedule</span></a></li>
+                        <li><a href="grades.html"><i class="fas fa-star"></i> <span>Grades</span></a></li>
                     </ul>
                 </div>
 
                 <div class="nav-section">
                     <div class="nav-section-title">ACCOUNT</div>
                     <ul class="nav-items">
-                        <li><a href="profile.html" class="active"><i class="fas fa-user-circle"></i> My Profile</a></li>
-                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                        <li><a href="profile.html" class="active"><i class="fas fa-user-circle"></i> <span>My Profile</span></a></li>
+                        <li><a href="../auth/login.html" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
                     </ul>
                 </div>
             </nav>
@@ -104,7 +108,7 @@
                             <div class="info-icon"><i class="fas fa-envelope"></i></div>
                             <div class="info-content">
                                 <div class="info-label">Email Address</div>
-                                <div class="info-value" id="profileEmail">teacher@plsnhs.edu.ph</div>
+                                <div class="info-value" id="profileEmail">teacher@hes.edu.ph</div>
                                 <span id="emailVerifiedBadge"><span class="verified-badge"><i class="fas fa-check-circle"></i> Verified</span></span>
                             </div>
                         </div>
@@ -113,7 +117,7 @@
                             <div class="info-icon"><i class="fas fa-id-card"></i></div>
                             <div class="info-content">
                                 <div class="info-label">Employee ID</div>
-                                <div class="info-value" id="teacherId">PLSNHS-TEA-00021</div>
+                                <div class="info-value" id="teacherId">HES-TEA-00021</div>
                             </div>
                         </div>
 
@@ -239,41 +243,99 @@
                         </div>
                     </div>
 
-                    <!-- Edit Profile Form -->
-                    <div class="form-card">
-                        <div class="form-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
-                            <i class="fas fa-user-edit" style="color: var(--primary); font-size: 1.2rem;"></i>
-                            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #0b2b4a;">Edit Profile Information</h3>
-                        </div>
-                        <form id="profileUpdateForm">
-                            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-                                <div class="form-group">
-                                    <label class="form-label" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; color: #1e293b;">First Name <span class="required" style="color: #ef4444;">*</span></label>
-                                    <input type="text" name="first_name" id="editFirstname" placeholder="First Name" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; color: #1e293b;">Last Name <span class="required" style="color: #ef4444;">*</span></label>
-                                    <input type="text" name="last_name" id="editLastname" placeholder="Last Name" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;" required>
-                                </div>
-                            </div>
-
-                            <div class="form-group" style="margin-top: 14px;">
-                                <label class="form-label" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; color: #1e293b;">Contact Number</label>
-                                <input type="tel" name="phone" id="editPhone" placeholder="09XXXXXXXXX" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
-                                <small style="color: #64748b; display: block; margin-top: 5px;">
-                                    <i class="fas fa-info-circle"></i> Mobile format: 09XXXXXXXXX (11 digits)
-                                </small>
-                            </div>
-
-                            <div class="form-group" style="margin-top: 14px;">
-                                <label class="form-label" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; color: #1e293b;">Department / Specialization</label>
-                                <input type="text" name="department" id="editDepartment" placeholder="e.g. Senior High School - STEM Faculty" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
-                            </div>
-
-                            <button type="submit" class="btn-submit" id="saveTeacherProfileBtn" style="margin-top: 18px; width: 100%; padding: 12px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                                <i class="fas fa-save"></i> Save Profile Changes
+                    <!-- Account Information Card (View & Edit Modes) -->
+                    <div class="account-info-card" id="accountInfoCard">
+                        <div class="card-header-with-action">
+                            <h3><i class="fas fa-id-card"></i> Account Information</h3>
+                            <button type="button" class="btn-edit-toggle" id="editTeacherInfoToggleBtn">
+                                <i class="fas fa-edit"></i> Edit
                             </button>
-                        </form>
+                        </div>
+
+                        <!-- VIEW MODE -->
+                        <div class="account-info-view" id="teacherInfoViewContainer">
+                            <div class="account-info-grid">
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Full Name</span>
+                                    <span class="account-info-value" id="viewTeacherFullName">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Email Address</span>
+                                    <span class="account-info-value" id="viewTeacherEmail">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Employee ID</span>
+                                    <span class="account-info-value" id="viewTeacherEmployeeId">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Gender</span>
+                                    <span class="account-info-value" id="viewTeacherGender">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Contact Number</span>
+                                    <span class="account-info-value" id="viewTeacherPhone">-</span>
+                                </div>
+                                <div class="account-info-item">
+                                    <span class="account-info-label">Department / Specialization</span>
+                                    <span class="account-info-value" id="viewTeacherDepartment">-</span>
+                                </div>
+                                <div class="account-info-item full-width">
+                                    <span class="account-info-label">Complete Home Address</span>
+                                    <span class="account-info-value" id="viewTeacherAddress">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- EDIT MODE (Form) -->
+                        <div class="account-info-edit-container" id="teacherInfoEditContainer" style="display: none;">
+                            <form id="profileUpdateForm">
+                                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                                    <div class="form-group">
+                                        <label class="form-label" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; color: #1e293b;">First Name <span class="required" style="color: #ef4444;">*</span></label>
+                                        <input type="text" name="first_name" id="editFirstname" placeholder="First Name" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; color: #1e293b;">Last Name <span class="required" style="color: #ef4444;">*</span></label>
+                                        <input type="text" name="last_name" id="editLastname" placeholder="Last Name" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;" required>
+                                    </div>
+                                </div>
+
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px;">
+                                    <div class="form-group">
+                                        <label class="form-label" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; color: #1e293b;">Gender</label>
+                                        <select name="gender" id="editGender" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; background: #fff;">
+                                            <option value="">Select Gender</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Prefer not to say">Prefer not to say</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; color: #1e293b;">Contact Number</label>
+                                        <input type="tel" name="phone" id="editPhone" placeholder="09XXXXXXXXX" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                                    </div>
+                                </div>
+
+                                <div class="form-group" style="margin-top: 14px;">
+                                    <label class="form-label" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; color: #1e293b;">Complete Home Address</label>
+                                    <textarea name="address" id="editAddress" rows="2" placeholder="Barangay, City/Municipality, Province" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem; resize: vertical;"></textarea>
+                                </div>
+
+                                <div class="form-group" style="margin-top: 14px;">
+                                    <label class="form-label" style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; color: #1e293b;">Department / Specialization</label>
+                                    <input type="text" name="department" id="editDepartment" placeholder="e.g. Senior High School - STEM Faculty" style="width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                                </div>
+
+                                <div class="account-info-actions">
+                                    <button type="button" class="btn-secondary" id="cancelTeacherEditBtn" style="padding: 9px 18px; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; color: #475569; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                                        <i class="fas fa-times"></i> Cancel
+                                    </button>
+                                    <button type="submit" class="btn-submit" id="saveTeacherProfileBtn" style="padding: 9px 22px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-weight: 600; font-size: 0.92rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                                        <i class="fas fa-save"></i> Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
 
                     <!-- Change Password Form -->
@@ -396,5 +458,6 @@
     <!-- JavaScript -->
     <script src="js/teacher_avatar_sync.js"></script>
     <script type="module" src="js/profile.js"></script>
+    <script src="../js/chatbot.js"></script>
 </body>
 </html>

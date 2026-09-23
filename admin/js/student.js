@@ -1,5 +1,5 @@
 /**
- * PLSNHS Admin - Students List (Whole School by Year Level & Section)
+ * HES Admin - Students List (Whole School by Year Level & Section)
  */
 
 import { supabase } from '../../supabase/config.js';

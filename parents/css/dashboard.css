@@ -103,9 +103,10 @@ body {
 
 .school-badge {
     font-size: 11px;
-    opacity: 0.8;
+    opacity: 0.85;
     letter-spacing: 0.3px;
     padding-left: 4px;
+    color: rgba(255, 255, 255, 0.8);
 }
 
 /* Parent Profile */

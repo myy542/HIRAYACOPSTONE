@@ -68,36 +68,45 @@ body {
 .logo {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 12px;
+    margin-bottom: 4px;
 }
 
 .logo-icon {
-    background: var(--accent);
-    color: var(--primary);
-    width: 42px;
-    height: 42px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
-    font-weight: 800;
-    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.logo-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .logo-text {
-    font-size: 1.4rem;
-    font-weight: 700;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #fff;
 }
+
 .logo-text span {
-    color: var(--accent);
+    color: #facc15;
 }
 
 .school-badge {
-    font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.5);
-    margin-top: 4px;
+    font-size: 11px;
+    opacity: 0.85;
+    letter-spacing: 0.3px;
     padding-left: 4px;
-    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.8);
 }
 
 /* Teacher Profile */
@@ -183,7 +192,14 @@ body {
     color: rgba(255, 255, 255, 0.6);
     text-decoration: none;
     font-size: 0.9rem;
+    white-space: nowrap;
     transition: var(--transition);
+}
+
+.nav-items a span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .nav-items a i {
@@ -791,25 +807,54 @@ body {
         width: 70px;
         padding: 1rem 0;
     }
+    .sidebar-header {
+        padding: 0 0.5rem 1rem;
+        display: flex;
+        justify-content: center;
+    }
+    .sidebar .logo {
+        justify-content: center;
+        margin-bottom: 0;
+    }
     .sidebar .logo-text,
     .sidebar .school-badge,
     .sidebar .teacher-name,
     .sidebar .teacher-role,
     .sidebar .nav-section-title,
     .sidebar .nav-items a span {
-        display: none;
+        display: none !important;
+    }
+    .sidebar .teacher-profile {
+        padding: 0.8rem 0;
+    }
+    .sidebar .teacher-avatar {
+        width: 44px;
+        height: 44px;
+        margin: 0 auto;
+    }
+    .sidebar .avatar-initial {
+        width: 44px;
+        height: 44px;
+        font-size: 1.1rem;
+    }
+    .sidebar .nav-menu {
+        padding: 0.5rem;
     }
     .sidebar .nav-items a {
         justify-content: center;
-        padding: 0.6rem;
+        padding: 0.75rem 0.5rem;
+        font-size: 0 !important;
+        gap: 0;
     }
     .sidebar .nav-items a i {
-        font-size: 1.2rem;
+        font-size: 1.25rem !important;
+        width: auto;
+        margin: 0;
     }
     .main-content {
         margin-left: 70px;
         max-width: calc(100% - 70px);
-        padding: 1.5rem;
+        padding: 1.25rem;
     }
     .classes-grid {
         grid-template-columns: 1fr;
